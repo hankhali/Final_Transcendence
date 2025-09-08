@@ -1,11 +1,5 @@
 
-interface UserProfile {
-  username: string;
-  displayName: string;
-  skillLevel: 'beginner' | 'intermediate' | 'expert';
-  bio: string;
-  avatar: string;
-}
+import type { UserProfile } from '../types/index.js';
 
 export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLElement {
   const container = document.createElement('div');

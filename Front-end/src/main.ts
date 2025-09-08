@@ -1,16 +1,9 @@
 // This file is a TypeScript module
-import "./style.css"; // Ensure your CSS is imported
-import { apiService } from "./api.ts";
+import "./styles/style.css"; // Ensure your CSS is imported
+import { apiService } from "./services/api.ts";
 import { createProfileSettings } from "./components/ProfileSettings";
 
 // Global variables for message display
-declare global {
-  interface Window {
-    showMessage: (text: string, type?: 'success' | 'error' | 'info') => void;
-    messageTimeout: number | null;
-  }
-}
-
 window.messageTimeout = null;
 let currentUser: { id: number; username: string } | null = null;
 
@@ -510,14 +503,6 @@ function createNavbar(): HTMLElement {
     mobileMenuToggle.classList.toggle("active");
     const expanded = mobileMenuToggle.classList.contains("active");
     mobileMenuToggle.setAttribute("aria-expanded", String(expanded));
-    
-    // Toggle language switcher visibility in mobile menu
-    if (window.innerWidth <= 768) {
-      const languageSwitcher = document.getElementById('language-switcher-container');
-      if (languageSwitcher) {
-        languageSwitcher.style.display = expanded ? 'flex' : 'none';
-      }
-    }
   });
   // Close mobile menu when a link is clicked
   navLinks.querySelectorAll(".navbar-link").forEach((link) => {

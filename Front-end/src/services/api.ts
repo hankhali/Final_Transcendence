@@ -1,28 +1,4 @@
-export interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-  loading: boolean;
-}
-
-export interface Tournament {
-  id: number;
-  name: string;
-  max_players: number;
-  status: 'pending' | 'started' | 'completed';
-  created_by: number;
-}
-
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  alias?: string;
-}
-
-export interface JoinTournamentRequest {
-  playerAliases: string[];
-  userId: number;
-}
+import type { ApiResponse, Tournament, User } from '../types/index.js';
 
 // Base API URL - update this to match your backend
 const API_BASE_URL = 'http://localhost:8000'; 
