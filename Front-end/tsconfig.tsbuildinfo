@@ -1,1 +1,1 @@
-{"root":["./src/api.ts","./src/game.ts","./src/language.ts","./src/main.ts","./src/translations.ts","./src/components/profilesettings.ts"],"version":"5.8.3"}
+{"root":["./src/api.ts","./src/main.ts","./src/translations.ts","./src/components/profilesettings.ts"],"version":"5.8.3"}

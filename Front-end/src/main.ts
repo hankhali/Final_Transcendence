@@ -9,15 +9,10 @@ declare global {
     showMessage: (text: string, type?: 'success' | 'error' | 'info') => void;
     messageTimeout: number | null;
   }
-  interface Window {
-    messageTimeout: number | null;
-    currentGameContainer: HTMLElement | null;
-  }
 }
 
 window.messageTimeout = null;
 let currentUser: { id: number; username: string } | null = null;
-window.currentGameContainer = null;
 
 // Utility function to navigate between pages
 export function navigateTo(path: string) {
@@ -294,19 +289,6 @@ function createNavbar(): HTMLElement {
   });
   navLinks.appendChild(homeLink);
   navLinks.appendChild(tournamentsLink);
-  
-  // Add Dashboard link
-  const dashboardLink = document.createElement("a");
-  dashboardLink.href = "/dashboard";
-  dashboardLink.className = "navbar-link";
-  dashboardLink.textContent = "Dashboard";
-  dashboardLink.setAttribute("role", "menuitem");
-  dashboardLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    navigateTo("/dashboard");
-  });
-  navLinks.appendChild(dashboardLink);
-  
   navLinks.appendChild(ACCOUNTLink);
   
   // Profile Dropdown
@@ -1163,17 +1145,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 // Handle browser history changes (back/forward buttons)
 window.addEventListener("popstate", () => {
-  if (window.currentGameContainer) {
-    window.currentGameContainer.remove();
-    window.currentGameContainer = null;
-    document.body.style.overflow = "";
-    return;
-  }
   const app = document.getElementById("app");
   if (app) {
     setupRoutes(app);
   }
 });
-
-// Function to display the game - removed unused function
 

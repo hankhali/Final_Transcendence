@@ -55,14 +55,6 @@ export const translations = {
     copyright: '© 2025 Neon Pong. All rights reserved.',
     made_with_love: 'Made with <i class="fas fa-heart"></i> by Four Innovative Minds.',
     
-    // Game Controls
-    pause: 'Pause',
-    resume: 'Resume',
-    restart: 'Restart',
-    game_over: 'Game Over',
-    score: 'Score: {score}',
-    high_score: 'High Score: {score}',
-    
     // Accessibility
     skip_to_content: 'Skip to main content',
     high_contrast: 'Toggle high contrast mode',
@@ -123,14 +115,6 @@ export const translations = {
     copyright: '© 2025 Neon Pong. Tous droits réservés.',
     made_with_love: 'Fait avec <i class="fas fa-heart"></i> par Quatre Esprits Innovants.',
     
-    // Game Controls
-    pause: 'Pause',
-    resume: 'Reprendre',
-    restart: 'Redémarrer',
-    game_over: 'Partie Terminée',
-    score: 'Score : {score}',
-    high_score: 'Meilleur Score : {score}',
-    
     // Accessibility
     skip_to_content: 'Aller au contenu principal',
     high_contrast: 'Activer le mode contraste élevé',
@@ -190,14 +174,6 @@ export const translations = {
     // Footer
     copyright: '© 2025 Neon Pong. Todos los derechos reservados.',
     made_with_love: 'Hecho con <i class="fas fa-heart"></i> por Cuatro Mentes Innovadoras.',
-    
-    // Game Controls
-    pause: 'Pausa',
-    resume: 'Continuar',
-    restart: 'Reiniciar',
-    game_over: 'Juego Terminado',
-    score: 'Puntuación: {score}',
-    high_score: 'Mejor Puntuación: {score}',
     
     // Accessibility
     skip_to_content: 'Saltar al contenido principal',
