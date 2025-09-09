@@ -91,7 +91,8 @@ function showMessage(
   // Clear existing messages and timeouts
   const existingMessage = document.querySelector(".message");
   if (existingMessage) {
-    existingMessage.remove();
+    existingMessage.classList.add("removing");
+    setTimeout(() => existingMessage.remove(), 300);
   }
   if (window.messageTimeout) {
     clearTimeout(window.messageTimeout);
@@ -99,6 +100,15 @@ function showMessage(
 
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${type}-message`;
+  
+  // Add icon based on message type
+  let iconClass = "";
+  if (type === "success") iconClass = "fas fa-check-circle";
+  else if (type === "error") iconClass = "fas fa-exclamation-circle";
+  else iconClass = "fas fa-info-circle";
+  
+  const icon = document.createElement("i");
+  icon.className = iconClass;
   
   // Create message content container
   const messageContent = document.createElement("div");
@@ -111,24 +121,15 @@ function showMessage(
   closeButton.innerHTML = "&times;";
   closeButton.setAttribute("aria-label", "Close message");
   closeButton.addEventListener("click", () => {
-    messageDiv.remove();
+    messageDiv.classList.add("removing");
+    setTimeout(() => messageDiv.remove(), 300);
     if (window.messageTimeout) {
       clearTimeout(window.messageTimeout);
     }
   });
   
-  // Add icon based on message type
-  let icon = "";
-  if (type === "success") icon = "✓";
-  else if (type === "error") icon = "✕";
-  else icon = "ℹ";
-  
-  const iconSpan = document.createElement("span");
-  iconSpan.className = "message-icon";
-  iconSpan.textContent = icon;
-  
   // Assemble the message
-  messageDiv.appendChild(iconSpan);
+  messageDiv.appendChild(icon);
   messageDiv.appendChild(messageContent);
   messageDiv.appendChild(closeButton);
   
@@ -142,10 +143,9 @@ function showMessage(
   
   // Auto-hide after delay
   window.messageTimeout = window.setTimeout(() => {
-    messageDiv.style.opacity = '0';
-    messageDiv.style.transform = 'translateY(-20px)';
+    messageDiv.classList.add("removing");
     setTimeout(() => messageDiv.remove(), 300);
-  }, 5000);
+  }, 4000);
 }
 // Global variables for accessibility features
 let isHighContrast = false;
