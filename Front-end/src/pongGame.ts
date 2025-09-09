@@ -173,19 +173,21 @@ export class PongGame {
   private setupEventListeners(): void {
     // Keyboard controls
     document.addEventListener('keydown', (e) => {
-      this.keys[e.key.toLowerCase()] = true;
-      
-      // Game controls
-      if (e.key === ' ') {
+      const key = e.key.toLowerCase();
+      this.keys[key] = true;
+      // Prevent default for game control keys
+      if (["arrowup", "arrowdown", "w", "s", " "].includes(key)) {
         e.preventDefault();
+      }
+      // Game controls
+      if (key === ' ') {
         if (!this.gameState.isPlaying) {
           this.startGame();
         } else {
           this.pauseGame();
         }
       }
-      
-      if (e.key === 'r' || e.key === 'R') {
+      if (key === 'r') {
         this.resetGame();
       }
     });
@@ -195,25 +197,7 @@ export class PongGame {
     });
 
     // Mouse/Touch controls for mobile
-    this.canvas.addEventListener('mousemove', (e) => {
-      if (!this.player2.isAI) {
-        const rect = this.canvas.getBoundingClientRect();
-        const mouseY = e.clientY - rect.top;
-        this.player2.y = mouseY - this.config.paddleHeight / 2;
-        this.clampPaddle(this.player2);
-      }
-    });
-
-    // Touch controls
-    this.canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (!this.player2.isAI && e.touches.length > 0) {
-        const rect = this.canvas.getBoundingClientRect();
-        const touchY = e.touches[0].clientY - rect.top;
-        this.player2.y = touchY - this.config.paddleHeight / 2;
-        this.clampPaddle(this.player2);
-      }
-    });
+  // Removed mouse and touch controls for player 2. Only arrow keys control player 2 now.
   }
 
   private gameLoop(): void {
@@ -244,20 +228,20 @@ export class PongGame {
   }
 
   private updatePaddles(): void {
-    // Player 1 controls (W/S or Arrow Keys)
-    if (this.keys['w'] || this.keys['arrowup']) {
+    // Player 1 controls (W/S)
+    if (this.keys['w']) {
       this.player1.y -= this.config.paddleSpeed;
     }
-    if (this.keys['s'] || this.keys['arrowdown']) {
+    if (this.keys['s']) {
       this.player1.y += this.config.paddleSpeed;
     }
 
-    // Player 2 controls (if not AI)
+    // Player 2 controls (Arrow Up/Down)
     if (!this.player2.isAI) {
-      if (this.keys['i']) {
+      if (this.keys['arrowup']) {
         this.player2.y -= this.config.paddleSpeed;
       }
-      if (this.keys['k']) {
+      if (this.keys['arrowdown']) {
         this.player2.y += this.config.paddleSpeed;
       }
     } else {
@@ -414,25 +398,26 @@ export class PongGame {
   }
 
   private drawBackground(): void {
-    // Draw subtle grid pattern
-    this.ctx.strokeStyle = 'rgba(0, 230, 255, 0.1)';
-    this.ctx.lineWidth = 1;
-    
-    // Vertical lines
+    // Premium animated neon grid background
+    const time = Date.now() * 0.002;
+    this.ctx.save();
     for (let x = 0; x < this.config.canvasWidth; x += 40) {
+      this.ctx.strokeStyle = `rgba(0, 230, 255, ${0.12 + 0.08 * Math.sin(time + x)})`;
+      this.ctx.lineWidth = 2;
       this.ctx.beginPath();
       this.ctx.moveTo(x, 0);
       this.ctx.lineTo(x, this.config.canvasHeight);
       this.ctx.stroke();
     }
-    
-    // Horizontal lines
     for (let y = 0; y < this.config.canvasHeight; y += 40) {
+      this.ctx.strokeStyle = `rgba(255, 0, 255, ${0.12 + 0.08 * Math.cos(time + y)})`;
+      this.ctx.lineWidth = 2;
       this.ctx.beginPath();
       this.ctx.moveTo(0, y);
       this.ctx.lineTo(this.config.canvasWidth, y);
       this.ctx.stroke();
     }
+    this.ctx.restore();
   }
 
   private drawCenterLine(): void {
@@ -447,70 +432,60 @@ export class PongGame {
   }
 
   private drawPaddle(x: number, y: number): void {
-    // Paddle glow effect
-    this.ctx.shadowColor = '#00e6ff';
-    this.ctx.shadowBlur = 20;
-    
-    // Paddle gradient
-    const gradient = this.ctx.createLinearGradient(x, y, x + this.config.paddleWidth, y + this.config.paddleHeight);
-    gradient.addColorStop(0, '#00e6ff');
-    gradient.addColorStop(0.5, '#ffffff');
-    gradient.addColorStop(1, '#00e6ff');
-    
-    this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(x, y, this.config.paddleWidth, this.config.paddleHeight);
-    
-    // Reset shadow
-    this.ctx.shadowBlur = 0;
+  // Premium paddle: neon glow, inner shadow, and gradient
+  this.ctx.save();
+  this.ctx.shadowColor = '#00fff7';
+  this.ctx.shadowBlur = 30;
+  const gradient = this.ctx.createLinearGradient(x, y, x + this.config.paddleWidth, y + this.config.paddleHeight);
+  gradient.addColorStop(0, '#00fff7');
+  gradient.addColorStop(0.5, '#fff');
+  gradient.addColorStop(1, '#ff00ea');
+  this.ctx.fillStyle = gradient;
+  this.ctx.fillRect(x, y, this.config.paddleWidth, this.config.paddleHeight);
+  // Inner shadow
+  this.ctx.globalAlpha = 0.3;
+  this.ctx.fillStyle = '#222';
+  this.ctx.fillRect(x + 2, y + 2, this.config.paddleWidth - 4, this.config.paddleHeight - 4);
+  this.ctx.globalAlpha = 1;
+  this.ctx.restore();
   }
 
   private drawBall(): void {
-    // Ball glow effect
-    this.ctx.shadowColor = '#ff00ff';
-    this.ctx.shadowBlur = 15;
-    
-    // Ball gradient
+    // Premium ball: animated neon glow and gradient
+    this.ctx.save();
+    this.ctx.shadowColor = '#ff00ea';
+    this.ctx.shadowBlur = 25 + 10 * Math.abs(Math.sin(Date.now() * 0.005));
     const gradient = this.ctx.createRadialGradient(
       this.ball.x, this.ball.y, 0,
       this.ball.x, this.ball.y, this.config.ballSize
     );
-    gradient.addColorStop(0, '#ffffff');
-    gradient.addColorStop(0.3, '#ff00ff');
-    gradient.addColorStop(1, '#8a2be2');
-    
+    gradient.addColorStop(0, '#fff');
+    gradient.addColorStop(0.4, '#ff00ea');
+    gradient.addColorStop(1, '#00fff7');
     this.ctx.fillStyle = gradient;
     this.ctx.beginPath();
     this.ctx.arc(this.ball.x, this.ball.y, this.config.ballSize, 0, Math.PI * 2);
     this.ctx.fill();
-    
-    // Reset shadow
-    this.ctx.shadowBlur = 0;
+    this.ctx.restore();
   }
 
   private drawScores(): void {
-    this.ctx.fillStyle = '#00e6ff';
-    this.ctx.font = 'bold 48px Arial';
-    this.ctx.textAlign = 'center';
-    
-    // Player 1 score
-    this.ctx.fillText(
-      this.player1.score.toString(),
-      this.config.canvasWidth / 4,
-      60
-    );
-    
-    // Player 2 score
-    this.ctx.fillText(
-      this.player2.score.toString(),
-      (this.config.canvasWidth * 3) / 4,
-      60
-    );
-
-    // Player names
-    this.ctx.font = 'bold 16px Arial';
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText(this.player1.name, this.config.canvasWidth / 4, 85);
-    this.ctx.fillText(this.player2.name, (this.config.canvasWidth * 3) / 4, 85);
+  // Premium score: neon text and glow
+  this.ctx.save();
+  this.ctx.font = 'bold 54px Orbitron, Arial';
+  this.ctx.textAlign = 'center';
+  this.ctx.shadowColor = '#00fff7';
+  this.ctx.shadowBlur = 20;
+  this.ctx.fillStyle = 'rgba(0,255,255,0.95)';
+  this.ctx.fillText(this.player1.score.toString(), this.config.canvasWidth / 4, 70);
+  this.ctx.fillStyle = 'rgba(255,0,255,0.95)';
+  this.ctx.fillText(this.player2.score.toString(), (this.config.canvasWidth * 3) / 4, 70);
+  this.ctx.shadowBlur = 0;
+  this.ctx.font = 'bold 18px Orbitron, Arial';
+  this.ctx.fillStyle = '#fff';
+  this.ctx.fillText(this.player1.name, this.config.canvasWidth / 4, 100);
+  this.ctx.fillText(this.player2.name, (this.config.canvasWidth * 3) / 4, 100);
+  this.ctx.restore();
   }
 
   private drawGameStateMessages(): void {

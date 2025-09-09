@@ -857,24 +857,25 @@ function renderTournamentPage(): HTMLElement {
     const createTournamentBtn = gameModesSection.querySelector('#create-tournament-btn') as HTMLButtonElement;
     
     play1v1Btn?.addEventListener('click', () => {
-      // Create game page and replace current content
+      // Create game page and render inside a dedicated container
       const app = document.getElementById("app");
       if (app) {
-        const gameContainer = document.createElement("div");
-        gameContainer.className = "game-container-wrapper";
-        
+        let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
+        if (!gameContainer) {
+          gameContainer = document.createElement("div");
+          gameContainer.id = "game-container-wrapper";
+          gameContainer.className = "game-container-wrapper";
+          app.innerHTML = '';
+          app.appendChild(gameContainer);
+        } else {
+          gameContainer.innerHTML = '';
+        }
         // Create navigation back function
         const navigateBack = () => {
           navigateTo('/tournament'); // Navigate back to games page
         };
-        
         // Create and render the 1v1 game
         create1v1GamePage(gameContainer, navigateBack);
-        
-        // Replace app content with game
-        app.innerHTML = '';
-        app.appendChild(gameContainer);
-        
         showMessage('🎮 Starting 1v1 match...', 'info');
       }
     });
@@ -2220,46 +2221,37 @@ function showTournamentBracket(tournament: any) {
 // Match handling functions
 (window as any).startMatch = function(matchIndex: number, player1: string, player2: string) {
   showMessage(`Starting match: ${player1} vs ${player2}`, "info");
-  
-  // Show match selection modal
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay";
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  `;
-  
-  modal.innerHTML = `
-    <div class="modal-content" style="background: linear-gradient(135deg, rgba(15, 18, 40, 0.95), rgba(8, 10, 28, 0.98)); backdrop-filter: blur(20px); border: 2px solid rgba(0, 230, 255, 0.3); border-radius: 16px; padding: 2rem; max-width: 500px; width: 90%; text-align: center;">
-      <h2 style="color: #00e6ff; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
-        <i class="fas fa-play"></i> Semi-Final Match
-      </h2>
-      <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 2rem; font-size: 1.1rem;">
-        Who won the match?
-      </p>
-      <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem;">
-        <button class="winner-btn" onclick="declareWinner(${matchIndex}, '${player1}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #00e6ff, #0099cc); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
-          ${player1}
-        </button>
-        <button class="winner-btn" onclick="declareWinner(${matchIndex}, '${player2}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #ff00ff, #cc0099); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
-          ${player2}
-        </button>
-      </div>
-      <button onclick="this.parentElement.parentElement.remove()" style="padding: 0.8rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: rgba(255, 255, 255, 0.8); cursor: pointer;">
-        Cancel
-      </button>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
+  // Find the app container and replace content with the game
+  const app = document.getElementById("app");
+  if (app) {
+    app.innerHTML = '';
+    const gameContainer = document.createElement("div");
+    gameContainer.className = "game-container-wrapper";
+    app.appendChild(gameContainer);
+    // Navigation back to bracket after match
+    const navigateBack = () => {
+      showTournamentBracket((window as any).currentTournament);
+    };
+    // Create and render the 1v1 game with player names
+    const gamePage = create1v1GamePage(gameContainer, navigateBack);
+    gamePage.setPlayerNames(player1, player2);
+    // When the game ends, update the bracket and return
+    gamePage.game?.onGameEndCallback((winner, gameTime) => {
+      // Update tournament data
+      const tournament = (window as any).currentTournament;
+      tournament.bracket.semifinals[matchIndex].winner = winner.name;
+      // Update localStorage
+      const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+      const tournamentIndex = tournaments.findIndex((t: any) => t.id === tournament.id);
+      if (tournamentIndex !== -1) {
+        tournaments[tournamentIndex] = tournament;
+        localStorage.setItem('tournaments', JSON.stringify(tournaments));
+      }
+      // Show bracket again
+      showTournamentBracket(tournament);
+      showMessage(`🏆 ${winner.name} wins Match ${matchIndex + 1}!`, "success");
+    });
+  }
 };
 
 (window as any).declareWinner = function(matchIndex: number, winner: string) {
@@ -2293,46 +2285,37 @@ function showTournamentBracket(tournament: any) {
 
 (window as any).startFinalsMatch = function(player1: string, player2: string) {
   showMessage(`Starting Finals: ${player1} vs ${player2}`, "info");
-  
-  // Show finals selection modal
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay";
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  `;
-  
-  modal.innerHTML = `
-    <div class="modal-content" style="background: linear-gradient(135deg, rgba(15, 18, 40, 0.95), rgba(8, 10, 28, 0.98)); backdrop-filter: blur(20px); border: 2px solid rgba(255, 215, 0, 0.3); border-radius: 16px; padding: 2rem; max-width: 500px; width: 90%; text-align: center;">
-      <h2 style="color: #ffd700; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
-        <i class="fas fa-crown"></i> Championship Finals
-      </h2>
-      <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 2rem; font-size: 1.1rem;">
-        Who is the Tournament Champion?
-      </p>
-      <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem;">
-        <button class="winner-btn" onclick="declareChampion('${player1}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #00e6ff, #0099cc); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
-          ${player1}
-        </button>
-        <button class="winner-btn" onclick="declareChampion('${player2}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #ff00ff, #cc0099); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
-          ${player2}
-        </button>
-      </div>
-      <button onclick="this.parentElement.parentElement.remove()" style="padding: 0.8rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: rgba(255, 255, 255, 0.8); cursor: pointer;">
-        Cancel
-      </button>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
+  // Find the app container and replace content with the game
+  const app = document.getElementById("app");
+  if (app) {
+    app.innerHTML = '';
+    const gameContainer = document.createElement("div");
+    gameContainer.className = "game-container-wrapper";
+    app.appendChild(gameContainer);
+    // Navigation back to bracket after match
+    const navigateBack = () => {
+      showTournamentBracket((window as any).currentTournament);
+    };
+    // Create and render the 1v1 game with player names
+    const gamePage = create1v1GamePage(gameContainer, navigateBack);
+    gamePage.setPlayerNames(player1, player2);
+    // When the game ends, update the bracket and return
+    gamePage.game?.onGameEndCallback((winner, gameTime) => {
+      // Update tournament data
+      const tournament = (window as any).currentTournament;
+      tournament.bracket.champion = winner.name;
+      // Update localStorage
+      const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+      const tournamentIndex = tournaments.findIndex((t: any) => t.id === tournament.id);
+      if (tournamentIndex !== -1) {
+        tournaments[tournamentIndex] = tournament;
+        localStorage.setItem('tournaments', JSON.stringify(tournaments));
+      }
+      // Show bracket again
+      showTournamentBracket(tournament);
+      showMessage(`👑 ${winner.name} is the Tournament Champion!`, "success");
+    });
+  }
 };
 
 (window as any).declareChampion = function(champion: string) {

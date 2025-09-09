@@ -3,12 +3,7 @@ import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
 
 export class GamePage {
   private container: HTMLElement;
-  public game: PongGame | null = null;
-  public setPlayerNames(player1Name: string, player2Name: string): void {
-    if (this.game) {
-      this.game.setPlayerNames(player1Name, player2Name);
-    }
-  }
+  private game: PongGame | null = null;
   private gameCanvas: HTMLCanvasElement | null = null;
   private gameMode: '1v1' | 'ai' | 'tournament' = '1v1';
   private isFullscreen = false;
@@ -56,7 +51,7 @@ export class GamePage {
         <!-- Game Container -->
         <div class="game-container" id="game-container">
           <div class="game-canvas-wrapper">
-            <canvas id="game-canvas" class="game-canvas"></canvas>
+            <canvas id="game-canvas" class="game-canvas" tabindex="0"></canvas>
             
             <!-- Game Overlay -->
             <div class="game-overlay" id="game-overlay">
@@ -153,17 +148,11 @@ export class GamePage {
   }
 
   private initializeGame(): void {
-    console.log('Initializing game...');
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
-    console.log('Canvas found:', this.gameCanvas);
-    if (!this.gameCanvas) {
-      console.error('Canvas not found!');
-      return;
-    }
+    if (!this.gameCanvas) return;
 
     // Create 1v1 game
     this.game = create1v1Game(this.gameCanvas);
-    console.log('Game created:', this.game);
     this.setupGameCallbacks();
   }
 
@@ -257,25 +246,10 @@ export class GamePage {
   }
 
   private startGame(): void {
-    console.log('Starting game...', this.game);
-    if (!this.game) {
-      console.error('Game not initialized!');
-      return;
-    }
+    this.game?.startGame();
     this.hideGameOverlay();
-    // Force overlay to hide in case of CSS issues
-    const overlay = document.getElementById('game-overlay');
-    if (overlay) overlay.style.display = 'none';
-    // Ensure canvas is visible and sized correctly
-    if (this.gameCanvas) {
-      this.gameCanvas.style.display = 'block';
-      this.gameCanvas.width = 800;
-      this.gameCanvas.height = 400;
-    }
-    this.game.startGame();
     this.startGameTimer();
     this.updateGameStatus('Playing...');
-    console.log('Game started successfully');
   }
 
   private updateScores(player1Score: number, player2Score: number): void {

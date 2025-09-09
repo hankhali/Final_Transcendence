@@ -115,9 +115,10 @@
 .game-canvas-wrapper {
   position: relative;
   flex: 1;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 12px;
-  border: 2px solid rgba(0, 255, 255, 0.3);
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+  border-radius: 18px;
+  border: 3px solid #00fff7;
+  box-shadow: 0 0 40px 10px #00fff744, 0 0 80px 20px #ff00ea22;
   overflow: hidden;
   margin-bottom: 1rem;
 }
@@ -126,7 +127,7 @@
   width: 100%;
   height: 100%;
   display: block;
-  background: #000;
+  background: transparent;
 }
 
 /* Game Overlay */
@@ -136,21 +137,24 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+  opacity: 0.98;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
+  box-shadow: 0 0 60px 20px #00fff7aa, 0 0 120px 40px #ff00ea55;
 }
 
 .game-overlay-content {
   text-align: center;
   max-width: 400px;
-  padding: 2rem;
-  background: rgba(26, 26, 46, 0.9);
-  border-radius: 16px;
-  border: 2px solid rgba(0, 255, 255, 0.3);
-  backdrop-filter: blur(10px);
+  padding: 2.5rem 2rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 22px;
+  border: 3px solid #ff00ea;
+  box-shadow: 0 0 40px 10px #ff00ea44, 0 0 80px 20px #00fff744;
+  backdrop-filter: blur(16px);
 }
 
 .game-logo {
