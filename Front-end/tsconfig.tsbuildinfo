@@ -1,1 +1,1 @@
-{"root":["./src/main.ts","./src/components/profilesettings.ts","./src/services/api.ts","./src/types/index.ts","./src/utils/helpers.ts"],"version":"5.8.3"}
+{"root":["./src/main.ts","./src/translations.ts","./src/components/profilesettings.ts","./src/services/api.ts","./src/types/index.ts","./src/utils/helpers.ts"],"version":"5.8.3"}

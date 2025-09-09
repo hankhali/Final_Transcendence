@@ -1,7 +1,9 @@
 
 import type { UserProfile } from '../types/index.js';
+import { languageManager } from '../translations.js';
 
 export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLElement {
+  const t = languageManager.getTranslations();
   const container = document.createElement('div');
   container.className = 'profile-settings';
 
@@ -62,7 +64,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   const changeButton = document.createElement('button');
   changeButton.type = 'button';
   changeButton.className = 'secondary-button';
-  changeButton.textContent = 'Change Avatar';
+  changeButton.textContent = t.profile.settings.changeAvatar;
   changeButton.style.marginTop = '1rem';
   changeButton.addEventListener('click', () => avatarInput.click());
   
@@ -79,7 +81,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
 
   // Username Field
   const usernameField = createFormField({
-    label: 'Username',
+    label: t.profile.settings.username,
     name: 'username',
     type: 'text',
     value: defaultProfile.username,
@@ -89,7 +91,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
 
   // Display Name Field
   const displayNameField = createFormField({
-    label: 'Display Name',
+    label: t.profile.settings.displayName,
     name: 'displayName',
     type: 'text',
     value: defaultProfile.displayName,
@@ -103,13 +105,13 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   
   const skillLabel = document.createElement('label');
   skillLabel.className = 'form-label';
-  skillLabel.textContent = 'Skill Level';
+  skillLabel.textContent = t.profile.settings.skillLevel;
   skillLabel.htmlFor = 'skillLevel';
   
   const skillOptions = [
-    { id: 'beginner', label: 'Beginner', emoji: '👶' },
-    { id: 'intermediate', label: 'Intermediate', emoji: '💪' },
-    { id: 'expert', label: 'Expert', emoji: '🏆' }
+    { id: 'beginner', label: t.profile.settings.beginner, emoji: '👶' },
+    { id: 'intermediate', label: t.profile.settings.intermediate, emoji: '💪' },
+    { id: 'expert', label: t.profile.settings.expert, emoji: '🏆' }
   ] as const;
   
   const skillContainer = document.createElement('div');
@@ -152,13 +154,13 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   skillLevelField.appendChild(skillLabel);
   skillLevelField.appendChild(skillContainer);
 
-  // Bio Field
+    // Bio Field
   const bioField = createFormField({
-    label: 'Bio (Optional)',
     name: 'bio',
     type: 'textarea',
-    value: defaultProfile.bio,
-    placeholder: 'Tell us about yourself...'
+    label: t.profile.settings.bio,
+    placeholder: t.profile.settings.bioPlaceholder,
+    value: defaultProfile.bio || ''
   });
 
   // Advanced Settings Toggle - Styled Button
@@ -167,7 +169,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   advancedToggle.innerHTML = `
     <button type="button" class="settings-button advanced-toggle-button">
       <span class="button-icon"><i class="fas fa-sliders-h"></i></span>
-      <span class="button-text">ADVANCED SETTINGS</span>
+      <span class="button-text">${t.profile.settings.advancedSettings}</span>
       <span class="button-arrow"><i class="fas fa-chevron-down"></i></span>
     </button>
   `;
@@ -179,18 +181,18 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   
   // Password Update Section
   const passwordField = createFormField({
-    label: 'New Password',
+    label: t.profile.settings.newPassword,
     name: 'newPassword',
     type: 'password',
-    placeholder: 'Leave blank to keep current',
+    placeholder: t.profile.settings.passwordPlaceholder,
     autoComplete: 'new-password'
   });
   
   const confirmPasswordField = createFormField({
-    label: 'Confirm New Password',
+    label: t.profile.settings.confirmPassword,
     name: 'confirmPassword',
     type: 'password',
-    placeholder: 'Confirm your new password',
+    placeholder: t.profile.settings.confirmPasswordPlaceholder,
     autoComplete: 'new-password'
   });
   
@@ -217,7 +219,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   submitButton.innerHTML = `
     <button type="submit" class="settings-button save-changes-button">
       <span class="button-icon"><i class="fas fa-save"></i></span>
-      <span class="button-text">SAVE CHANGES</span>
+      <span class="button-text">${t.profile.settings.saveChanges}</span>
       <span class="button-check"><i class="fas fa-check"></i></span>
     </button>
   `;
@@ -237,7 +239,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   gameHistoryButton.innerHTML = `
     <button type="button" class="settings-button game-history-button">
       <span class="button-icon"><i class="fas fa-history"></i></span>
-      <span class="button-text">GAME HISTORY</span>
+      <span class="button-text">${t.profile.settings.gameHistory}</span>
       <span class="button-arrow"><i class="fas fa-external-link-alt"></i></span>
     </button>
   `;
@@ -249,35 +251,63 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   
   form.appendChild(gameHistoryButton);
   
-  // Danger Zone - Delete Profile Section
-  const deleteSection = document.createElement('div');
-  deleteSection.className = 'delete-profile-section';
-  deleteSection.innerHTML = `
+  // Account Deletion Section - Collapsible like other sections
+  const accountDeletionToggle = document.createElement('div');
+  accountDeletionToggle.className = 'settings-button-container';
+  accountDeletionToggle.innerHTML = `
+    <button type="button" class="settings-button account-deletion-button">
+      <span class="button-icon"><i class="fas fa-user-times"></i></span>
+      <span class="button-text">${t.profile.settings.accountDeletion}</span>
+      <span class="button-arrow"><i class="fas fa-chevron-down"></i></span>
+    </button>
+  `;
+
+  // Account Deletion Content (hidden by default)
+  const accountDeletionContent = document.createElement('div');
+  accountDeletionContent.className = 'account-deletion-content';
+  accountDeletionContent.style.display = 'none';
+  accountDeletionContent.innerHTML = `
     <div class="danger-zone">
-      <h3 class="danger-zone-title">
+      <div class="danger-warning">
         <i class="fas fa-exclamation-triangle"></i>
-        Danger Zone
-      </h3>
-      <p class="danger-zone-description">
-        Once you delete your profile, there is no going back. This action cannot be undone.
-      </p>
-      <div class="settings-button-container">
-        <button type="button" class="settings-button delete-profile-button">
-          <span class="button-icon"><i class="fas fa-trash-alt"></i></span>
-          <span class="button-text">DELETE PROFILE</span>
-          <span class="button-arrow"><i class="fas fa-exclamation-triangle"></i></span>
+        <div class="warning-text">
+          <h4>Warning: Permanent Action</h4>
+          <p>Once you delete your profile, there is no going back. This action cannot be undone and will permanently remove:</p>
+          <ul>
+            <li>Your profile information and settings</li>
+            <li>Game history and statistics</li>
+            <li>Friend connections</li>
+            <li>All personal data</li>
+          </ul>
+        </div>
+      </div>
+      <div class="danger-actions">
+        <button type="button" class="delete-profile-btn">
+          <i class="fas fa-trash-alt"></i>
+          DELETE PROFILE PERMANENTLY
         </button>
       </div>
     </div>
   `;
+
+  // Toggle account deletion content
+  const accountDeletionButton = accountDeletionToggle.querySelector('.account-deletion-button');
+  const deletionArrow = accountDeletionToggle.querySelector('.button-arrow i');
   
+  accountDeletionButton?.addEventListener('click', () => {
+    const isHidden = accountDeletionContent.style.display === 'none';
+    accountDeletionContent.style.display = isHidden ? 'block' : 'none';
+    deletionArrow?.classList.toggle('rotated', isHidden);
+  });
+
   // Add delete profile functionality
-  const deleteButton = deleteSection.querySelector('.delete-profile-button');
+  const deleteButton = accountDeletionContent.querySelector('.delete-profile-btn');
   deleteButton?.addEventListener('click', () => {
     showDeleteProfileModal();
   });
   
-  form.appendChild(deleteSection);
+  form.appendChild(accountDeletionToggle);
+  form.appendChild(accountDeletionContent);
   form.appendChild(submitButton);
 
   // Form submission
