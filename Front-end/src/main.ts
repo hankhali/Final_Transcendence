@@ -1,11 +1,58 @@
 // This file is a TypeScript module
 import "./styles/style.css"; // Ensure your CSS is imported
-import { apiService } from "./services/api.ts";
+// import { apiService } from "./services/api.ts"; // Commented out for dummy implementation
 import { createProfileSettings } from "./components/ProfileSettings";
+import { languageManager } from "./translations";
 
 // Global variables for message display
 window.messageTimeout = null;
 let currentUser: { id: number; username: string } | null = null;
+
+// Translation update function
+function updateAllTranslations(): void {
+  const t = languageManager.getTranslations();
+  
+  // Update navigation links
+  const homeLink = document.querySelector('.navbar-link[href="/"]') as HTMLElement;
+  const tournamentsLink = document.querySelector('.navbar-link[href="/tournament"]') as HTMLElement;
+  const accountLink = document.querySelector('.navbar-link[href="/ACCOUNT"], .navbar-link[href="/logout"]') as HTMLElement;
+  const profileLink = document.querySelector('.navbar-link[href="/profile"]') as HTMLElement;
+  
+  if (homeLink) homeLink.textContent = t.nav.home;
+  if (tournamentsLink) tournamentsLink.textContent = t.nav.tournaments;
+  if (profileLink) profileLink.textContent = t.nav.profile;
+  if (accountLink) {
+    accountLink.textContent = isLoggedIn ? t.nav.logout : t.nav.account;
+  }
+  
+  // Update logo
+  const logo = document.querySelector('.navbar-logo') as HTMLElement;
+  if (logo) logo.textContent = t.common.neonPong;
+  
+  // Update font size controls
+  const fontSizeLabel = document.querySelector('.font-size-controls .sr-only') as HTMLElement;
+  if (fontSizeLabel) fontSizeLabel.textContent = t.fontControls.label;
+  
+  const decreaseFontBtn = document.querySelector('.font-size-btn i.fa-minus') as HTMLElement;
+  if (decreaseFontBtn && decreaseFontBtn.parentElement) {
+    const srText = decreaseFontBtn.parentElement.querySelector('.sr-only') as HTMLElement;
+    if (srText) srText.textContent = t.fontControls.decrease;
+    decreaseFontBtn.parentElement.setAttribute('title', t.fontControls.decrease);
+  }
+  
+  const increaseFontBtn = document.querySelector('.font-size-btn i.fa-plus') as HTMLElement;
+  if (increaseFontBtn && increaseFontBtn.parentElement) {
+    const srText = increaseFontBtn.parentElement.querySelector('.sr-only') as HTMLElement;
+    if (srText) srText.textContent = t.fontControls.increase;
+    increaseFontBtn.parentElement.setAttribute('title', t.fontControls.increase);
+  }
+  
+  // Re-render current page content with new translations
+  const app = document.getElementById("app");
+  if (app) {
+    setupRoutes(app);
+  }
+}
 
 // Utility function to navigate between pages
 export function navigateTo(path: string) {
@@ -225,15 +272,20 @@ if (typeof document !== 'undefined') {
 
 // Function to update navbar based on login state
 function updateNavbar(): void {
+  const t = languageManager.getTranslations();
   const profileLink = document.querySelector('.navbar-link[href="/profile"]') as HTMLElement;
-  const accountLink = document.querySelector('.navbar-link[href="/ACCOUNT"]') as HTMLAnchorElement;
+  // Look for account link by either href value since it changes between states
+  let accountLink = document.querySelector('.navbar-link[href="/ACCOUNT"]') as HTMLAnchorElement;
+  if (!accountLink) {
+    accountLink = document.querySelector('.navbar-link[href="/logout"]') as HTMLAnchorElement;
+  }
   
   if (profileLink) {
     profileLink.style.display = isLoggedIn ? 'flex' : 'none';
   }
   
   if (accountLink) {
-    accountLink.textContent = isLoggedIn ? 'LOGOUT' : 'ACCOUNT';
+    accountLink.textContent = isLoggedIn ? t.nav.logout : t.nav.account;
     accountLink.href = isLoggedIn ? '/logout' : '/ACCOUNT';
   }
 }
@@ -273,13 +325,14 @@ function checkLoginState(): void {
 }
 // Navbar Component
 function createNavbar(): HTMLElement {
+  const t = languageManager.getTranslations();
   const navbar = document.createElement("nav");
   navbar.className = "navbar";
   navbar.setAttribute("aria-label", "Main navigation");
   
   const logo = document.createElement("a");
   logo.className = "navbar-logo";
-  logo.textContent = "Neon Pong";
+  logo.textContent = t.common.neonPong;
   logo.href = "/";
   logo.addEventListener("click", (e) => {
     e.preventDefault();
@@ -306,7 +359,7 @@ function createNavbar(): HTMLElement {
   const homeLink = document.createElement("a");
   homeLink.href = "/";
   homeLink.className = "navbar-link";
-  homeLink.textContent = "Home";
+  homeLink.textContent = t.nav.home;
   homeLink.setAttribute("role", "menuitem");
   homeLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -315,7 +368,7 @@ function createNavbar(): HTMLElement {
   const tournamentsLink = document.createElement("a");
   tournamentsLink.href = "/tournament";
   tournamentsLink.className = "navbar-link";
-  tournamentsLink.textContent = "Tournaments";
+  tournamentsLink.textContent = t.nav.tournaments;
   tournamentsLink.setAttribute("role", "menuitem");
   tournamentsLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -325,7 +378,7 @@ function createNavbar(): HTMLElement {
   const ACCOUNTLink = document.createElement("a");
   ACCOUNTLink.href = "/ACCOUNT";
   ACCOUNTLink.className = "navbar-link";
-  ACCOUNTLink.textContent = "ACCOUNT";
+  ACCOUNTLink.textContent = t.nav.account;
   ACCOUNTLink.setAttribute("role", "menuitem");
   ACCOUNTLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -352,7 +405,7 @@ function createNavbar(): HTMLElement {
   const profileLink = document.createElement("a");
   profileLink.href = "/profile";
   profileLink.className = "navbar-link";
-  profileLink.textContent = "Profile";
+  profileLink.textContent = t.nav.profile;
   profileLink.setAttribute("role", "menuitem");
   profileLink.style.display = "none"; // Initially hidden
   profileLink.addEventListener("click", (e) => {
@@ -361,6 +414,62 @@ function createNavbar(): HTMLElement {
   });
   
   navLinks.appendChild(profileLink);
+  
+  // Language Selector
+  const languageSelector = document.createElement('div');
+  languageSelector.className = 'language-selector';
+  languageSelector.setAttribute('aria-label', 'Language selection');
+  
+  const languageBtn = document.createElement('button');
+  languageBtn.className = 'language-btn';
+  languageBtn.innerHTML = '🌐 <span class="language-text">EN</span> <i class="fas fa-chevron-down" aria-hidden="true"></i>';
+  languageBtn.setAttribute('aria-label', 'Select language');
+  languageBtn.setAttribute('aria-expanded', 'false');
+  
+  const languageDropdown = document.createElement('div');
+  languageDropdown.className = 'language-dropdown';
+  languageDropdown.setAttribute('role', 'menu');
+  
+  const languages = [
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' }
+  ];
+  
+  languages.forEach(lang => {
+    const langOption = document.createElement('button');
+    langOption.className = 'language-option';
+    langOption.innerHTML = `${lang.flag} ${lang.name}`;
+    langOption.setAttribute('role', 'menuitem');
+    langOption.dataset.lang = lang.code;
+    
+    langOption.addEventListener('click', () => {
+      languageManager.setLanguage(lang.code);
+      languageBtn.innerHTML = `🌐 <span class="language-text">${lang.code.toUpperCase()}</span> <i class="fas fa-chevron-down" aria-hidden="true"></i>`;
+      languageDropdown.style.display = 'none';
+      languageBtn.setAttribute('aria-expanded', 'false');
+      updateAllTranslations();
+    });
+    
+    languageDropdown.appendChild(langOption);
+  });
+  
+  languageBtn.addEventListener('click', () => {
+    const isOpen = languageDropdown.style.display === 'block';
+    languageDropdown.style.display = isOpen ? 'none' : 'block';
+    languageBtn.setAttribute('aria-expanded', (!isOpen).toString());
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!languageSelector.contains(e.target as Node)) {
+      languageDropdown.style.display = 'none';
+      languageBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+  
+  languageSelector.appendChild(languageBtn);
+  languageSelector.appendChild(languageDropdown);
   
   // Accessibility Controls
   const accessibilityControls = document.createElement('div');
@@ -381,14 +490,14 @@ function createNavbar(): HTMLElement {
   // Add a label for screen readers
   const fontSizeLabel = document.createElement('span');
   fontSizeLabel.className = 'sr-only';
-  fontSizeLabel.textContent = 'Font size: ';
+  fontSizeLabel.textContent = t.fontControls.label;
   fontSizeContainer.appendChild(fontSizeLabel);
   // Decrease button with minus icon
   const decreaseFontBtn = document.createElement('button');
   decreaseFontBtn.className = 'font-size-btn';
-  decreaseFontBtn.innerHTML = '<i class="fas fa-minus" aria-hidden="true"></i> <span class="sr-only">Decrease font size</span>';
-  decreaseFontBtn.setAttribute('aria-label', 'Decrease font size');
-  decreaseFontBtn.setAttribute('title', 'Decrease font size (Smaller text)');
+  decreaseFontBtn.innerHTML = `<i class="fas fa-minus" aria-hidden="true"></i> <span class="sr-only">${t.fontControls.decrease}</span>`;
+  decreaseFontBtn.setAttribute('aria-label', t.fontControls.decrease);
+  decreaseFontBtn.setAttribute('title', t.fontControls.decrease);
   decreaseFontBtn.addEventListener('click', (e) => {
     e.preventDefault();
     adjustFontSize(false);
@@ -401,9 +510,9 @@ function createNavbar(): HTMLElement {
   // Increase button with plus icon
   const increaseFontBtn = document.createElement('button');
   increaseFontBtn.className = 'font-size-btn';
-  increaseFontBtn.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i> <span class="sr-only">Increase font size</span>';
-  increaseFontBtn.setAttribute('aria-label', 'Increase font size');
-  increaseFontBtn.setAttribute('title', 'Increase font size (Larger text)');
+  increaseFontBtn.innerHTML = `<i class="fas fa-plus" aria-hidden="true"></i> <span class="sr-only">${t.fontControls.increase}</span>`;
+  increaseFontBtn.setAttribute('aria-label', t.fontControls.increase);
+  increaseFontBtn.setAttribute('title', t.fontControls.increase);
   increaseFontBtn.addEventListener('click', (e) => {
     e.preventDefault();
     adjustFontSize(true);
@@ -423,7 +532,10 @@ function createNavbar(): HTMLElement {
   const controlsContainer = document.createElement('div');
   controlsContainer.className = 'controls-container';
   
-  // Add font size controls first
+  // Add language selector first
+  controlsContainer.appendChild(languageSelector);
+  
+  // Add font size controls second
   controlsContainer.appendChild(fontSizeContainer);
   
   // Add high contrast toggle last
@@ -479,6 +591,7 @@ function createFooter(): HTMLElement {
 }
 // Home Page
 function renderHomePage(): HTMLElement {
+  const t = languageManager.getTranslations();
   const home = document.createElement("div");
   home.className = "page"; // Removed home-page specific class as it's handled by 'page'
   home.setAttribute("role", "main");
@@ -490,20 +603,20 @@ function renderHomePage(): HTMLElement {
   paddleImage.className = "ping-pong-paddle";
   const heroTitle = document.createElement("h1");
   heroTitle.className = "hero-title";
-  heroTitle.textContent = "NEON PONG";
+  heroTitle.textContent = t.home.title;
   
   const heroSubtitle = document.createElement("h2");
   heroSubtitle.className = "hero-subtitle";
-  heroSubtitle.textContent = "THE ULTIMATE RETRO-FUTURISTIC ARCADE EXPERIENCE.";
+  heroSubtitle.textContent = t.home.tagline;
   
   const heroDescription = document.createElement("p");
   heroDescription.className = "hero-description";
-  heroDescription.textContent = "Challenge your friends in a fast-paced game of skill and reflexes.";
+  heroDescription.textContent = t.home.description;
   const heroCta = document.createElement("div");
   heroCta.className = "hero-cta";
   const registerCtaBtn = document.createElement("button");
   registerCtaBtn.className = "primary-button register-cta-button";
-  registerCtaBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register Now';
+  registerCtaBtn.innerHTML = `<i class="fas fa-user-plus"></i> ${t.home.registerNow}`;
   registerCtaBtn.addEventListener("click", () => navigateTo("/register"));
   heroCta.appendChild(registerCtaBtn);
   heroSection.appendChild(paddleImage);
@@ -518,7 +631,7 @@ function renderHomePage(): HTMLElement {
   teamSection.className = "content-section";
   const teamTitle = document.createElement("h2");
   teamTitle.className = "section-title";
-  teamTitle.textContent = "Meet the Team";
+  teamTitle.textContent = t.home.meetTheTeam;
   teamSection.appendChild(teamTitle);
   const teamGrid = document.createElement("div");
   teamGrid.className = "team-grid";
@@ -550,98 +663,208 @@ function renderHomePage(): HTMLElement {
 // Tournament Page (Simplified for dynamic content, actual tournament data will be in renderHomePage)
 // Tournament Page (Updated with API integration)
 function renderTournamentPage(): HTMLElement {
+  const t = languageManager.getTranslations();
   const tournamentPage = document.createElement("div");
   tournamentPage.className = "page content-section";
   tournamentPage.id = "tournaments-page";
   tournamentPage.setAttribute("role", "main");
-  const title = document.createElement("h1");
-  title.className = "section-title";
-  title.textContent = "Tournaments";
-  tournamentPage.appendChild(title);
-  // Create Tournament Button
-  const createButton = document.createElement("button");
-  createButton.className = "primary-button";
-  createButton.style.cssText =
-    "margin-bottom: 2rem; display: block; margin-left: auto; margin-right: auto;";
-  createButton.innerHTML = '<i class="fas fa-plus"></i> Create Tournament';
-  createButton.addEventListener("click", showCreateTournamentModal);
-  tournamentPage.appendChild(createButton);
-  const tournamentList = document.createElement("div");
-  tournamentList.className = "tournament-list";
-  tournamentList.setAttribute("role", "list");
-  tournamentList.id = "tournament-list-container";
-  tournamentPage.appendChild(tournamentList);
-  // Load tournaments from API
-  loadTournaments(tournamentList);
+  
+  // Premium Hero section for tournaments
+  const heroSection = document.createElement("div");
+  heroSection.className = "tournament-hero-premium";
+  heroSection.innerHTML = `
+    <div class="hero-background-effects">
+      <div class="floating-orb orb-1"></div>
+      <div class="floating-orb orb-2"></div>
+      <div class="floating-orb orb-3"></div>
+    </div>
+    
+    <div class="tournament-hero-content">
+      <div class="premium-badge">
+        <span>${t.tournaments.elite}</span>
+      </div>
+      
+      <div class="tournament-icon-premium">
+        <div class="icon-glow"></div>
+        <i class="fas fa-crown"></i>
+      </div>
+      
+      <h1 class="tournament-hero-title-premium">
+        <span class="title-line-1">${t.tournaments.championship}</span>
+        <span class="title-line-2">${t.tournaments.arena}</span>
+      </h1>
+      
+      <p class="tournament-hero-subtitle-premium">
+        ${t.tournaments.subtitle}
+      </p>
+      
+      <div class="tournament-stats-grid">
+        <div class="stat-item">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">4</span>
+            <span class="stat-label">${t.tournaments.stats.elitePlayers}</span>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <div class="stat-icon">
+            <i class="fas fa-trophy"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">1</span>
+            <span class="stat-label">${t.tournaments.stats.champion}</span>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <div class="stat-icon">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-number">∞</span>
+            <span class="stat-label">${t.tournaments.stats.glory}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tournament-features-premium">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-chess"></i>
+          </div>
+          <h3>${t.tournaments.features.strategic.title}</h3>
+          <p>${t.tournaments.features.strategic.description}</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-medal"></i>
+          </div>
+          <h3>${t.tournaments.features.prestige.title}</h3>
+          <p>${t.tournaments.features.prestige.description}</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-fire"></i>
+          </div>
+          <h3>${t.tournaments.features.competition.title}</h3>
+          <p>${t.tournaments.features.competition.description}</p>
+        </div>
+      </div>
+    </div>
+  `;
+  tournamentPage.appendChild(heroSection);
+  
+  // Premium Create tournament section
+  const createSection = document.createElement("div");
+  createSection.className = "tournament-create-section-premium";
+  
+  console.log("Tournament page - isLoggedIn:", isLoggedIn, "currentUser:", currentUser);
+  
+  if (isLoggedIn && currentUser) {
+    createSection.innerHTML = `
+      <div class="create-tournament-card-premium">
+        <div class="card-shimmer"></div>
+        <div class="card-content">
+          <div class="create-icon-premium">
+            <div class="icon-rings">
+              <div class="ring ring-1"></div>
+              <div class="ring ring-2"></div>
+              <div class="ring ring-3"></div>
+            </div>
+            <i class="fas fa-plus"></i>
+          </div>
+          
+          <div class="create-text-content">
+            <h2 class="create-title-premium">${t.tournaments.createCard.title}</h2>
+            <p class="create-description-premium">
+              ${t.tournaments.createCard.description}
+            </p>
+            
+            <div class="tournament-benefits">
+              <div class="benefit-item">
+                <i class="fas fa-check-circle"></i>
+                <span>${t.tournaments.createCard.benefits.bracket}</span>
+              </div>
+              <div class="benefit-item">
+                <i class="fas fa-check-circle"></i>
+                <span>${t.tournaments.createCard.benefits.progress}</span>
+              </div>
+              <div class="benefit-item">
+                <i class="fas fa-check-circle"></i>
+                <span>${t.tournaments.createCard.benefits.ceremony}</span>
+              </div>
+            </div>
+          </div>
+          
+          <button class="create-tournament-btn-premium" id="create-tournament-btn">
+            <span class="btn-bg"></span>
+            <span class="btn-content">
+              <i class="fas fa-crown"></i>
+              <span>${t.tournaments.createCard.button}</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    const createBtn = createSection.querySelector('#create-tournament-btn') as HTMLButtonElement;
+    createBtn?.addEventListener("click", showCreateTournamentModal);
+  } else {
+    createSection.innerHTML = `
+      <div class="create-tournament-card-premium login-required">
+        <div class="card-shimmer"></div>
+        <div class="card-content">
+          <div class="create-icon-premium locked">
+            <div class="icon-rings">
+              <div class="ring ring-1"></div>
+              <div class="ring ring-2"></div>
+            </div>
+            <i class="fas fa-lock"></i>
+          </div>
+          
+          <div class="create-text-content">
+            <h2 class="create-title-premium">${t.tournaments.loginRequired.title}</h2>
+            <p class="create-description-premium">
+              ${t.tournaments.loginRequired.description}
+            </p>
+            
+            <div class="login-benefits">
+              <div class="benefit-item">
+                <i class="fas fa-star"></i>
+                <span>${t.tournaments.loginRequired.benefits.access}</span>
+              </div>
+              <div class="benefit-item">
+                <i class="fas fa-star"></i>
+                <span>${t.tournaments.loginRequired.benefits.status}</span>
+              </div>
+            </div>
+          </div>
+          
+          <button class="create-tournament-btn-premium" onclick="navigateTo('/ACCOUNT')">
+            <span class="btn-bg"></span>
+            <span class="btn-content">
+              <i class="fas fa-key"></i>
+              <span>${t.tournaments.loginRequired.button}</span>
+            </span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  
+  tournamentPage.appendChild(createSection);
   tournamentPage.appendChild(createFooter());
   return tournamentPage;
 }
-//load tournaments from db
-async function loadTournaments(container: HTMLElement) {
-  showLoading();
-  try {
-    const result = await apiService.tournaments.getAll();
-    if (result.data && result.data.length > 0) {
-      container.innerHTML = "";
-      result.data.forEach((tournament: any) => {
-        const item = document.createElement("div");
-        item.className = "tournament-item";
-        item.setAttribute("role", "listitem");
-        let statusClass = "";
-        let buttonText = "";
-        let buttonDisabled = false;
-        if (tournament.status === "pending") {
-          statusClass = "status-open";
-          buttonText = "Join Tournament";
-        } else if (tournament.status === "started") {
-          statusClass = "status-in-progress";
-          buttonText = "View Progress";
-          buttonDisabled = true;
-        } else {
-          statusClass = "status-completed";
-          buttonText = "View Results";
-        }
-        item.innerHTML = `
-          <h3>${tournament.name}</h3>
-          <p class="tournament-status"><span class="status-indicator ${statusClass}"></span> ${
-          tournament.status
-        }</p>
-          <p><strong>Max Players:</strong> ${tournament.max_players}</p>
-          <button class="primary-button join-button ${
-            tournament.status === "completed" ? "secondary-button" : ""
-          }" ${buttonDisabled ? "disabled" : ""}>${buttonText}</button>
-        `;
-        const joinButton = item.querySelector(
-          ".join-button"
-        ) as HTMLButtonElement;
-        if (joinButton && tournament.status === "pending") {
-          joinButton.addEventListener("click", () => {
-            console.log(`Joining tournament: ${tournament.name}`);
-            // TODO: Implement join tournament functionality
-          });
-        }
-        container.appendChild(item);
-      });
-    } else {
-      container.innerHTML = `
-        <div style="text-align: center; color: var(--text-color-light); padding: 2rem;">
-          <p>No tournaments available. Create one to get started!</p>
-        </div>
-      `;
-    }
-  } catch (error) {
-    container.innerHTML = `
-      <div style="text-align: center; color: var(--error-color); padding: 2rem;">
-        <p>Failed to load tournaments. Please try again later.</p>
-      </div>
-    `;
-    console.error("Failed to load tournaments:", error);
-  } finally {
-    hideLoading();
-  }
-}
+
 // Combined Login/Register Page
 function renderAuthPage(isLogin = true): HTMLElement {
+  const t = languageManager.getTranslations();
   const authPage = document.createElement("div");
   authPage.className = "page content-section";
   authPage.id = isLogin ? "login" : "register";
@@ -656,7 +879,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   const toggleLink = document.createElement("a");
   toggleLink.href = "#";
   toggleLink.className = "text-blue-500 hover:underline";
-  toggleLink.textContent = isLogin ? "Create an ACCOUNT" : "Sign in to existing ACCOUNT";
+  toggleLink.textContent = isLogin ? t.auth.login.createAccount : t.auth.register.signIn;
   toggleLink.addEventListener("click", (e: Event) => {
     e.preventDefault();
     const newPath = isLogin ? "/register" : "/login";
@@ -669,7 +892,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   // Create the text node with proper styling
   const textNode = document.createElement('span');
   textNode.className = 'toggle-text';
-  textNode.textContent = isLogin ? "Don't have an account? " : "Already have an account? ";
+  textNode.textContent = isLogin ? t.auth.login.noAccount : t.auth.register.hasAccount;
   
   // Style the toggle link
   toggleLink.className = 'toggle-link neon-text';
@@ -695,7 +918,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   // Form title
   const title = document.createElement("h2");
   title.className = "form-title";
-  title.textContent = isLogin ? "Login to Neon Pong" : "Register for Neon Pong";
+  title.textContent = isLogin ? t.auth.login.title : t.auth.register.title;
   
   // Form element
   const form = document.createElement("form");
@@ -706,7 +929,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   if (!isLogin) {
     const emailLabel = document.createElement("label");
     emailLabel.className = "form-label";
-    emailLabel.textContent = "Email";
+    emailLabel.textContent = t.auth.register.email;
     emailInput = document.createElement("input");
     emailInput.type = "email";
     emailInput.className = "form-input";
@@ -719,7 +942,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   // Username field (always shown)
   const usernameLabel = document.createElement("label");
   usernameLabel.className = "form-label";
-  usernameLabel.textContent = "Username";
+  usernameLabel.textContent = isLogin ? t.auth.login.username : t.auth.register.username;
   const usernameInput = document.createElement("input");
   usernameInput.type = "text";
   usernameInput.className = "form-input";
@@ -729,7 +952,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   // Password field (always shown)
   const passwordLabel = document.createElement("label");
   passwordLabel.className = "form-label";
-  passwordLabel.textContent = "Password";
+  passwordLabel.textContent = isLogin ? t.auth.login.password : t.auth.register.password;
   const passwordInput = document.createElement("input");
   passwordInput.type = "password";
   passwordInput.className = "form-input";
@@ -742,7 +965,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   if (!isLogin) {
     confirmLabel = document.createElement("label");
     confirmLabel.className = "form-label";
-    confirmLabel.textContent = "Confirm Password";
+    confirmLabel.textContent = t.auth.register.confirmPassword;
     confirmPasswordInput = document.createElement("input");
     confirmPasswordInput.type = "password";
     confirmPasswordInput.className = "form-input";
@@ -754,13 +977,13 @@ function renderAuthPage(isLogin = true): HTMLElement {
   const submitButton = document.createElement("button");
   submitButton.type = "submit";
   submitButton.className = "primary-button w-full";
-  submitButton.textContent = isLogin ? "Login" : "Register";
+  submitButton.textContent = isLogin ? t.auth.login.button : t.auth.register.button;
 
   // Back button
   const backButton = document.createElement("button");
   backButton.type = "button";
   backButton.className = "secondary-button w-full mt-2";
-  backButton.textContent = "Back to Home";
+  backButton.textContent = isLogin ? t.auth.login.backToHome : t.auth.register.backToHome;
   backButton.addEventListener("click", () => navigateTo("/"));
 
   // Add elements to form in the correct order
@@ -838,6 +1061,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
 
 // Profile Page
 function renderProfilePage(): HTMLElement {
+  const t = languageManager.getTranslations();
   const profilePage = document.createElement("div");
   profilePage.className = "page content-section";
   profilePage.id = "profile";
@@ -846,7 +1070,7 @@ function renderProfilePage(): HTMLElement {
   // Add a page title
   const pageTitle = document.createElement("h1");
   pageTitle.className = "section-title";
-  pageTitle.textContent = "User Profile";
+  pageTitle.textContent = t.profile.title;
   profilePage.appendChild(pageTitle);
   
   // Create tabs for different sections
@@ -857,11 +1081,11 @@ function renderProfilePage(): HTMLElement {
   tabButtons.className = "tab-buttons";
   
   const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: "fa-tachometer-alt" },
-    { id: "profile-info", label: "Profile Settings", icon: "fa-user-edit" },
-    { id: "stats", label: "Statistics", icon: "fa-chart-bar" },
-    { id: "friends", label: "Friends", icon: "fa-users" },
-    { id: "match-history", label: "Match History", icon: "fa-history" }
+    { id: "dashboard", label: t.profile.tabs.dashboard, icon: "fa-tachometer-alt" },
+    { id: "profile-info", label: t.profile.tabs.settings, icon: "fa-user-edit" },
+    { id: "stats", label: t.profile.tabs.statistics, icon: "fa-chart-bar" },
+    { id: "friends", label: t.profile.tabs.friends, icon: "fa-users" },
+    { id: "match-history", label: t.profile.tabs.history, icon: "fa-history" }
   ];
   
   tabs.forEach((tab, index) => {
@@ -976,6 +1200,7 @@ function renderProfilePage(): HTMLElement {
 
 // Comprehensive Dashboard Section
 function createDashboardSection(userData: any): HTMLElement {
+  const t = languageManager.getTranslations();
   const dashboardContainer = document.createElement("div");
   dashboardContainer.className = "dashboard-section";
   
@@ -984,8 +1209,8 @@ function createDashboardSection(userData: any): HTMLElement {
   dashboardHeader.className = "dashboard-header";
   dashboardHeader.innerHTML = `
     <div class="welcome-banner">
-      <h2>Welcome back, ${userData.displayName}!</h2>
-      <p>Here's your gaming overview and performance insights</p>
+      <h2>${t.profile.dashboard.welcome}</h2>
+      <p>${t.profile.dashboard.overview}</p>
     </div>
   `;
   dashboardContainer.appendChild(dashboardHeader);
@@ -995,7 +1220,7 @@ function createDashboardSection(userData: any): HTMLElement {
   kpiSection.className = "dashboard-kpis";
   
   const kpiTitle = document.createElement("h3");
-  kpiTitle.textContent = "Performance Overview";
+  kpiTitle.textContent = t.profile.dashboard.overview;
   kpiTitle.className = "dashboard-section-title";
   kpiSection.appendChild(kpiTitle);
   
@@ -1004,15 +1229,15 @@ function createDashboardSection(userData: any): HTMLElement {
   
   const kpis = [
     { 
-      label: "Current Rank", 
+      label: t.profile.dashboard.rank, 
       value: `#${userData.ranking}`, 
-      subtitle: `of ${userData.totalPlayers} players`,
+      subtitle: `${t.profile.dashboard.of} ${userData.totalPlayers} ${t.profile.dashboard.players}`,
       icon: "fa-crown", 
       color: "gold",
       trend: "up"
     },
     { 
-      label: "Win Rate", 
+      label: t.profile.dashboard.winRate, 
       value: `${userData.winRate}%`, 
       subtitle: `${userData.wins}W / ${userData.losses}L`,
       icon: "fa-trophy", 
@@ -1020,17 +1245,17 @@ function createDashboardSection(userData: any): HTMLElement {
       trend: "up"
     },
     { 
-      label: "Current Streak", 
+      label: t.profile.dashboard.streak, 
       value: userData.currentStreak, 
-      subtitle: `Best: ${userData.longestStreak}`,
+      subtitle: `${t.profile.dashboard.best}: ${userData.longestStreak}`,
       icon: "fa-fire", 
       color: "warning",
       trend: "up"
     },
     { 
-      label: "Total Play Time", 
+      label: t.profile.dashboard.playTime, 
       value: `${Math.floor(userData.totalPlayTime / 60)}h ${userData.totalPlayTime % 60}m`, 
-      subtitle: `Avg: ${userData.averageMatchDuration}min/game`,
+      subtitle: `${t.profile.dashboard.avg}: ${userData.averageMatchDuration}min/game`,
       icon: "fa-clock", 
       color: "info",
       trend: "up"
@@ -1066,7 +1291,7 @@ function createDashboardSection(userData: any): HTMLElement {
   analyticsSection.className = "dashboard-analytics";
   
   const analyticsTitle = document.createElement("h3");
-  analyticsTitle.textContent = "Performance Analytics";
+  analyticsTitle.textContent = t.profile.dashboard.analytics;
   analyticsTitle.className = "dashboard-section-title";
   analyticsSection.appendChild(analyticsTitle);
   
@@ -1111,11 +1336,12 @@ function createDashboardSection(userData: any): HTMLElement {
 
 // Weekly Performance Chart
 function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
+  const t = languageManager.getTranslations();
   const chartContainer = document.createElement("div");
   chartContainer.className = "chart-container weekly-chart";
   
   const chartTitle = document.createElement("h4");
-  chartTitle.textContent = "Weekly Performance";
+  chartTitle.textContent = t.profile.dashboard.weekly;
   chartContainer.appendChild(chartTitle);
   
   const chartWrapper = document.createElement("div");
@@ -1154,11 +1380,11 @@ function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
   chartLegend.innerHTML = `
     <div class="legend-item">
       <div class="legend-color wins"></div>
-      <span>Wins</span>
+      <span>${t.profile.dashboard.wins}</span>
     </div>
     <div class="legend-item">
       <div class="legend-color losses"></div>
-      <span>Losses</span>
+      <span>${t.profile.dashboard.losses}</span>
     </div>
   `;
   chartContainer.appendChild(chartLegend);
@@ -1168,11 +1394,12 @@ function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
 
 // Skill Progression Chart
 function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
+  const t = languageManager.getTranslations();
   const chartContainer = document.createElement("div");
   chartContainer.className = "chart-container skill-chart";
   
   const chartTitle = document.createElement("h4");
-  chartTitle.textContent = "Skill Rating Progression";
+  chartTitle.textContent = t.profile.dashboard.rating;
   chartContainer.appendChild(chartTitle);
   
   const chartWrapper = document.createElement("div");
@@ -1232,11 +1459,12 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
 
 // Recent Matches Summary
 function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
+  const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "recent-matches-summary";
   
   const title = document.createElement("h4");
-  title.textContent = "Recent Matches";
+  title.textContent = t.profile.dashboard.recent;
   container.appendChild(title);
   
   const matchesList = document.createElement("div");
@@ -1266,7 +1494,7 @@ function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
   
   const viewAllBtn = document.createElement("button");
   viewAllBtn.className = "secondary-button";
-  viewAllBtn.textContent = "View All Matches";
+  viewAllBtn.textContent = t.profile.dashboard.viewAll;
   viewAllBtn.addEventListener("click", () => switchTab("match-history"));
   container.appendChild(viewAllBtn);
   
@@ -1275,21 +1503,22 @@ function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
 
 // Advanced Statistics Panel
 function createAdvancedStatsPanel(userData: any): HTMLElement {
+  const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "advanced-stats-panel";
   
   const title = document.createElement("h4");
-  title.textContent = "Advanced Statistics";
+  title.textContent = t.profile.dashboard.advanced;
   container.appendChild(title);
   
   const statsGrid = document.createElement("div");
   statsGrid.className = "advanced-stats-grid";
   
   const advancedStats = [
-    { label: "Average Score", value: userData.averageScore, unit: "pts" },
-    { label: "Perfect Games", value: userData.perfectGames, unit: "" },
-    { label: "Comebacks", value: userData.comebacks, unit: "" },
-    { label: "Preferred Mode", value: userData.preferredGameMode, unit: "" }
+    { label: t.profile.dashboard.avgScore, value: userData.averageScore, unit: "pts" },
+    { label: t.profile.dashboard.perfectGames, value: userData.perfectGames, unit: "" },
+    { label: t.profile.dashboard.comebacks, value: userData.comebacks, unit: "" },
+    { label: t.profile.dashboard.preferredMode, value: userData.preferredGameMode, unit: "" }
   ];
   
   advancedStats.forEach(stat => {
@@ -1309,11 +1538,12 @@ function createAdvancedStatsPanel(userData: any): HTMLElement {
 
 // Achievements Section
 function createAchievementsSection(userData: any): HTMLElement {
+  const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "achievements-section";
   
   const title = document.createElement("h3");
-  title.textContent = "Achievements & Goals";
+  title.textContent = t.profile.dashboard.achievements;
   title.className = "dashboard-section-title";
   container.appendChild(title);
   
@@ -1322,32 +1552,32 @@ function createAchievementsSection(userData: any): HTMLElement {
   
   const achievements = [
     {
-      title: "Win Streak Master",
-      description: "Win 10 games in a row",
+      title: t.profile.dashboard.winStreakMaster,
+      description: t.profile.dashboard.winStreakDesc,
       progress: userData.currentStreak,
       target: 10,
       icon: "fa-fire",
       unlocked: userData.longestStreak >= 10
     },
     {
-      title: "Century Club",
-      description: "Play 100 total games",
+      title: t.profile.dashboard.centuryClub,
+      description: t.profile.dashboard.centuryDesc,
       progress: userData.gamesPlayed,
       target: 100,
       icon: "fa-medal",
       unlocked: userData.gamesPlayed >= 100
     },
     {
-      title: "Perfect Player",
-      description: "Win a game 21-0",
+      title: t.profile.dashboard.perfectPlayer,
+      description: t.profile.dashboard.perfectDesc,
       progress: userData.perfectGames,
       target: 1,
       icon: "fa-star",
       unlocked: userData.perfectGames >= 1
     },
     {
-      title: "Social Butterfly",
-      description: "Add 10 friends",
+      title: t.profile.dashboard.socialButterfly,
+      description: t.profile.dashboard.socialDesc,
       progress: userData.friends.length,
       target: 10,
       icon: "fa-users",
@@ -1401,21 +1631,22 @@ function switchTab(tabId: string) {
 }
 
 function createStatsSection(userData: any): HTMLElement {
+  const t = languageManager.getTranslations();
   const statsContainer = document.createElement("div");
   statsContainer.className = "stats-section";
   
   const statsTitle = document.createElement("h2");
-  statsTitle.textContent = "Player Statistics";
+  statsTitle.textContent = t.profile.statistics.title;
   statsContainer.appendChild(statsTitle);
   
   const statsGrid = document.createElement("div");
   statsGrid.className = "stats-grid";
   
   const stats = [
-    { label: "Games Played", value: userData.gamesPlayed, icon: "fa-gamepad" },
-    { label: "Wins", value: userData.wins, icon: "fa-trophy", color: "success" },
-    { label: "Losses", value: userData.losses, icon: "fa-times-circle", color: "danger" },
-    { label: "Win Rate", value: `${userData.winRate}%`, icon: "fa-percentage", color: "info" }
+    { label: t.profile.statistics.gamesPlayed, value: userData.gamesPlayed, icon: "fa-gamepad" },
+    { label: t.profile.statistics.wins, value: userData.wins, icon: "fa-trophy", color: "success" },
+    { label: t.profile.statistics.losses, value: userData.losses, icon: "fa-times-circle", color: "danger" },
+    { label: t.profile.statistics.winRate, value: `${userData.winRate}%`, icon: "fa-percentage", color: "info" }
   ];
   
   stats.forEach(stat => {
@@ -1438,6 +1669,7 @@ function createStatsSection(userData: any): HTMLElement {
 }
 
 function createFriendsSection(friends: any[]): HTMLElement {
+  const t = languageManager.getTranslations();
   const friendsContainer = document.createElement("div");
   friendsContainer.className = "friends-section";
   
@@ -1445,11 +1677,11 @@ function createFriendsSection(friends: any[]): HTMLElement {
   friendsHeader.className = "section-header";
   
   const friendsTitle = document.createElement("h2");
-  friendsTitle.textContent = "Friends List";
+  friendsTitle.textContent = t.profile.friends.title;
   
   const addFriendBtn = document.createElement("button");
   addFriendBtn.className = "primary-button";
-  addFriendBtn.innerHTML = '<i class="fas fa-user-plus"></i> Add Friend';
+  addFriendBtn.innerHTML = `<i class="fas fa-user-plus"></i> ${t.profile.friends.addFriend}`;
   addFriendBtn.addEventListener("click", showAddFriendModal);
   
   friendsHeader.appendChild(friendsTitle);
@@ -1473,8 +1705,8 @@ function createFriendsSection(friends: any[]): HTMLElement {
       friendCard.className = "friend-card";
       
       const onlineStatus = friend.isOnline ? 'online' : 'offline';
-      const lastSeenText = friend.isOnline ? 'Online' : 
-        friend.lastSeen ? `Last seen ${friend.lastSeen.toLocaleDateString()}` : 'Offline';
+      const lastSeenText = friend.isOnline ? t.profile.friends.online : 
+        friend.lastSeen ? `${t.profile.friends.lastSeen} ${friend.lastSeen.toLocaleDateString()}` : 'Offline';
       
       friendCard.innerHTML = `
         <div class="friend-avatar">
@@ -1488,7 +1720,7 @@ function createFriendsSection(friends: any[]): HTMLElement {
         </div>
         <div class="friend-actions">
           <button class="secondary-button" onclick="challengeFriend('${friend.username}')">
-            <i class="fas fa-gamepad"></i> Challenge
+            <i class="fas fa-gamepad"></i> ${t.profile.friends.challenge}
           </button>
           <button class="danger-button" onclick="removeFriend(${friend.id})">
             <i class="fas fa-user-minus"></i>
@@ -1504,11 +1736,12 @@ function createFriendsSection(friends: any[]): HTMLElement {
 }
 
 function createMatchHistorySection(matchHistory: any[]): HTMLElement {
+  const t = languageManager.getTranslations();
   const historyContainer = document.createElement("div");
   historyContainer.className = "match-history-section";
   
   const historyTitle = document.createElement("h2");
-  historyTitle.textContent = "Match History";
+  historyTitle.textContent = t.profile.history.title;
   historyContainer.appendChild(historyTitle);
   
   if (matchHistory.length === 0) {
@@ -1530,7 +1763,7 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
     matchCard.className = `match-card ${match.result}`;
     
     const resultIcon = match.result === 'win' ? 'fa-trophy' : 'fa-times-circle';
-    const resultText = match.result === 'win' ? 'Victory' : 'Defeat';
+    const resultText = match.result === 'win' ? t.profile.history.victory : t.profile.history.defeat;
     
     matchCard.innerHTML = `
       <div class="match-result">
@@ -1541,13 +1774,13 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
         <img src="${match.opponentAvatar}" alt="${match.opponent}'s avatar" class="opponent-avatar" />
         <div class="opponent-info">
           <div class="opponent-name">${match.opponent}</div>
-          <div class="game-type">${match.gameType === '1v1' ? '1v1 Match' : 'Tournament'}</div>
+          <div class="game-type">${match.gameType === '1v1' ? t.profile.history.match1v1 : t.profile.history.tournament}</div>
         </div>
       </div>
       <div class="match-details">
         <div class="match-score">${match.score}</div>
         <div class="match-date">${match.date.toLocaleDateString()}</div>
-        <div class="match-duration">${match.duration} min</div>
+        <div class="match-duration">${match.duration} ${t.profile.history.min}</div>
       </div>
     `;
     historyList.appendChild(matchCard);
@@ -1619,6 +1852,15 @@ function removeFriend(friendId: number) {
 
 // Create Tournament Modal
 function showCreateTournamentModal() {
+  console.log("showCreateTournamentModal called - isLoggedIn:", isLoggedIn, "currentUser:", currentUser);
+  
+  // Check if user is logged in
+  if (!isLoggedIn || !currentUser) {
+    showMessage("Please login to create tournaments.", "error");
+    navigateTo("/ACCOUNT");
+    return;
+  }
+
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
   modal.style.cssText = `
@@ -1633,99 +1875,442 @@ function showCreateTournamentModal() {
     align-items: center;
     z-index: 1000;
   `;
+  
   const modalContent = document.createElement("div");
   modalContent.className = "modal-content";
   modalContent.style.cssText = `
-    background: var(--bg-color);
-    border: 2px solid var(--primary-color);
-    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(15, 18, 40, 0.95), rgba(8, 10, 28, 0.98));
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(0, 230, 255, 0.3);
+    border-radius: 16px;
     padding: 2rem;
-    max-width: 500px;
+    max-width: 600px;
     width: 90%;
-    box-shadow: 0 0 20px var(--primary-color);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 230, 255, 0.2);
+    max-height: 90vh;
+    overflow-y: auto;
   `;
+  
   modalContent.innerHTML = `
-    <h2 style="color: var(--primary-color); margin-bottom: 1.5rem; text-align: center;">Create Tournament</h2>
+    <h2 style="color: #00e6ff; margin-bottom: 1.5rem; text-align: center; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Create Local Tournament</h2>
+    
     <form id="create-tournament-form">
-      <label for="tournament-name" style="display: block; margin-bottom: 0.5rem; color: var(--text-color);">Tournament Name:</label>
-      <input type="text" id="tournament-name" required style="width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid var(--primary-color); border-radius: 5px; background: var(--bg-color); color: var(--text-color);">
-      <label for="max-players" style="display: block; margin-bottom: 0.5rem; color: var(--text-color);">Max Players:</label>
-      <select id="max-players" required style="width: 100%; padding: 0.8rem; margin-bottom: 1.5rem; border: 1px solid var(--primary-color); border-radius: 5px; background: var(--bg-color); color: var(--text-color);">
-        <option value="">Select Players</option>
-        <option value="4">4 Players</option>
-        <option value="8">8 Players</option>
-      </select>
-      <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-        <button type="button" id="cancel-tournament" class="secondary-button">Cancel</button>
-        <button type="submit" class="primary-button">Create Tournament</button>
+      <div style="margin-bottom: 1.5rem;">
+        <label for="tournament-name" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.9); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.9rem;">Tournament Name:</label>
+        <input type="text" id="tournament-name" required placeholder="Enter tournament name..." style="width: 100%; padding: 1rem; border: 1px solid rgba(0, 230, 255, 0.3); border-radius: 8px; background: linear-gradient(135deg, rgba(15, 18, 40, 0.8), rgba(8, 10, 28, 0.9)); color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); font-size: 0.95rem;">
+      </div>
+      
+      <div style="background: linear-gradient(135deg, rgba(0, 230, 255, 0.05), rgba(255, 0, 255, 0.05)); border: 1px solid rgba(0, 230, 255, 0.2); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+        <h3 style="color: #00e6ff; margin-bottom: 1rem; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+          <i class="fas fa-users"></i> Enter 4 Player Names
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label for="player1" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 0.9rem;">Player 1:</label>
+            <input type="text" id="player1" required placeholder="Enter player 1 name..." style="width: 100%; padding: 0.8rem; border: 1px solid rgba(0, 230, 255, 0.3); border-radius: 6px; background: linear-gradient(135deg, rgba(15, 18, 40, 0.8), rgba(8, 10, 28, 0.9)); color: rgba(255, 255, 255, 0.9); font-size: 0.9rem;">
+          </div>
+          
+          <div>
+            <label for="player2" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 0.9rem;">Player 2:</label>
+            <input type="text" id="player2" required placeholder="Enter player 2 name..." style="width: 100%; padding: 0.8rem; border: 1px solid rgba(0, 230, 255, 0.3); border-radius: 6px; background: linear-gradient(135deg, rgba(15, 18, 40, 0.8), rgba(8, 10, 28, 0.9)); color: rgba(255, 255, 255, 0.9); font-size: 0.9rem;">
+          </div>
+          
+          <div>
+            <label for="player3" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 0.9rem;">Player 3:</label>
+            <input type="text" id="player3" required placeholder="Enter player 3 name..." style="width: 100%; padding: 0.8rem; border: 1px solid rgba(0, 230, 255, 0.3); border-radius: 6px; background: linear-gradient(135deg, rgba(15, 18, 40, 0.8), rgba(8, 10, 28, 0.9)); color: rgba(255, 255, 255, 0.9); font-size: 0.9rem;">
+          </div>
+          
+          <div>
+            <label for="player4" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 0.9rem;">Player 4:</label>
+            <input type="text" id="player4" required placeholder="Enter player 4 name..." style="width: 100%; padding: 0.8rem; border: 1px solid rgba(0, 230, 255, 0.3); border-radius: 6px; background: linear-gradient(135deg, rgba(15, 18, 40, 0.8), rgba(8, 10, 28, 0.9)); color: rgba(255, 255, 255, 0.9); font-size: 0.9rem;">
+          </div>
+        </div>
+        
+        <div style="margin-top: 1rem; padding: 1rem; background: rgba(0, 230, 255, 0.1); border-radius: 8px; border: 1px solid rgba(0, 230, 255, 0.2);">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <i class="fas fa-trophy" style="color: #ffd700;"></i>
+            <span style="color: rgba(255, 255, 255, 0.9); font-weight: 600; font-size: 0.9rem;">Tournament Format:</span>
+          </div>
+          <p style="margin: 0; color: rgba(255, 255, 255, 0.7); font-size: 0.85rem; line-height: 1.4;">
+            <strong>Semi-Finals:</strong> Player 1 vs Player 2, Player 3 vs Player 4<br>
+            <strong>Finals:</strong> Winners advance to championship match
+          </p>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+        <button type="button" id="cancel-tournament" class="secondary-button" style="padding: 1rem 1.5rem; border-radius: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Cancel</button>
+        <button type="submit" class="primary-button" style="padding: 1rem 1.5rem; border-radius: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background: linear-gradient(135deg, #00e6ff, #ff00ff);">
+          <i class="fas fa-trophy"></i> Start Tournament
+        </button>
       </div>
     </form>
   `;
+  
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
-  const form = modal.querySelector(
-    "#create-tournament-form"
-  ) as HTMLFormElement;
-  const cancelBtn = modal.querySelector(
-    "#cancel-tournament"
-  ) as HTMLButtonElement;
+  
+  const form = modal.querySelector("#create-tournament-form") as HTMLFormElement;
+  const cancelBtn = modal.querySelector("#cancel-tournament") as HTMLButtonElement;
+  
   cancelBtn.addEventListener("click", () => {
     document.body.removeChild(modal);
   });
+  
   modal.addEventListener("click", (e) => {
     if (e.target === modal) {
       document.body.removeChild(modal);
     }
   });
+  
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!currentUser) {
-      showMessage("Please register first to create a tournament.", "error");
-      document.body.removeChild(modal);
-      navigateTo("/register");
-      return;
-    }
-    const nameInput = modal.querySelector(
-      "#tournament-name"
-    ) as HTMLInputElement;
-    const playersSelect = modal.querySelector(
-      "#max-players"
-    ) as HTMLSelectElement;
-    const name = nameInput.value.trim();
-    const maxPlayers = parseInt(playersSelect.value) as 4 | 8;
-    if (!name || !maxPlayers) {
+    
+    const nameInput = modal.querySelector("#tournament-name") as HTMLInputElement;
+    const player1Input = modal.querySelector("#player1") as HTMLInputElement;
+    const player2Input = modal.querySelector("#player2") as HTMLInputElement;
+    const player3Input = modal.querySelector("#player3") as HTMLInputElement;
+    const player4Input = modal.querySelector("#player4") as HTMLInputElement;
+    
+    const tournamentName = nameInput.value.trim();
+    const player1 = player1Input.value.trim();
+    const player2 = player2Input.value.trim();
+    const player3 = player3Input.value.trim();
+    const player4 = player4Input.value.trim();
+    
+    if (!tournamentName || !player1 || !player2 || !player3 || !player4) {
       showMessage("Please fill in all fields.", "error");
       return;
     }
-    //will create tournament
+    
+    // Check for duplicate names
+    const players = [player1, player2, player3, player4];
+    const uniquePlayers = new Set(players);
+    if (uniquePlayers.size !== 4) {
+      showMessage("All player names must be unique.", "error");
+      return;
+    }
+    
+    // Create tournament
     showLoading();
     try {
-      const result = await apiService.tournaments.create(
-        name,
-        maxPlayers,
-        currentUser.id
-      );
-      if (result.data) {
-        showMessage(`Tournament "${name}" created successfully!`, "success");
-        document.body.removeChild(modal);
-        // Refresh tournament page
-        if (window.location.pathname === "/tournament") {
-          const app = document.getElementById("app");
-          if (app) {
-            setupRoutes(app);
-          }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create tournament data
+      const tournament = {
+        id: Date.now(),
+        name: tournamentName,
+        players: [player1, player2, player3, player4],
+        createdBy: currentUser?.username || 'Unknown',
+        createdDate: new Date().toISOString().split('T')[0],
+        status: 'active',
+        bracket: {
+          semifinals: [
+            { player1: player1, player2: player2, winner: null },
+            { player1: player3, player2: player4, winner: null }
+          ],
+          finals: { player1: null, player2: null, winner: null }
         }
-      } else {
-        showMessage(result.error || "Failed to create tournament.", "error");
-      }
+      };
+      
+      // Store tournament in localStorage for demo
+      const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+      tournaments.push(tournament);
+      localStorage.setItem('tournaments', JSON.stringify(tournaments));
+      
+      document.body.removeChild(modal);
+      showMessage(`Tournament "${tournamentName}" created successfully! 🏆`, "success");
+      
+      // Navigate to tournament bracket view
+      showTournamentBracket(tournament);
+      
     } catch (error) {
-      showMessage("Failed to create tournament. Please try again.", "error");
-      console.error("Tournament creation error:", error);
+      showMessage("Error creating tournament. Please try again.", "error");
     } finally {
       hideLoading();
     }
   });
 }
+
+// Function to show tournament bracket
+function showTournamentBracket(tournament: any) {
+  const app = document.getElementById("app");
+  if (!app) return;
+  
+  app.innerHTML = `
+    <div class="tournament-bracket-page">
+      <div class="tournament-header">
+        <div class="back-button" onclick="navigateTo('/tournament')">
+          <i class="fas fa-arrow-left"></i> Back to Tournaments
+        </div>
+        <h1 class="tournament-title">${tournament.name}</h1>
+        <div class="tournament-meta">
+          <span>Created by: ${tournament.createdBy}</span>
+          <span>Date: ${tournament.createdDate}</span>
+        </div>
+      </div>
+      
+      <div class="bracket-container">
+        <div class="bracket-round">
+          <h2 class="round-title">Semi-Finals</h2>
+          
+          <div class="match-container">
+            <div class="match" id="match-1">
+              <div class="match-header">Match 1 - Semi-Final</div>
+              <div class="players">
+                <div class="player ${tournament.bracket.semifinals[0].winner === tournament.bracket.semifinals[0].player1 ? 'winner' : ''}" data-player="${tournament.bracket.semifinals[0].player1}">
+                  ${tournament.bracket.semifinals[0].player1}
+                </div>
+                <div class="vs">VS</div>
+                <div class="player ${tournament.bracket.semifinals[0].winner === tournament.bracket.semifinals[0].player2 ? 'winner' : ''}" data-player="${tournament.bracket.semifinals[0].player2}">
+                  ${tournament.bracket.semifinals[0].player2}
+                </div>
+              </div>
+              ${!tournament.bracket.semifinals[0].winner ? `
+                <div class="match-actions">
+                  <button class="start-match-btn" onclick="startMatch(0, '${tournament.bracket.semifinals[0].player1}', '${tournament.bracket.semifinals[0].player2}')">
+                    <i class="fas fa-play"></i> Start Match 1
+                  </button>
+                </div>
+              ` : `
+                <div class="winner-announcement">
+                  <i class="fas fa-trophy"></i>
+                  Winner: ${tournament.bracket.semifinals[0].winner}
+                </div>
+              `}
+            </div>
+            
+            <div class="match ${!tournament.bracket.semifinals[0].winner ? 'match-locked' : ''}" id="match-2">
+              <div class="match-header">
+                Match 2 - Semi-Final
+                ${!tournament.bracket.semifinals[0].winner ? '<span class="locked-indicator"><i class="fas fa-lock"></i> Locked</span>' : ''}
+              </div>
+              <div class="players">
+                <div class="player ${tournament.bracket.semifinals[1].winner === tournament.bracket.semifinals[1].player1 ? 'winner' : ''}" data-player="${tournament.bracket.semifinals[1].player1}">
+                  ${tournament.bracket.semifinals[1].player1}
+                </div>
+                <div class="vs">VS</div>
+                <div class="player ${tournament.bracket.semifinals[1].winner === tournament.bracket.semifinals[1].player2 ? 'winner' : ''}" data-player="${tournament.bracket.semifinals[1].player2}">
+                  ${tournament.bracket.semifinals[1].player2}
+                </div>
+              </div>
+              ${!tournament.bracket.semifinals[1].winner ? `
+                <div class="match-actions">
+                  ${tournament.bracket.semifinals[0].winner ? `
+                    <button class="start-match-btn" onclick="startMatch(1, '${tournament.bracket.semifinals[1].player1}', '${tournament.bracket.semifinals[1].player2}')">
+                      <i class="fas fa-play"></i> Start Match 2
+                    </button>
+                  ` : `
+                    <button class="start-match-btn locked-btn" disabled>
+                      <i class="fas fa-lock"></i> Waiting for Match 1
+                    </button>
+                    <p class="waiting-message">Match 1 must finish first</p>
+                  `}
+                </div>
+              ` : `
+                <div class="winner-announcement">
+                  <i class="fas fa-trophy"></i>
+                  Winner: ${tournament.bracket.semifinals[1].winner}
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+        
+        <div class="bracket-arrow">
+          <i class="fas fa-arrow-right"></i>
+        </div>
+        
+        <div class="bracket-round">
+          <h2 class="round-title">Finals</h2>
+          
+          <div class="match-container">
+            <div class="match finals-match" id="finals-match">
+              <div class="match-header">Championship Finals</div>
+              ${tournament.bracket.semifinals[0].winner && tournament.bracket.semifinals[1].winner ? `
+                <div class="players">
+                  <div class="player ${tournament.bracket.finals.winner === tournament.bracket.semifinals[0].winner ? 'winner' : ''}" data-player="${tournament.bracket.semifinals[0].winner}">
+                    ${tournament.bracket.semifinals[0].winner}
+                  </div>
+                  <div class="vs">VS</div>
+                  <div class="player ${tournament.bracket.finals.winner === tournament.bracket.semifinals[1].winner ? 'winner' : ''}" data-player="${tournament.bracket.semifinals[1].winner}">
+                    ${tournament.bracket.semifinals[1].winner}
+                  </div>
+                </div>
+                ${!tournament.bracket.finals.winner ? `
+                  <div class="match-actions">
+                    <button class="start-match-btn" onclick="startFinalsMatch('${tournament.bracket.semifinals[0].winner}', '${tournament.bracket.semifinals[1].winner}')">
+                      <i class="fas fa-crown"></i> Start Finals
+                    </button>
+                  </div>
+                ` : `
+                  <div class="champion-announcement">
+                    <i class="fas fa-crown"></i>
+                    <span>Tournament Champion:</span>
+                    <div class="champion-name">${tournament.bracket.finals.winner}</div>
+                  </div>
+                `}
+              ` : `
+                <div class="waiting-players">
+                  <div class="waiting-text">Waiting for semi-final winners...</div>
+                  <div class="vs">VS</div>
+                  <div class="waiting-text">Waiting for semi-final winners...</div>
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Store current tournament in global scope for match functions
+  (window as any).currentTournament = tournament;
+}
+
+// Match handling functions
+(window as any).startMatch = function(matchIndex: number, player1: string, player2: string) {
+  showMessage(`Starting match: ${player1} vs ${player2}`, "info");
+  
+  // Show match selection modal
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  `;
+  
+  modal.innerHTML = `
+    <div class="modal-content" style="background: linear-gradient(135deg, rgba(15, 18, 40, 0.95), rgba(8, 10, 28, 0.98)); backdrop-filter: blur(20px); border: 2px solid rgba(0, 230, 255, 0.3); border-radius: 16px; padding: 2rem; max-width: 500px; width: 90%; text-align: center;">
+      <h2 style="color: #00e6ff; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+        <i class="fas fa-play"></i> Semi-Final Match
+      </h2>
+      <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 2rem; font-size: 1.1rem;">
+        Who won the match?
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem;">
+        <button class="winner-btn" onclick="declareWinner(${matchIndex}, '${player1}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #00e6ff, #0099cc); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+          ${player1}
+        </button>
+        <button class="winner-btn" onclick="declareWinner(${matchIndex}, '${player2}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #ff00ff, #cc0099); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+          ${player2}
+        </button>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" style="padding: 0.8rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: rgba(255, 255, 255, 0.8); cursor: pointer;">
+        Cancel
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+};
+
+(window as any).declareWinner = function(matchIndex: number, winner: string) {
+  const tournament = (window as any).currentTournament;
+  
+  // Update tournament data
+  tournament.bracket.semifinals[matchIndex].winner = winner;
+  
+  // Update localStorage
+  const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+  const tournamentIndex = tournaments.findIndex((t: any) => t.id === tournament.id);
+  if (tournamentIndex !== -1) {
+    tournaments[tournamentIndex] = tournament;
+    localStorage.setItem('tournaments', JSON.stringify(tournaments));
+  }
+  
+  // Remove modal
+  const modal = document.querySelector('.modal-overlay');
+  if (modal) modal.remove();
+  
+  // Refresh bracket display
+  showTournamentBracket(tournament);
+  
+  // Show appropriate message based on which match finished
+  if (matchIndex === 0) {
+    showMessage(`🏆 ${winner} wins Match 1! Match 2 is now unlocked! 🎉`, "success");
+  } else {
+    showMessage(`🏆 ${winner} wins Match 2! Both semi-finals complete! 🎉`, "success");
+  }
+};
+
+(window as any).startFinalsMatch = function(player1: string, player2: string) {
+  showMessage(`Starting Finals: ${player1} vs ${player2}`, "info");
+  
+  // Show finals selection modal
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  `;
+  
+  modal.innerHTML = `
+    <div class="modal-content" style="background: linear-gradient(135deg, rgba(15, 18, 40, 0.95), rgba(8, 10, 28, 0.98)); backdrop-filter: blur(20px); border: 2px solid rgba(255, 215, 0, 0.3); border-radius: 16px; padding: 2rem; max-width: 500px; width: 90%; text-align: center;">
+      <h2 style="color: #ffd700; margin-bottom: 1.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+        <i class="fas fa-crown"></i> Championship Finals
+      </h2>
+      <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 2rem; font-size: 1.1rem;">
+        Who is the Tournament Champion?
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem;">
+        <button class="winner-btn" onclick="declareChampion('${player1}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #00e6ff, #0099cc); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+          ${player1}
+        </button>
+        <button class="winner-btn" onclick="declareChampion('${player2}')" style="flex: 1; padding: 1.5rem; border-radius: 12px; background: linear-gradient(135deg, #ff00ff, #cc0099); border: none; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+          ${player2}
+        </button>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" style="padding: 0.8rem 1.5rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: rgba(255, 255, 255, 0.8); cursor: pointer;">
+        Cancel
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+};
+
+(window as any).declareChampion = function(champion: string) {
+  const tournament = (window as any).currentTournament;
+  
+  // Update tournament data
+  tournament.bracket.finals.winner = champion;
+  tournament.status = 'completed';
+  
+  // Update localStorage
+  const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
+  const tournamentIndex = tournaments.findIndex((t: any) => t.id === tournament.id);
+  if (tournamentIndex !== -1) {
+    tournaments[tournamentIndex] = tournament;
+    localStorage.setItem('tournaments', JSON.stringify(tournaments));
+  }
+  
+  // Remove modal
+  const modal = document.querySelector('.modal-overlay');
+  if (modal) modal.remove();
+  
+  // Refresh bracket display
+  showTournamentBracket(tournament);
+  
+  showMessage(`🏆 ${champion} is the Tournament Champion! 🏆`, "success");
+};
 
 // Router setup function
 function setupRoutes(app: HTMLElement): void {
@@ -1812,6 +2397,13 @@ function setupRoutes(app: HTMLElement): void {
 // Initial page load
 document.addEventListener("DOMContentLoaded", async () => {
   console.log('[App] DOM fully loaded, initializing application...');
+  
+  // Initialize translation system
+  console.log('[App] Initializing translation system...');
+  languageManager.addListener(() => {
+    // Update the navbar when language changes
+    updateNavbar();
+  });
   
   console.log('[App] Finding app container...');
   const app = document.getElementById("app");

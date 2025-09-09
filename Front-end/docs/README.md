@@ -14,30 +14,10 @@ A TypeScript SPA (Single Page Application) for the ft_transcendence project, bui
 ## Project Structure
 
 ```
-Front-end/
-├── assets/
-│   └── images/              # Image assets (pic1-4.png)
-├── public/                  # Public assets (vite.svg)
+ft_transcendence/
 ├── src/
-│   ├── components/          # Reusable UI components
-│   │   └── ProfileSettings.ts
-│   ├── services/            # API and external services
-│   │   └── api.ts
-│   ├── styles/              # All CSS files
-│   │   ├── style.css        # Main styles
-│   │   ├── auth-forms.css
-│   │   ├── profile-dropdown.css
-│   │   └── profile-settings.css
-│   ├── types/               # TypeScript type definitions
-│   │   └── index.ts
-│   ├── utils/               # Utility functions
-│   │   └── helpers.ts
-│   └── main.ts              # Application entry point
-├── docs/                    # Documentation
-├── dist/                    # Build output
-├── index.html               # Main HTML file
-└── config files             # package.json, tsconfig, etc.
-```
+│   ├── main.ts       # Main application entry point
+│   └── style.css     # Global styles
 ├── index.html        # HTML entry point
 ├── vite.config.ts    # Vite configuration
 ├── tsconfig.json     # TypeScript configuration
