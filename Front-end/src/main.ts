@@ -1,8 +1,9 @@
 // This file is a TypeScript module
 import "./styles/style.css"; // Ensure your CSS is imported
-// import { apiService } from "./services/api.ts"; // Commented out for dummy implementation
+import "./styles/game-page.css"; // Game page styles
 import { createProfileSettings } from "./components/ProfileSettings";
 import { languageManager } from "./translations";
+import { create1v1GamePage } from "./gamePage.js";
 
 // Global variables for message display
 window.messageTimeout = null;
@@ -14,12 +15,12 @@ function updateAllTranslations(): void {
   
   // Update navigation links
   const homeLink = document.querySelector('.navbar-link[href="/"]') as HTMLElement;
-  const tournamentsLink = document.querySelector('.navbar-link[href="/tournament"]') as HTMLElement;
+  const gamesLink = document.querySelector('.navbar-link[href="/tournament"]') as HTMLElement;
   const accountLink = document.querySelector('.navbar-link[href="/ACCOUNT"], .navbar-link[href="/logout"]') as HTMLElement;
   const profileLink = document.querySelector('.navbar-link[href="/profile"]') as HTMLElement;
   
   if (homeLink) homeLink.textContent = t.nav.home;
-  if (tournamentsLink) tournamentsLink.textContent = t.nav.tournaments;
+  if (gamesLink) gamesLink.textContent = t.nav.games;
   if (profileLink) profileLink.textContent = t.nav.profile;
   if (accountLink) {
     accountLink.textContent = isLoggedIn ? t.nav.logout : t.nav.account;
@@ -83,7 +84,7 @@ function getPageTitle(path: string): string {
     case "/":
       return "Home - Neon Pong";
     case "/tournament":
-      return "Tournaments - Neon Pong";
+      return "Games - Neon Pong";
     case "/register":
       return "Register - Neon Pong";
     case "/login":
@@ -365,12 +366,12 @@ function createNavbar(): HTMLElement {
     e.preventDefault();
     navigateTo("/");
   });
-  const tournamentsLink = document.createElement("a");
-  tournamentsLink.href = "/tournament";
-  tournamentsLink.className = "navbar-link";
-  tournamentsLink.textContent = t.nav.tournaments;
-  tournamentsLink.setAttribute("role", "menuitem");
-  tournamentsLink.addEventListener("click", (e) => {
+  const gamesLink = document.createElement("a");
+  gamesLink.href = "/tournament";
+  gamesLink.className = "navbar-link";
+  gamesLink.textContent = t.nav.games;
+  gamesLink.setAttribute("role", "menuitem");
+  gamesLink.addEventListener("click", (e) => {
     e.preventDefault();
     navigateTo("/tournament");
   });
@@ -398,7 +399,7 @@ function createNavbar(): HTMLElement {
     }
   });
   navLinks.appendChild(homeLink);
-  navLinks.appendChild(tournamentsLink);
+  navLinks.appendChild(gamesLink);
   navLinks.appendChild(ACCOUNTLink);
   
   // Profile Link
@@ -444,11 +445,24 @@ function createNavbar(): HTMLElement {
     langOption.dataset.lang = lang.code;
     
     langOption.addEventListener('click', () => {
-      languageManager.setLanguage(lang.code);
-      languageBtn.innerHTML = `🌐 <span class="language-text">${lang.code.toUpperCase()}</span> <i class="fas fa-chevron-down" aria-hidden="true"></i>`;
+      const currentLang = languageManager.getCurrentLanguage();
+      
+      // Don't show confirmation if it's the same language
+      if (lang.code === currentLang) {
+        languageDropdown.style.display = 'none';
+        languageBtn.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      
+      // Use confirmation dialog for language change
+      languageManager.setLanguageWithConfirmation(lang.code);
+      
+      // Close dropdown immediately
       languageDropdown.style.display = 'none';
       languageBtn.setAttribute('aria-expanded', 'false');
-      updateAllTranslations();
+      
+      // Update button text will happen when the language actually changes
+      // via the listener system
     });
     
     languageDropdown.appendChild(langOption);
@@ -470,6 +484,23 @@ function createNavbar(): HTMLElement {
   
   languageSelector.appendChild(languageBtn);
   languageSelector.appendChild(languageDropdown);
+  
+  // Add listener to update language button when language changes
+  languageManager.addListener(() => {
+    const currentLang = languageManager.getCurrentLanguage();
+    const currentLangData = languages.find(l => l.code === currentLang);
+    if (currentLangData) {
+      languageBtn.innerHTML = `🌐 <span class="language-text">${currentLang.toUpperCase()}</span> <i class="fas fa-chevron-down" aria-hidden="true"></i>`;
+    }
+    updateAllTranslations();
+  });
+  
+  // Initialize button with current language
+  const currentLang = languageManager.getCurrentLanguage();
+  const currentLangData = languages.find(l => l.code === currentLang);
+  if (currentLangData) {
+    languageBtn.innerHTML = `🌐 <span class="language-text">${currentLang.toUpperCase()}</span> <i class="fas fa-chevron-down" aria-hidden="true"></i>`;
+  }
   
   // Accessibility Controls
   const accessibilityControls = document.createElement('div');
@@ -660,196 +691,212 @@ function renderHomePage(): HTMLElement {
   home.appendChild(createFooter());
   return home;
 }
-// Tournament Page (Simplified for dynamic content, actual tournament data will be in renderHomePage)
-// Tournament Page (Updated with API integration)
+// Games Page (1v1 and Tournaments)
 function renderTournamentPage(): HTMLElement {
   const t = languageManager.getTranslations();
-  const tournamentPage = document.createElement("div");
-  tournamentPage.className = "page content-section";
-  tournamentPage.id = "tournaments-page";
-  tournamentPage.setAttribute("role", "main");
+  const gamesPage = document.createElement("div");
+  gamesPage.className = "page content-section";
+  gamesPage.id = "games-page";
+  gamesPage.setAttribute("role", "main");
   
-  // Premium Hero section for tournaments
+  // Hero Section
   const heroSection = document.createElement("div");
-  heroSection.className = "tournament-hero-premium";
+  heroSection.className = "games-hero-section";
   heroSection.innerHTML = `
     <div class="hero-background-effects">
       <div class="floating-orb orb-1"></div>
       <div class="floating-orb orb-2"></div>
       <div class="floating-orb orb-3"></div>
+      <div class="grid-overlay"></div>
     </div>
     
-    <div class="tournament-hero-content">
-      <div class="premium-badge">
-        <span>${t.tournaments.elite}</span>
-      </div>
-      
-      <div class="tournament-icon-premium">
+    <div class="games-hero-content">
+      <div class="hero-icon">
         <div class="icon-glow"></div>
-        <i class="fas fa-crown"></i>
+        <i class="fas fa-gamepad"></i>
       </div>
       
-      <h1 class="tournament-hero-title-premium">
-        <span class="title-line-1">${t.tournaments.championship}</span>
-        <span class="title-line-2">${t.tournaments.arena}</span>
+      <h1 class="games-hero-title">
+        <span class="title-main">${t.games.title}</span>
+        <span class="title-sub">${t.games.subtitle}</span>
       </h1>
       
-      <p class="tournament-hero-subtitle-premium">
-        ${t.tournaments.subtitle}
-      </p>
-      
-      <div class="tournament-stats-grid">
+      <div class="games-stats-bar">
         <div class="stat-item">
-          <div class="stat-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="stat-content">
-            <span class="stat-number">4</span>
-            <span class="stat-label">${t.tournaments.stats.elitePlayers}</span>
-          </div>
+          <span class="stat-number">1,247</span>
+          <span class="stat-label">${t.games.stats.activePlayers}</span>
         </div>
-        
+        <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-icon">
-            <i class="fas fa-trophy"></i>
-          </div>
-          <div class="stat-content">
-            <span class="stat-number">1</span>
-            <span class="stat-label">${t.tournaments.stats.champion}</span>
-          </div>
+          <span class="stat-number">89</span>
+          <span class="stat-label">${t.games.stats.ongoingMatches}</span>
         </div>
-        
+        <div class="stat-divider"></div>
         <div class="stat-item">
-          <div class="stat-icon">
-            <i class="fas fa-bolt"></i>
-          </div>
-          <div class="stat-content">
-            <span class="stat-number">∞</span>
-            <span class="stat-label">${t.tournaments.stats.glory}</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="tournament-features-premium">
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="fas fa-chess"></i>
-          </div>
-          <h3>${t.tournaments.features.strategic.title}</h3>
-          <p>${t.tournaments.features.strategic.description}</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="fas fa-medal"></i>
-          </div>
-          <h3>${t.tournaments.features.prestige.title}</h3>
-          <p>${t.tournaments.features.prestige.description}</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="fas fa-fire"></i>
-          </div>
-          <h3>${t.tournaments.features.competition.title}</h3>
-          <p>${t.tournaments.features.competition.description}</p>
+          <span class="stat-number">12</span>
+          <span class="stat-label">${t.games.stats.tournaments}</span>
         </div>
       </div>
     </div>
   `;
-  tournamentPage.appendChild(heroSection);
   
-  // Premium Create tournament section
-  const createSection = document.createElement("div");
-  createSection.className = "tournament-create-section-premium";
-  
-  console.log("Tournament page - isLoggedIn:", isLoggedIn, "currentUser:", currentUser);
+  // Game Modes Section
+  const gameModesSection = document.createElement("div");
+  gameModesSection.className = "game-modes-section";
   
   if (isLoggedIn && currentUser) {
-    createSection.innerHTML = `
-      <div class="create-tournament-card-premium">
-        <div class="card-shimmer"></div>
-        <div class="card-content">
-          <div class="create-icon-premium">
-            <div class="icon-rings">
-              <div class="ring ring-1"></div>
-              <div class="ring ring-2"></div>
-              <div class="ring ring-3"></div>
-            </div>
-            <i class="fas fa-plus"></i>
+    gameModesSection.innerHTML = `
+      <div class="game-modes-container">
+        <!-- 1v1 Battle Mode -->
+        <div class="game-mode-card onevsone">
+          <div class="card-background">
+            <div class="card-glow"></div>
+            <div class="card-particles"></div>
           </div>
           
-          <div class="create-text-content">
-            <h2 class="create-title-premium">${t.tournaments.createCard.title}</h2>
-            <p class="create-description-premium">
-              ${t.tournaments.createCard.description}
-            </p>
+          <div class="mode-header">
+            <div class="mode-icon">
+              <div class="icon-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+              </div>
+              <i class="fas fa-bolt"></i>
+            </div>
+            <div class="mode-title">
+              <h2>${t.games.oneVsOne.title}</h2>
+              <p>${t.games.oneVsOne.subtitle}</p>
+            </div>
+          </div>
+          
+          <div class="mode-content">
+            <p class="mode-description">${t.games.oneVsOne.description}</p>
             
-            <div class="tournament-benefits">
-              <div class="benefit-item">
-                <i class="fas fa-check-circle"></i>
-                <span>${t.tournaments.createCard.benefits.bracket}</span>
+            <div class="mode-features">
+              <div class="feature-item">
+                <i class="fas fa-zap"></i>
+                <span>${t.games.oneVsOne.features.instant}</span>
               </div>
-              <div class="benefit-item">
-                <i class="fas fa-check-circle"></i>
-                <span>${t.tournaments.createCard.benefits.progress}</span>
+              <div class="feature-item">
+                <i class="fas fa-chart-line"></i>
+                <span>${t.games.oneVsOne.features.ranked}</span>
               </div>
-              <div class="benefit-item">
-                <i class="fas fa-check-circle"></i>
-                <span>${t.tournaments.createCard.benefits.ceremony}</span>
+              <div class="feature-item">
+                <i class="fas fa-balance-scale"></i>
+                <span>${t.games.oneVsOne.features.skill}</span>
               </div>
+            </div>
+            
+            <div class="mode-actions">
+              <button class="premium-game-btn" id="play-1v1-btn">
+                <span class="btn-bg"></span>
+                <span class="btn-content">
+                  <i class="fas fa-bolt"></i>
+                  ${t.games.oneVsOne.playNow}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Tournament Mode -->
+        <div class="game-mode-card tournament">
+          <div class="card-background">
+            <div class="card-glow"></div>
+            <div class="card-particles"></div>
+          </div>
+          
+          <div class="mode-header">
+            <div class="mode-icon">
+              <div class="icon-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+                <div class="ring ring-3"></div>
+              </div>
+              <i class="fas fa-crown"></i>
+            </div>
+            <div class="mode-title">
+              <h2>${t.games.tournaments.title}</h2>
+              <p>${t.games.tournaments.subtitle}</p>
             </div>
           </div>
           
-          <button class="create-tournament-btn-premium" id="create-tournament-btn">
-            <span class="btn-bg"></span>
-            <span class="btn-content">
-              <i class="fas fa-crown"></i>
-              <span>${t.tournaments.createCard.button}</span>
-            </span>
-          </button>
+          <div class="mode-content">
+            <p class="mode-description">${t.games.tournaments.description}</p>
+            
+            <div class="mode-features">
+              <div class="feature-item">
+                <i class="fas fa-chess"></i>
+                <span>${t.games.tournaments.features.strategic}</span>
+              </div>
+              <div class="feature-item">
+                <i class="fas fa-medal"></i>
+                <span>${t.games.tournaments.features.prestige}</span>
+              </div>
+              <div class="feature-item">
+                <i class="fas fa-fire"></i>
+                <span>${t.games.tournaments.features.competition}</span>
+              </div>
+            </div>
+            
+            <div class="mode-actions">
+              <button class="premium-game-btn" id="create-tournament-btn">
+                <span class="btn-bg"></span>
+                <span class="btn-content">
+                  <i class="fas fa-crown"></i>
+                  ${t.games.tournaments.createTournament}
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     `;
     
-    const createBtn = createSection.querySelector('#create-tournament-btn') as HTMLButtonElement;
-    createBtn?.addEventListener("click", showCreateTournamentModal);
+    // Add event listeners
+    const play1v1Btn = gameModesSection.querySelector('#play-1v1-btn') as HTMLButtonElement;
+    const createTournamentBtn = gameModesSection.querySelector('#create-tournament-btn') as HTMLButtonElement;
+    
+    play1v1Btn?.addEventListener('click', () => {
+      // Create game page and replace current content
+      const app = document.getElementById("app");
+      if (app) {
+        const gameContainer = document.createElement("div");
+        gameContainer.className = "game-container-wrapper";
+        
+        // Create navigation back function
+        const navigateBack = () => {
+          navigateTo('/tournament'); // Navigate back to games page
+        };
+        
+        // Create and render the 1v1 game
+        create1v1GamePage(gameContainer, navigateBack);
+        
+        // Replace app content with game
+        app.innerHTML = '';
+        app.appendChild(gameContainer);
+        
+        showMessage('🎮 Starting 1v1 match...', 'info');
+      }
+    });
+    
+    createTournamentBtn?.addEventListener('click', showCreateTournamentModal);
+    
   } else {
-    createSection.innerHTML = `
-      <div class="create-tournament-card-premium login-required">
-        <div class="card-shimmer"></div>
-        <div class="card-content">
-          <div class="create-icon-premium locked">
-            <div class="icon-rings">
-              <div class="ring ring-1"></div>
-              <div class="ring ring-2"></div>
-            </div>
+    // Login required section
+    gameModesSection.innerHTML = `
+      <div class="login-required-section">
+        <div class="login-card">
+          <div class="card-glow"></div>
+          <div class="login-icon">
             <i class="fas fa-lock"></i>
           </div>
-          
-          <div class="create-text-content">
-            <h2 class="create-title-premium">${t.tournaments.loginRequired.title}</h2>
-            <p class="create-description-premium">
-              ${t.tournaments.loginRequired.description}
-            </p>
-            
-            <div class="login-benefits">
-              <div class="benefit-item">
-                <i class="fas fa-star"></i>
-                <span>${t.tournaments.loginRequired.benefits.access}</span>
-              </div>
-              <div class="benefit-item">
-                <i class="fas fa-star"></i>
-                <span>${t.tournaments.loginRequired.benefits.status}</span>
-              </div>
-            </div>
-          </div>
-          
-          <button class="create-tournament-btn-premium" onclick="navigateTo('/ACCOUNT')">
-            <span class="btn-bg"></span>
+          <h2>${t.games.loginRequired.title}</h2>
+          <p>${t.games.loginRequired.description}</p>
+          <button class="login-access-btn" onclick="navigateTo('/ACCOUNT')">
+            <span class="btn-glow"></span>
             <span class="btn-content">
               <i class="fas fa-key"></i>
-              <span>${t.tournaments.loginRequired.button}</span>
+              ${t.games.loginRequired.button}
             </span>
           </button>
         </div>
@@ -857,9 +904,10 @@ function renderTournamentPage(): HTMLElement {
     `;
   }
   
-  tournamentPage.appendChild(createSection);
-  tournamentPage.appendChild(createFooter());
-  return tournamentPage;
+  gamesPage.appendChild(heroSection);
+  gamesPage.appendChild(gameModesSection);
+  gamesPage.appendChild(createFooter());
+  return gamesPage;
 }
 
 // Combined Login/Register Page
