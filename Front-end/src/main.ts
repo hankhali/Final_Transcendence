@@ -4,6 +4,7 @@ import "./styles/game-page.css"; // Game page styles
 import { createProfileSettings } from "./components/ProfileSettings";
 import { languageManager } from "./translations";
 import { create1v1GamePage } from "./gamePage.js";
+import { apiService } from "./services/api";
 
 // Global variables for message display
 window.messageTimeout = null;
@@ -973,7 +974,6 @@ function renderAuthPage(isLogin = true): HTMLElement {
   const form = document.createElement("form");
   form.noValidate = true;
 
-  // Email field (only for registration)
   let emailInput: HTMLInputElement | null = null;
   if (!isLogin) {
     const emailLabel = document.createElement("label");
@@ -1082,17 +1082,35 @@ function renderAuthPage(isLogin = true): HTMLElement {
     showLoading();
     try {
       if (isLogin) {
-        // Dummy login - just check if username and password are not empty
+        // Call backend login endpoint
         if (usernameInput.value.trim() && passwordInput.value.trim()) {
-          handleLogin(usernameInput.value);
+          const username = usernameInput.value.trim();
+          const password = passwordInput.value;
+          const res = await apiService.users.login(username, password);
+          if (res.error || !res.data) {
+            showMessage(res.error || 'Login failed', 'error');
+          } else {
+            // Use returned username if provided, otherwise fallback to input
+            handleLogin((res.data as any).username || username);
+            showMessage('Login successful', 'success');
+          }
         } else {
           showMessage("Please enter both username and password", "error");
         }
       } else if (emailInput) {
-        // Dummy registration - just check if all fields are filled
+        // Call backend registration endpoint
         if (usernameInput.value.trim() && passwordInput.value.trim() && emailInput.value.trim()) {
-          handleLogin(usernameInput.value);
-          showMessage("Registration successful!", "success");
+          const username = usernameInput.value.trim();
+          const password = passwordInput.value;
+          const email = emailInput.value.trim();
+          const res = await apiService.users.register(username, password, email);
+          if (res.error || !res.data) {
+            showMessage(res.error || 'Registration failed', 'error');
+          } else {
+            // Registration succeeded; auto-login or redirect as desired
+            handleLogin(username);
+            showMessage('Registration successful!', 'success');
+          }
         } else {
           showMessage("Please fill in all fields", "error");
         }
@@ -1269,7 +1287,8 @@ function createDashboardSection(userData: any): HTMLElement {
   kpiSection.className = "dashboard-kpis";
   
   const kpiTitle = document.createElement("h3");
-  kpiTitle.textContent = t.profile.dashboard.overview;
+  // Short label for KPI section to avoid duplicating the welcome banner text
+  kpiTitle.textContent = "Overview";
   kpiTitle.className = "dashboard-section-title";
   kpiSection.appendChild(kpiTitle);
   
@@ -1315,23 +1334,16 @@ function createDashboardSection(userData: any): HTMLElement {
     const kpiCard = document.createElement("div");
     kpiCard.className = `kpi-card ${kpi.color}`;
     kpiCard.innerHTML = `
-      <div class="kpi-header">
-        <div class="kpi-icon">
-          <i class="fas ${kpi.icon}"></i>
-        </div>
-        <div class="kpi-trend ${kpi.trend}">
-          <i class="fas fa-arrow-${kpi.trend}"></i>
-        </div>
-      </div>
+      <div class="kpi-icon"><i class="fas ${kpi.icon}"></i></div>
       <div class="kpi-content">
         <div class="kpi-value">${kpi.value}</div>
         <div class="kpi-label">${kpi.label}</div>
-        <div class="kpi-subtitle">${kpi.subtitle}</div>
+        <div class="kpi-sub">${kpi.subtitle}</div>
       </div>
+      <div class="kpi-trend ${kpi.trend}"></div>
     `;
     kpiGrid.appendChild(kpiCard);
   });
-  
   kpiSection.appendChild(kpiGrid);
   dashboardContainer.appendChild(kpiSection);
   
@@ -1384,7 +1396,7 @@ function createDashboardSection(userData: any): HTMLElement {
 }
 
 // Weekly Performance Chart
-function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
+export function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const chartContainer = document.createElement("div");
   chartContainer.className = "chart-container weekly-chart";
@@ -1396,7 +1408,15 @@ function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
   const chartWrapper = document.createElement("div");
   chartWrapper.className = "chart-wrapper";
   
-  const maxGames = Math.max(...weeklyStats.map(week => week.gamesPlayed));
+  if (!weeklyStats || weeklyStats.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'chart-empty';
+    empty.textContent = 'No weekly data available';
+    chartContainer.appendChild(empty);
+    return chartContainer;
+  }
+
+  const maxGames = Math.max(...weeklyStats.map(week => week.gamesPlayed || 0));
   
   weeklyStats.forEach(week => {
     const weekBar = document.createElement("div");
@@ -1442,7 +1462,7 @@ function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
 }
 
 // Skill Progression Chart
-function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
+export function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const chartContainer = document.createElement("div");
   chartContainer.className = "chart-container skill-chart";
@@ -1454,9 +1474,17 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
   const chartWrapper = document.createElement("div");
   chartWrapper.className = "line-chart-wrapper";
   
-  const maxRating = Math.max(...skillProgression.map(point => point.rating));
-  const minRating = Math.min(...skillProgression.map(point => point.rating));
-  const ratingRange = maxRating - minRating;
+  if (!skillProgression || skillProgression.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'chart-empty';
+    empty.textContent = 'No skill progression data';
+    chartContainer.appendChild(empty);
+    return chartContainer;
+  }
+
+  const maxRating = Math.max(...skillProgression.map(point => point.rating || 0));
+  const minRating = Math.min(...skillProgression.map(point => point.rating || 0));
+  const ratingRange = maxRating - minRating || 1; // avoid divide by zero
   
   const svgContainer = document.createElement("div");
   svgContainer.className = "svg-chart";
@@ -1507,7 +1535,7 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
 }
 
 // Recent Matches Summary
-function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
+export function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "recent-matches-summary";
@@ -1551,7 +1579,7 @@ function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
 }
 
 // Advanced Statistics Panel
-function createAdvancedStatsPanel(userData: any): HTMLElement {
+export function createAdvancedStatsPanel(userData: any): HTMLElement {
   const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "advanced-stats-panel";
@@ -1586,7 +1614,7 @@ function createAdvancedStatsPanel(userData: any): HTMLElement {
 }
 
 // Achievements Section
-function createAchievementsSection(userData: any): HTMLElement {
+export function createAchievementsSection(userData: any): HTMLElement {
   const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "achievements-section";
@@ -1665,7 +1693,7 @@ function createAchievementsSection(userData: any): HTMLElement {
   return container;
 }
 
-function switchTab(tabId: string) {
+export function switchTab(tabId: string) {
   // Update tab buttons
   document.querySelectorAll('.tab-button').forEach(btn => {
     btn.classList.remove('active');
@@ -1679,7 +1707,7 @@ function switchTab(tabId: string) {
   document.getElementById(tabId)?.classList.add('active');
 }
 
-function createStatsSection(userData: any): HTMLElement {
+export function createStatsSection(userData: any): HTMLElement {
   const t = languageManager.getTranslations();
   const statsContainer = document.createElement("div");
   statsContainer.className = "stats-section";
@@ -1717,7 +1745,7 @@ function createStatsSection(userData: any): HTMLElement {
   return statsContainer;
 }
 
-function createFriendsSection(friends: any[]): HTMLElement {
+export function createFriendsSection(friends: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const friendsContainer = document.createElement("div");
   friendsContainer.className = "friends-section";
@@ -1784,7 +1812,7 @@ function createFriendsSection(friends: any[]): HTMLElement {
   return friendsContainer;
 }
 
-function createMatchHistorySection(matchHistory: any[]): HTMLElement {
+export function createMatchHistorySection(matchHistory: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const historyContainer = document.createElement("div");
   historyContainer.className = "match-history-section";
@@ -1839,7 +1867,7 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
   return historyContainer;
 }
 
-function showAddFriendModal() {
+export function showAddFriendModal() {
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
   modal.innerHTML = `
@@ -1870,7 +1898,7 @@ function showAddFriendModal() {
   document.body.appendChild(modal);
 }
 
-function addFriend() {
+export function addFriend() {
   const usernameInput = document.getElementById("friend-username") as HTMLInputElement;
   const username = usernameInput.value.trim();
   
@@ -1882,11 +1910,11 @@ function addFriend() {
   }
 }
 
-function challengeFriend(username: string) {
+export function challengeFriend(username: string) {
   showMessage(`Challenge sent to ${username}!`, "info");
 }
 
-function removeFriend(friendId: number) {
+export function removeFriend(friendId: number) {
   if (confirm("Are you sure you want to remove this friend?")) {
     console.log(`Removing friend with ID: ${friendId}`);
     showMessage("Friend removed", "info");
@@ -1895,12 +1923,14 @@ function removeFriend(friendId: number) {
 }
 
 // Make functions global so they can be called from HTML onclick handlers
-(window as any).addFriend = addFriend;
-(window as any).challengeFriend = challengeFriend;
-(window as any).removeFriend = removeFriend;
+if (typeof window !== 'undefined') {
+  (window as any).addFriend = addFriend;
+  (window as any).challengeFriend = challengeFriend;
+  (window as any).removeFriend = removeFriend;
+}
 
 // Create Tournament Modal
-function showCreateTournamentModal() {
+export function showCreateTournamentModal() {
   console.log("showCreateTournamentModal called - isLoggedIn:", isLoggedIn, "currentUser:", currentUser);
   
   // Check if user is logged in
@@ -2051,8 +2081,7 @@ function showCreateTournamentModal() {
         id: Date.now(),
         name: tournamentName,
         players: [player1, player2, player3, player4],
-        createdBy: currentUser?.username || 'Unknown',
-        createdDate: new Date().toISOString().split('T')[0],
+  // createdBy and createdDate removed to simplify bracket header
         status: 'active',
         bracket: {
           semifinals: [
@@ -2090,14 +2119,11 @@ function showTournamentBracket(tournament: any) {
   app.innerHTML = `
     <div class="tournament-bracket-page">
       <div class="tournament-header">
-        <div class="back-button" onclick="navigateTo('/tournament')">
+        <div class="back-button">
           <i class="fas fa-arrow-left"></i> Back to Tournaments
         </div>
         <h1 class="tournament-title">${tournament.name}</h1>
-        <div class="tournament-meta">
-          <span>Created by: ${tournament.createdBy}</span>
-          <span>Date: ${tournament.createdDate}</span>
-        </div>
+  <!-- tournament meta removed -->
       </div>
       
       <div class="bracket-container">
@@ -2214,6 +2240,12 @@ function showTournamentBracket(tournament: any) {
     </div>
   `;
   
+  // Add event listener for back button AFTER setting innerHTML
+  const backBtn = app.querySelector('.back-button');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => navigateTo('/tournament'));
+  }
+
   // Store current tournament in global scope for match functions
   (window as any).currentTournament = tournament;
 }
@@ -2236,7 +2268,7 @@ function showTournamentBracket(tournament: any) {
     const gamePage = create1v1GamePage(gameContainer, navigateBack);
     gamePage.setPlayerNames(player1, player2);
     // When the game ends, update the bracket and return
-    gamePage.game?.onGameEndCallback((winner, gameTime) => {
+  gamePage.game?.onGameEndCallback((winner, _gameTime) => {
       // Update tournament data
       const tournament = (window as any).currentTournament;
       tournament.bracket.semifinals[matchIndex].winner = winner.name;
@@ -2300,7 +2332,7 @@ function showTournamentBracket(tournament: any) {
     const gamePage = create1v1GamePage(gameContainer, navigateBack);
     gamePage.setPlayerNames(player1, player2);
     // When the game ends, update the bracket and return
-    gamePage.game?.onGameEndCallback((winner, gameTime) => {
+  gamePage.game?.onGameEndCallback((winner, _gameTime) => {
       // Update tournament data
       const tournament = (window as any).currentTournament;
       tournament.bracket.champion = winner.name;
