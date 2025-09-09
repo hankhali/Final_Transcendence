@@ -2184,11 +2184,13 @@ button:disabled {
   text-align: center;
   margin-bottom: 3rem;
   position: relative;
+  /* reserve space on the right so absolutely-positioned controls don't cover meta */
+  padding-right: 220px;
 }
 
 .back-button {
   position: absolute;
-  left: 0;
+  right: 1rem;
   top: 0;
   display: inline-flex;
   align-items: center;
@@ -4240,13 +4242,17 @@ footer p {
 
 /* Dashboard Section */
 .dashboard-section {
-  padding: 0;
+  /* Give dashboard sections breathing room to avoid header overlap */
+  padding: 2.5rem 1rem 1.5rem; /* extra top padding so header and banner never overlap content */
   background: transparent;
 }
 
 /* Dashboard Header */
 .dashboard-header {
   margin-bottom: 2rem;
+  /* ensure header stacks above following content and participates in flow */
+  position: relative;
+  z-index: 2;
 }
 
 .welcome-banner {
@@ -4255,6 +4261,12 @@ footer p {
   border-radius: var(--border-radius-lg);
   border: 1px solid rgba(0, 230, 255, 0.2);
   text-align: center;
+}
+
+.welcome-banner {
+  /* ensure banner doesn't appear behind or cut into content */
+  position: relative;
+  z-index: 3;
 }
 
 .welcome-banner h2 {
@@ -4278,6 +4290,8 @@ footer p {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  background: transparent; /* ensure no large background shows */
+  padding: 0.25rem 0; /* compact spacing */
 }
 
 .dashboard-section-title::before {
