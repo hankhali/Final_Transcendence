@@ -41,6 +41,8 @@ function getPageTitle(path: string): string {
       return "Register - Neon Pong";
     case "/login":
       return "Login - Neon Pong";
+    case "/profile":
+      return "Profile - Neon Pong";
     default:
       return "Page Not Found - Neon Pong";
   }
@@ -284,139 +286,18 @@ function createNavbar(): HTMLElement {
   navLinks.appendChild(tournamentsLink);
   navLinks.appendChild(ACCOUNTLink);
   
-  // Profile Dropdown
-  const profileContainer = document.createElement('div');
-  profileContainer.className = 'profile-container';
-  
-  const profileButton = document.createElement('button');
-  profileButton.className = 'profile-button';
-  profileButton.setAttribute('aria-label', 'Profile menu');
-  profileButton.setAttribute('aria-expanded', 'false');
-  profileButton.setAttribute('aria-haspopup', 'true');
-  
-  const profileIcon = document.createElement('i');
-  profileIcon.className = 'fas fa-user-circle';
-  profileButton.appendChild(profileIcon);
-  
-  const dropdownMenu = document.createElement('div');
-  dropdownMenu.className = 'profile-dropdown';
-  dropdownMenu.setAttribute('role', 'menu');
-  
-  // Dropdown content will be added here
-  const dropdownContent = document.createElement('div');
-  dropdownContent.className = 'dropdown-content';
-  // Create profile settings container
-  const settingsContainer = document.createElement('div');
-  settingsContainer.className = 'profile-settings-container';
-  
-  // Create profile header
-  const header = document.createElement('div');
-  header.className = 'dropdown-header';
-  header.innerHTML = `
-    <i class="fas fa-user-circle"></i>
-    <span>Guest</span>
-  `;
-  
-  settingsContainer.appendChild(header);
-  
-  // Add divider
-  const divider = document.createElement('div');
-  divider.className = 'dropdown-divider';
-  settingsContainer.appendChild(divider);
-  
-  // Add menu items
-  const menuItems = [
-    { icon: 'fa-cog', text: 'Profile Settings', action: 'settings' },
-    { icon: 'fa-sign-out-alt', text: 'Sign Out', action: 'signout' }
-  ];
-  
-  menuItems.forEach(item => {
-    const menuItem = document.createElement('a');
-    menuItem.href = '#';
-    menuItem.className = 'dropdown-item';
-    menuItem.setAttribute('role', 'menuitem');
-    menuItem.setAttribute('data-action', item.action);
-    menuItem.innerHTML = `
-      <i class="fas ${item.icon}"></i>
-      <span>${item.text}</span>
-    `;
-    settingsContainer.appendChild(menuItem);
-  });
-  
-  dropdownContent.appendChild(settingsContainer);
-  
-  // Create profile settings form (initially hidden)
-  const profileFormContainer = document.createElement('div');
-  profileFormContainer.className = 'profile-form-container';
-  profileFormContainer.style.display = 'none';
-  
-  // Add back button
-  const backButton = document.createElement('button');
-  backButton.className = 'dropdown-back';
-  backButton.innerHTML = `
-    <i class="fas fa-arrow-left"></i>
-    <span>Back to Menu</span>
-  `;
-  backButton.addEventListener('click', () => {
-    settingsContainer.style.display = 'block';
-    profileFormContainer.style.display = 'none';
-  });
-  
-  profileFormContainer.appendChild(backButton);
-  
-  // Add profile settings form
-  const profileForm = createProfileSettings({
-    username: 'username123', // Replace with actual user data
-    displayName: 'Player',   // Replace with actual user data
-    skillLevel: 'intermediate', // Default skill level
-    bio: 'Ping pong enthusiast!',
-    avatar: ''
-  });
-  
-  profileFormContainer.appendChild(profileForm);
-  dropdownContent.appendChild(profileFormContainer);
-  
-  // Handle menu item clicks
-  dropdownContent.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const menuItem = target.closest('.dropdown-item') as HTMLElement;
-    
-    if (!menuItem) return;
-    
+  // Profile Link
+  const profileLink = document.createElement("a");
+  profileLink.href = "/profile";
+  profileLink.className = "navbar-link";
+  profileLink.textContent = "Profile";
+  profileLink.setAttribute("role", "menuitem");
+  profileLink.addEventListener("click", (e) => {
     e.preventDefault();
-    const action = menuItem.getAttribute('data-action');
-    
-    if (action === 'settings') {
-      settingsContainer.style.display = 'none';
-      profileFormContainer.style.display = 'block';
-    } else if (action === 'signout') {
-      // Handle sign out
-      console.log('User signed out');
-      // TODO: Implement sign out logic
-    }
+    navigateTo("/profile");
   });
   
-  dropdownMenu.appendChild(dropdownContent);
-  profileContainer.appendChild(profileButton);
-  profileContainer.appendChild(dropdownMenu);
-  
-  // Toggle dropdown on button click
-  profileButton.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isExpanded = profileButton.getAttribute('aria-expanded') === 'true';
-    profileButton.setAttribute('aria-expanded', (!isExpanded).toString());
-    dropdownMenu.classList.toggle('show', !isExpanded);
-  });
-  
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!profileContainer.contains(e.target as Node)) {
-      profileButton.setAttribute('aria-expanded', 'false');
-      dropdownMenu.classList.remove('show');
-    }
-  });
-  
-  navLinks.appendChild(profileContainer);
+  navLinks.appendChild(profileLink);
   
   // Accessibility Controls
   const accessibilityControls = document.createElement('div');
@@ -579,9 +460,9 @@ function renderHomePage(): HTMLElement {
   const teamGrid = document.createElement("div");
   teamGrid.className = "team-grid";
   const teamMembers = [
-    { name: "Hanieh", avatar: "./pic1.png" },
-    { name: "Mira", avatar: "./pic2.png" },
-    { name: "Fatima Fidha", avatar: "./pic3.png" },
+    { name: "Hanieh", avatar: "/pic1.png" },
+    { name: "Mira", avatar: "/pic2.png" },
+    { name: "Fatima Fidha", avatar: "/pic3.png" },
   ];
   teamMembers.forEach((member) => {
     const memberCard = document.createElement("div");
@@ -902,6 +783,787 @@ function renderAuthPage(isLogin = true): HTMLElement {
   return authPage;
 }
 
+// Profile Page
+function renderProfilePage(): HTMLElement {
+  const profilePage = document.createElement("div");
+  profilePage.className = "page content-section";
+  profilePage.id = "profile";
+  profilePage.setAttribute("role", "main");
+  
+  // Add a page title
+  const pageTitle = document.createElement("h1");
+  pageTitle.className = "section-title";
+  pageTitle.textContent = "User Profile";
+  profilePage.appendChild(pageTitle);
+  
+  // Create tabs for different sections
+  const tabContainer = document.createElement("div");
+  tabContainer.className = "profile-tabs";
+  
+  const tabButtons = document.createElement("div");
+  tabButtons.className = "tab-buttons";
+  
+  const tabs = [
+    { id: "dashboard", label: "Dashboard", icon: "fa-tachometer-alt" },
+    { id: "profile-info", label: "Profile Settings", icon: "fa-user-edit" },
+    { id: "stats", label: "Statistics", icon: "fa-chart-bar" },
+    { id: "friends", label: "Friends", icon: "fa-users" },
+    { id: "match-history", label: "Match History", icon: "fa-history" }
+  ];
+  
+  tabs.forEach((tab, index) => {
+    const tabButton = document.createElement("button");
+    tabButton.className = `tab-button ${index === 0 ? 'active' : ''}`;
+    tabButton.dataset.tab = tab.id;
+    tabButton.innerHTML = `<i class="fas ${tab.icon}"></i> ${tab.label}`;
+    tabButton.addEventListener("click", () => switchTab(tab.id));
+    tabButtons.appendChild(tabButton);
+  });
+  
+  tabContainer.appendChild(tabButtons);
+  
+  // Create tab content area
+  const tabContent = document.createElement("div");
+  tabContent.className = "tab-content";
+  
+  // Mock user data - in real app this would come from API
+  const mockUserData = {
+    username: 'player123',
+    displayName: 'Pro Player',
+    skillLevel: 'intermediate' as const,
+    bio: 'Passionate ping pong player with 5 years of experience!',
+    avatar: '/pic1.png',
+    wins: 45,
+    losses: 23,
+    gamesPlayed: 68,
+    winRate: 66.2,
+    currentStreak: 5,
+    longestStreak: 12,
+    averageMatchDuration: 22,
+    preferredGameMode: '1v1',
+    totalPlayTime: 1456, // minutes
+    ranking: 42,
+    totalPlayers: 1337,
+    averageScore: 18.5,
+    perfectGames: 3,
+    comebacks: 8,
+    friends: [
+      { id: 1, username: 'friend1', displayName: 'Alice', avatar: '/pic2.png', isOnline: true },
+      { id: 2, username: 'friend2', displayName: 'Bob', avatar: '/pic3.png', isOnline: false, lastSeen: new Date('2024-01-15') },
+      { id: 3, username: 'friend3', displayName: 'Carol', avatar: '/pic1.png', isOnline: true }
+    ],
+    matchHistory: [
+      { id: 1, opponent: 'Alice', opponentAvatar: '/pic2.png', result: 'win' as const, score: '21-18', date: new Date('2024-01-20'), gameType: '1v1' as const, duration: 25 },
+      { id: 2, opponent: 'Bob', opponentAvatar: '/pic3.png', result: 'loss' as const, score: '19-21', date: new Date('2024-01-19'), gameType: '1v1' as const, duration: 30 },
+      { id: 3, opponent: 'Carol', opponentAvatar: '/pic1.png', result: 'win' as const, score: '21-15', date: new Date('2024-01-18'), gameType: 'tournament' as const, duration: 20 },
+      { id: 4, opponent: 'David', opponentAvatar: '/pic2.png', result: 'win' as const, score: '21-12', date: new Date('2024-01-17'), gameType: '1v1' as const, duration: 18 },
+      { id: 5, opponent: 'Eve', opponentAvatar: '/pic3.png', result: 'win' as const, score: '21-16', date: new Date('2024-01-16'), gameType: 'tournament' as const, duration: 28 },
+      { id: 6, opponent: 'Frank', opponentAvatar: '/pic1.png', result: 'win' as const, score: '21-19', date: new Date('2024-01-15'), gameType: '1v1' as const, duration: 35 },
+      { id: 7, opponent: 'Grace', opponentAvatar: '/pic2.png', result: 'loss' as const, score: '18-21', date: new Date('2024-01-14'), gameType: 'tournament' as const, duration: 22 }
+    ],
+    weeklyStats: [
+      { week: 'Week 1', wins: 8, losses: 2, gamesPlayed: 10 },
+      { week: 'Week 2', wins: 12, losses: 3, gamesPlayed: 15 },
+      { week: 'Week 3', wins: 6, losses: 4, gamesPlayed: 10 },
+      { week: 'Week 4', wins: 10, losses: 5, gamesPlayed: 15 },
+      { week: 'Week 5', wins: 9, losses: 9, gamesPlayed: 18 }
+    ],
+    skillProgression: [
+      { month: 'Sep', rating: 1200 },
+      { month: 'Oct', rating: 1350 },
+      { month: 'Nov', rating: 1420 },
+      { month: 'Dec', rating: 1465 },
+      { month: 'Jan', rating: 1520 }
+    ]
+  };
+  
+  // Dashboard Tab (new)
+  const dashboardTab = document.createElement("div");
+  dashboardTab.className = "tab-pane active";
+  dashboardTab.id = "dashboard";
+  dashboardTab.appendChild(createDashboardSection(mockUserData));
+  
+  // Profile Settings Tab
+  const profileInfoTab = document.createElement("div");
+  profileInfoTab.className = "tab-pane";
+  profileInfoTab.id = "profile-info";
+  
+  const profileSettings = createProfileSettings(mockUserData);
+  profileInfoTab.appendChild(profileSettings);
+  
+  // Statistics Tab
+  const statsTab = document.createElement("div");
+  statsTab.className = "tab-pane";
+  statsTab.id = "stats";
+  statsTab.appendChild(createStatsSection(mockUserData));
+  
+  // Friends Tab
+  const friendsTab = document.createElement("div");
+  friendsTab.className = "tab-pane";
+  friendsTab.id = "friends";
+  friendsTab.appendChild(createFriendsSection(mockUserData.friends));
+  
+  // Match History Tab
+  const historyTab = document.createElement("div");
+  historyTab.className = "tab-pane";
+  historyTab.id = "match-history";
+  historyTab.appendChild(createMatchHistorySection(mockUserData.matchHistory));
+  
+  tabContent.appendChild(dashboardTab);
+  tabContent.appendChild(profileInfoTab);
+  tabContent.appendChild(statsTab);
+  tabContent.appendChild(friendsTab);
+  tabContent.appendChild(historyTab);
+  
+  tabContainer.appendChild(tabContent);
+  profilePage.appendChild(tabContainer);
+  
+  return profilePage;
+}
+
+// Comprehensive Dashboard Section
+function createDashboardSection(userData: any): HTMLElement {
+  const dashboardContainer = document.createElement("div");
+  dashboardContainer.className = "dashboard-section";
+  
+  // Dashboard Header with Welcome Message
+  const dashboardHeader = document.createElement("div");
+  dashboardHeader.className = "dashboard-header";
+  dashboardHeader.innerHTML = `
+    <div class="welcome-banner">
+      <h2>Welcome back, ${userData.displayName}!</h2>
+      <p>Here's your gaming overview and performance insights</p>
+    </div>
+  `;
+  dashboardContainer.appendChild(dashboardHeader);
+  
+  // Key Performance Indicators (KPIs)
+  const kpiSection = document.createElement("div");
+  kpiSection.className = "dashboard-kpis";
+  
+  const kpiTitle = document.createElement("h3");
+  kpiTitle.textContent = "Performance Overview";
+  kpiTitle.className = "dashboard-section-title";
+  kpiSection.appendChild(kpiTitle);
+  
+  const kpiGrid = document.createElement("div");
+  kpiGrid.className = "kpi-grid";
+  
+  const kpis = [
+    { 
+      label: "Current Rank", 
+      value: `#${userData.ranking}`, 
+      subtitle: `of ${userData.totalPlayers} players`,
+      icon: "fa-crown", 
+      color: "gold",
+      trend: "up"
+    },
+    { 
+      label: "Win Rate", 
+      value: `${userData.winRate}%`, 
+      subtitle: `${userData.wins}W / ${userData.losses}L`,
+      icon: "fa-trophy", 
+      color: "success",
+      trend: "up"
+    },
+    { 
+      label: "Current Streak", 
+      value: userData.currentStreak, 
+      subtitle: `Best: ${userData.longestStreak}`,
+      icon: "fa-fire", 
+      color: "warning",
+      trend: "up"
+    },
+    { 
+      label: "Total Play Time", 
+      value: `${Math.floor(userData.totalPlayTime / 60)}h ${userData.totalPlayTime % 60}m`, 
+      subtitle: `Avg: ${userData.averageMatchDuration}min/game`,
+      icon: "fa-clock", 
+      color: "info",
+      trend: "up"
+    }
+  ];
+  
+  kpis.forEach(kpi => {
+    const kpiCard = document.createElement("div");
+    kpiCard.className = `kpi-card ${kpi.color}`;
+    kpiCard.innerHTML = `
+      <div class="kpi-header">
+        <div class="kpi-icon">
+          <i class="fas ${kpi.icon}"></i>
+        </div>
+        <div class="kpi-trend ${kpi.trend}">
+          <i class="fas fa-arrow-${kpi.trend}"></i>
+        </div>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-value">${kpi.value}</div>
+        <div class="kpi-label">${kpi.label}</div>
+        <div class="kpi-subtitle">${kpi.subtitle}</div>
+      </div>
+    `;
+    kpiGrid.appendChild(kpiCard);
+  });
+  
+  kpiSection.appendChild(kpiGrid);
+  dashboardContainer.appendChild(kpiSection);
+  
+  // Charts and Analytics Section
+  const analyticsSection = document.createElement("div");
+  analyticsSection.className = "dashboard-analytics";
+  
+  const analyticsTitle = document.createElement("h3");
+  analyticsTitle.textContent = "Performance Analytics";
+  analyticsTitle.className = "dashboard-section-title";
+  analyticsSection.appendChild(analyticsTitle);
+  
+  const chartsContainer = document.createElement("div");
+  chartsContainer.className = "charts-container";
+  
+  // Weekly Performance Chart
+  const weeklyChart = createWeeklyPerformanceChart(userData.weeklyStats);
+  chartsContainer.appendChild(weeklyChart);
+  
+  // Skill Progression Chart
+  const skillChart = createSkillProgressionChart(userData.skillProgression);
+  chartsContainer.appendChild(skillChart);
+  
+  analyticsSection.appendChild(chartsContainer);
+  dashboardContainer.appendChild(analyticsSection);
+  
+  // Recent Activity and Quick Stats
+  const activitySection = document.createElement("div");
+  activitySection.className = "dashboard-activity";
+  
+  const activityRow = document.createElement("div");
+  activityRow.className = "activity-row";
+  
+  // Recent Matches Summary
+  const recentMatches = createRecentMatchesSummary(userData.matchHistory.slice(0, 5));
+  activityRow.appendChild(recentMatches);
+  
+  // Advanced Statistics
+  const advancedStats = createAdvancedStatsPanel(userData);
+  activityRow.appendChild(advancedStats);
+  
+  activitySection.appendChild(activityRow);
+  dashboardContainer.appendChild(activitySection);
+  
+  // Achievement and Goals Section
+  const achievementsSection = createAchievementsSection(userData);
+  dashboardContainer.appendChild(achievementsSection);
+  
+  return dashboardContainer;
+}
+
+// Weekly Performance Chart
+function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
+  const chartContainer = document.createElement("div");
+  chartContainer.className = "chart-container weekly-chart";
+  
+  const chartTitle = document.createElement("h4");
+  chartTitle.textContent = "Weekly Performance";
+  chartContainer.appendChild(chartTitle);
+  
+  const chartWrapper = document.createElement("div");
+  chartWrapper.className = "chart-wrapper";
+  
+  const maxGames = Math.max(...weeklyStats.map(week => week.gamesPlayed));
+  
+  weeklyStats.forEach(week => {
+    const weekBar = document.createElement("div");
+    weekBar.className = "week-bar";
+    
+    const winHeight = (week.wins / maxGames) * 100;
+    const lossHeight = (week.losses / maxGames) * 100;
+    
+    weekBar.innerHTML = `
+      <div class="bar-stack">
+        <div class="bar-segment wins" style="height: ${winHeight}%" 
+             title="${week.wins} wins"></div>
+        <div class="bar-segment losses" style="height: ${lossHeight}%" 
+             title="${week.losses} losses"></div>
+      </div>
+      <div class="bar-label">${week.week}</div>
+      <div class="bar-stats">
+        <span class="win-count">${week.wins}W</span>
+        <span class="loss-count">${week.losses}L</span>
+      </div>
+    `;
+    
+    chartWrapper.appendChild(weekBar);
+  });
+  
+  chartContainer.appendChild(chartWrapper);
+  
+  const chartLegend = document.createElement("div");
+  chartLegend.className = "chart-legend";
+  chartLegend.innerHTML = `
+    <div class="legend-item">
+      <div class="legend-color wins"></div>
+      <span>Wins</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color losses"></div>
+      <span>Losses</span>
+    </div>
+  `;
+  chartContainer.appendChild(chartLegend);
+  
+  return chartContainer;
+}
+
+// Skill Progression Chart
+function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
+  const chartContainer = document.createElement("div");
+  chartContainer.className = "chart-container skill-chart";
+  
+  const chartTitle = document.createElement("h4");
+  chartTitle.textContent = "Skill Rating Progression";
+  chartContainer.appendChild(chartTitle);
+  
+  const chartWrapper = document.createElement("div");
+  chartWrapper.className = "line-chart-wrapper";
+  
+  const maxRating = Math.max(...skillProgression.map(point => point.rating));
+  const minRating = Math.min(...skillProgression.map(point => point.rating));
+  const ratingRange = maxRating - minRating;
+  
+  const svgContainer = document.createElement("div");
+  svgContainer.className = "svg-chart";
+  
+  let pathData = "";
+  const points: string[] = [];
+  
+  skillProgression.forEach((point, index) => {
+    const x = (index / (skillProgression.length - 1)) * 100;
+    const y = ((maxRating - point.rating) / ratingRange) * 100;
+    
+    if (index === 0) {
+      pathData += `M ${x} ${y}`;
+    } else {
+      pathData += ` L ${x} ${y}`;
+    }
+    
+    points.push(`
+      <div class="chart-point" style="left: ${x}%; top: ${y}%"
+           title="${point.month}: ${point.rating}">
+        <div class="point-value">${point.rating}</div>
+      </div>
+    `);
+  });
+  
+  svgContainer.innerHTML = `
+    <svg viewBox="0 0 100 100" class="line-chart">
+      <path d="${pathData}" class="chart-line" />
+      <path d="${pathData}" class="chart-line-glow" />
+    </svg>
+    ${points.join('')}
+  `;
+  
+  chartWrapper.appendChild(svgContainer);
+  
+  const xAxis = document.createElement("div");
+  xAxis.className = "chart-x-axis";
+  skillProgression.forEach(point => {
+    const label = document.createElement("span");
+    label.textContent = point.month;
+    xAxis.appendChild(label);
+  });
+  chartWrapper.appendChild(xAxis);
+  
+  chartContainer.appendChild(chartWrapper);
+  
+  return chartContainer;
+}
+
+// Recent Matches Summary
+function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
+  const container = document.createElement("div");
+  container.className = "recent-matches-summary";
+  
+  const title = document.createElement("h4");
+  title.textContent = "Recent Matches";
+  container.appendChild(title);
+  
+  const matchesList = document.createElement("div");
+  matchesList.className = "recent-matches-list";
+  
+  recentMatches.forEach(match => {
+    const matchItem = document.createElement("div");
+    matchItem.className = `recent-match-item ${match.result}`;
+    
+    const resultIcon = match.result === 'win' ? 'fa-check-circle' : 'fa-times-circle';
+    
+    matchItem.innerHTML = `
+      <div class="match-result-icon">
+        <i class="fas ${resultIcon}"></i>
+      </div>
+      <div class="match-info">
+        <div class="opponent-name">${match.opponent}</div>
+        <div class="match-details">${match.score} • ${match.duration}min</div>
+      </div>
+      <div class="match-date">${match.date.toLocaleDateString()}</div>
+    `;
+    
+    matchesList.appendChild(matchItem);
+  });
+  
+  container.appendChild(matchesList);
+  
+  const viewAllBtn = document.createElement("button");
+  viewAllBtn.className = "secondary-button";
+  viewAllBtn.textContent = "View All Matches";
+  viewAllBtn.addEventListener("click", () => switchTab("match-history"));
+  container.appendChild(viewAllBtn);
+  
+  return container;
+}
+
+// Advanced Statistics Panel
+function createAdvancedStatsPanel(userData: any): HTMLElement {
+  const container = document.createElement("div");
+  container.className = "advanced-stats-panel";
+  
+  const title = document.createElement("h4");
+  title.textContent = "Advanced Statistics";
+  container.appendChild(title);
+  
+  const statsGrid = document.createElement("div");
+  statsGrid.className = "advanced-stats-grid";
+  
+  const advancedStats = [
+    { label: "Average Score", value: userData.averageScore, unit: "pts" },
+    { label: "Perfect Games", value: userData.perfectGames, unit: "" },
+    { label: "Comebacks", value: userData.comebacks, unit: "" },
+    { label: "Preferred Mode", value: userData.preferredGameMode, unit: "" }
+  ];
+  
+  advancedStats.forEach(stat => {
+    const statItem = document.createElement("div");
+    statItem.className = "advanced-stat-item";
+    statItem.innerHTML = `
+      <div class="stat-value">${stat.value}${stat.unit}</div>
+      <div class="stat-label">${stat.label}</div>
+    `;
+    statsGrid.appendChild(statItem);
+  });
+  
+  container.appendChild(statsGrid);
+  
+  return container;
+}
+
+// Achievements Section
+function createAchievementsSection(userData: any): HTMLElement {
+  const container = document.createElement("div");
+  container.className = "achievements-section";
+  
+  const title = document.createElement("h3");
+  title.textContent = "Achievements & Goals";
+  title.className = "dashboard-section-title";
+  container.appendChild(title);
+  
+  const achievementsGrid = document.createElement("div");
+  achievementsGrid.className = "achievements-grid";
+  
+  const achievements = [
+    {
+      title: "Win Streak Master",
+      description: "Win 10 games in a row",
+      progress: userData.currentStreak,
+      target: 10,
+      icon: "fa-fire",
+      unlocked: userData.longestStreak >= 10
+    },
+    {
+      title: "Century Club",
+      description: "Play 100 total games",
+      progress: userData.gamesPlayed,
+      target: 100,
+      icon: "fa-medal",
+      unlocked: userData.gamesPlayed >= 100
+    },
+    {
+      title: "Perfect Player",
+      description: "Win a game 21-0",
+      progress: userData.perfectGames,
+      target: 1,
+      icon: "fa-star",
+      unlocked: userData.perfectGames >= 1
+    },
+    {
+      title: "Social Butterfly",
+      description: "Add 10 friends",
+      progress: userData.friends.length,
+      target: 10,
+      icon: "fa-users",
+      unlocked: userData.friends.length >= 10
+    }
+  ];
+  
+  achievements.forEach(achievement => {
+    const achievementCard = document.createElement("div");
+    achievementCard.className = `achievement-card ${achievement.unlocked ? 'unlocked' : 'locked'}`;
+    
+    const progressPercent = Math.min((achievement.progress / achievement.target) * 100, 100);
+    
+    achievementCard.innerHTML = `
+      <div class="achievement-icon">
+        <i class="fas ${achievement.icon}"></i>
+        ${achievement.unlocked ? '<div class="unlock-badge"><i class="fas fa-check"></i></div>' : ''}
+      </div>
+      <div class="achievement-content">
+        <div class="achievement-title">${achievement.title}</div>
+        <div class="achievement-description">${achievement.description}</div>
+        <div class="achievement-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progressPercent}%"></div>
+          </div>
+          <div class="progress-text">${achievement.progress}/${achievement.target}</div>
+        </div>
+      </div>
+    `;
+    
+    achievementsGrid.appendChild(achievementCard);
+  });
+  
+  container.appendChild(achievementsGrid);
+  
+  return container;
+}
+
+function switchTab(tabId: string) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
+  
+  // Update tab content
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    pane.classList.remove('active');
+  });
+  document.getElementById(tabId)?.classList.add('active');
+}
+
+function createStatsSection(userData: any): HTMLElement {
+  const statsContainer = document.createElement("div");
+  statsContainer.className = "stats-section";
+  
+  const statsTitle = document.createElement("h2");
+  statsTitle.textContent = "Player Statistics";
+  statsContainer.appendChild(statsTitle);
+  
+  const statsGrid = document.createElement("div");
+  statsGrid.className = "stats-grid";
+  
+  const stats = [
+    { label: "Games Played", value: userData.gamesPlayed, icon: "fa-gamepad" },
+    { label: "Wins", value: userData.wins, icon: "fa-trophy", color: "success" },
+    { label: "Losses", value: userData.losses, icon: "fa-times-circle", color: "danger" },
+    { label: "Win Rate", value: `${userData.winRate}%`, icon: "fa-percentage", color: "info" }
+  ];
+  
+  stats.forEach(stat => {
+    const statCard = document.createElement("div");
+    statCard.className = `stat-card ${stat.color || ''}`;
+    statCard.innerHTML = `
+      <div class="stat-icon">
+        <i class="fas ${stat.icon}"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">${stat.value}</div>
+        <div class="stat-label">${stat.label}</div>
+      </div>
+    `;
+    statsGrid.appendChild(statCard);
+  });
+  
+  statsContainer.appendChild(statsGrid);
+  return statsContainer;
+}
+
+function createFriendsSection(friends: any[]): HTMLElement {
+  const friendsContainer = document.createElement("div");
+  friendsContainer.className = "friends-section";
+  
+  const friendsHeader = document.createElement("div");
+  friendsHeader.className = "section-header";
+  
+  const friendsTitle = document.createElement("h2");
+  friendsTitle.textContent = "Friends List";
+  
+  const addFriendBtn = document.createElement("button");
+  addFriendBtn.className = "primary-button";
+  addFriendBtn.innerHTML = '<i class="fas fa-user-plus"></i> Add Friend';
+  addFriendBtn.addEventListener("click", showAddFriendModal);
+  
+  friendsHeader.appendChild(friendsTitle);
+  friendsHeader.appendChild(addFriendBtn);
+  friendsContainer.appendChild(friendsHeader);
+  
+  const friendsList = document.createElement("div");
+  friendsList.className = "friends-list";
+  
+  if (friends.length === 0) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-state";
+    emptyState.innerHTML = `
+      <i class="fas fa-user-friends"></i>
+      <p>No friends yet. Start by adding some friends!</p>
+    `;
+    friendsList.appendChild(emptyState);
+  } else {
+    friends.forEach(friend => {
+      const friendCard = document.createElement("div");
+      friendCard.className = "friend-card";
+      
+      const onlineStatus = friend.isOnline ? 'online' : 'offline';
+      const lastSeenText = friend.isOnline ? 'Online' : 
+        friend.lastSeen ? `Last seen ${friend.lastSeen.toLocaleDateString()}` : 'Offline';
+      
+      friendCard.innerHTML = `
+        <div class="friend-avatar">
+          <img src="${friend.avatar}" alt="${friend.displayName}'s avatar" />
+          <div class="status-indicator ${onlineStatus}"></div>
+        </div>
+        <div class="friend-info">
+          <div class="friend-name">${friend.displayName}</div>
+          <div class="friend-username">@${friend.username}</div>
+          <div class="friend-status ${onlineStatus}">${lastSeenText}</div>
+        </div>
+        <div class="friend-actions">
+          <button class="secondary-button" onclick="challengeFriend('${friend.username}')">
+            <i class="fas fa-gamepad"></i> Challenge
+          </button>
+          <button class="danger-button" onclick="removeFriend(${friend.id})">
+            <i class="fas fa-user-minus"></i>
+          </button>
+        </div>
+      `;
+      friendsList.appendChild(friendCard);
+    });
+  }
+  
+  friendsContainer.appendChild(friendsList);
+  return friendsContainer;
+}
+
+function createMatchHistorySection(matchHistory: any[]): HTMLElement {
+  const historyContainer = document.createElement("div");
+  historyContainer.className = "match-history-section";
+  
+  const historyTitle = document.createElement("h2");
+  historyTitle.textContent = "Match History";
+  historyContainer.appendChild(historyTitle);
+  
+  if (matchHistory.length === 0) {
+    const emptyState = document.createElement("div");
+    emptyState.className = "empty-state";
+    emptyState.innerHTML = `
+      <i class="fas fa-history"></i>
+      <p>No matches played yet. Start playing to build your history!</p>
+    `;
+    historyContainer.appendChild(emptyState);
+    return historyContainer;
+  }
+  
+  const historyList = document.createElement("div");
+  historyList.className = "match-history-list";
+  
+  matchHistory.forEach(match => {
+    const matchCard = document.createElement("div");
+    matchCard.className = `match-card ${match.result}`;
+    
+    const resultIcon = match.result === 'win' ? 'fa-trophy' : 'fa-times-circle';
+    const resultText = match.result === 'win' ? 'Victory' : 'Defeat';
+    
+    matchCard.innerHTML = `
+      <div class="match-result">
+        <i class="fas ${resultIcon}"></i>
+        <span class="result-text">${resultText}</span>
+      </div>
+      <div class="match-opponent">
+        <img src="${match.opponentAvatar}" alt="${match.opponent}'s avatar" class="opponent-avatar" />
+        <div class="opponent-info">
+          <div class="opponent-name">${match.opponent}</div>
+          <div class="game-type">${match.gameType === '1v1' ? '1v1 Match' : 'Tournament'}</div>
+        </div>
+      </div>
+      <div class="match-details">
+        <div class="match-score">${match.score}</div>
+        <div class="match-date">${match.date.toLocaleDateString()}</div>
+        <div class="match-duration">${match.duration} min</div>
+      </div>
+    `;
+    historyList.appendChild(matchCard);
+  });
+  
+  historyContainer.appendChild(historyList);
+  return historyContainer;
+}
+
+function showAddFriendModal() {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add Friend</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label for="friend-username">Username or Display Name</label>
+          <input type="text" id="friend-username" placeholder="Enter username..." />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary-button modal-close">Cancel</button>
+        <button class="primary-button" onclick="addFriend()">Add Friend</button>
+      </div>
+    </div>
+  `;
+  
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal || (e.target as HTMLElement).classList.contains('modal-close')) {
+      modal.remove();
+    }
+  });
+  
+  document.body.appendChild(modal);
+}
+
+function addFriend() {
+  const usernameInput = document.getElementById("friend-username") as HTMLInputElement;
+  const username = usernameInput.value.trim();
+  
+  if (username) {
+    showMessage(`Friend request sent to ${username}!`, "success");
+    document.querySelector(".modal-overlay")?.remove();
+  } else {
+    showMessage("Please enter a username", "error");
+  }
+}
+
+function challengeFriend(username: string) {
+  showMessage(`Challenge sent to ${username}!`, "info");
+}
+
+function removeFriend(friendId: number) {
+  if (confirm("Are you sure you want to remove this friend?")) {
+    console.log(`Removing friend with ID: ${friendId}`);
+    showMessage("Friend removed", "info");
+    // In real app, would call API and refresh the friends list
+  }
+}
+
+// Make functions global so they can be called from HTML onclick handlers
+(window as any).addFriend = addFriend;
+(window as any).challengeFriend = challengeFriend;
+(window as any).removeFriend = removeFriend;
+
 // Create Tournament Modal
 function showCreateTournamentModal() {
   const modal = document.createElement("div");
@@ -1032,7 +1694,7 @@ function setupRoutes(app: HTMLElement): void {
     "/login": () => renderAuthPage(true),
     "/register": () => renderAuthPage(false),
     "/tournament": renderTournamentPage,
-    "/profile": () => createProfileSettings(),
+    "/profile": renderProfilePage,
     "/ACCOUNT": () => renderAuthPage(true)
     // Add other routes as they are implemented
   };
@@ -1135,4 +1797,7 @@ window.addEventListener("popstate", () => {
     setupRoutes(app);
   }
 });
+
+// Global functions for dashboard and profile features
+(window as any).switchTab = switchTab;
 

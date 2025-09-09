@@ -12,6 +12,12 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     skillLevel: 'beginner',
     bio: '',
     avatar: '',
+    wins: 0,
+    losses: 0,
+    gamesPlayed: 0,
+    winRate: 0,
+    friends: [],
+    matchHistory: [],
     ...profile
   };
 
@@ -242,6 +248,36 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   });
   
   form.appendChild(gameHistoryButton);
+  
+  // Danger Zone - Delete Profile Section
+  const deleteSection = document.createElement('div');
+  deleteSection.className = 'delete-profile-section';
+  deleteSection.innerHTML = `
+    <div class="danger-zone">
+      <h3 class="danger-zone-title">
+        <i class="fas fa-exclamation-triangle"></i>
+        Danger Zone
+      </h3>
+      <p class="danger-zone-description">
+        Once you delete your profile, there is no going back. This action cannot be undone.
+      </p>
+      <div class="settings-button-container">
+        <button type="button" class="settings-button delete-profile-button">
+          <span class="button-icon"><i class="fas fa-trash-alt"></i></span>
+          <span class="button-text">DELETE PROFILE</span>
+          <span class="button-arrow"><i class="fas fa-exclamation-triangle"></i></span>
+        </button>
+      </div>
+    </div>
+  `;
+  
+  // Add delete profile functionality
+  const deleteButton = deleteSection.querySelector('.delete-profile-button');
+  deleteButton?.addEventListener('click', () => {
+    showDeleteProfileModal();
+  });
+  
+  form.appendChild(deleteSection);
   form.appendChild(submitButton);
 
   // Form submission
@@ -337,5 +373,111 @@ function createFormField({
   return group;
 }
 
+// Function to show delete profile confirmation modal
+function showDeleteProfileModal() {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay delete-profile-modal";
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header danger-header">
+        <div class="modal-title">
+          <i class="fas fa-exclamation-triangle"></i>
+          Delete Profile
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-confirmation-content">
+          <div class="warning-icon">
+            <i class="fas fa-trash-alt"></i>
+          </div>
+          <h3>Are you absolutely sure?</h3>
+          <p class="warning-text">
+            This action <strong>cannot be undone</strong>. This will permanently delete your profile, 
+            including all your game history, statistics, friends, and achievements.
+          </p>
+          <div class="confirmation-input-group">
+            <label for="delete-confirmation">
+              Type <strong>DELETE</strong> to confirm:
+            </label>
+            <input 
+              type="text" 
+              id="delete-confirmation" 
+              placeholder="Type DELETE here"
+              class="confirmation-input"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer danger-footer">
+        <button class="secondary-button modal-close">Cancel</button>
+        <button class="danger-button" id="confirm-delete-btn" disabled>
+          <i class="fas fa-trash-alt"></i>
+          Delete Profile Forever
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Add confirmation input validation
+  const confirmInput = modal.querySelector('#delete-confirmation') as HTMLInputElement;
+  const confirmButton = modal.querySelector('#confirm-delete-btn') as HTMLButtonElement;
+  
+  confirmInput.addEventListener('input', () => {
+    if (confirmInput.value.trim().toUpperCase() === 'DELETE') {
+      confirmButton.disabled = false;
+      confirmButton.classList.add('enabled');
+    } else {
+      confirmButton.disabled = true;
+      confirmButton.classList.remove('enabled');
+    }
+  });
+
+  // Handle delete confirmation
+  confirmButton.addEventListener('click', async () => {
+    if (confirmInput.value.trim().toUpperCase() === 'DELETE') {
+      try {
+        // Show loading state
+        confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        confirmButton.disabled = true;
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // TODO: Add actual API call to delete profile
+        console.log('Profile deletion confirmed');
+        
+        modal.remove();
+        showMessage('Profile deleted successfully. Redirecting...', 'success');
+        
+        // Redirect to home page after deletion
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Error deleting profile:', error);
+        showMessage('Failed to delete profile. Please try again.', 'error');
+        confirmButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Profile Forever';
+        confirmButton.disabled = false;
+      }
+    }
+  });
+
+  // Handle modal close
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal || (e.target as HTMLElement).classList.contains('modal-close')) {
+      modal.remove();
+    }
+  });
+
+  document.body.appendChild(modal);
+  
+  // Focus on the confirmation input
+  setTimeout(() => {
+    confirmInput.focus();
+  }, 100);
+}
+
 // Use the global showMessage function from main.ts
-const showMessage = window.showMessage;
+const showMessage = (window as any).showMessage;

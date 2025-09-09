@@ -5,6 +5,8 @@ export interface User {
   username: string;
   email: string;
   alias?: string;
+  isOnline?: boolean;
+  lastSeen?: Date;
 }
 
 export interface Tournament {
@@ -21,6 +23,32 @@ export interface UserProfile {
   skillLevel: 'beginner' | 'intermediate' | 'expert';
   bio: string;
   avatar: string;
+  wins: number;
+  losses: number;
+  gamesPlayed: number;
+  winRate: number;
+  friends: Friend[];
+  matchHistory: MatchRecord[];
+}
+
+export interface Friend {
+  id: number;
+  username: string;
+  displayName: string;
+  avatar: string;
+  isOnline: boolean;
+  lastSeen?: Date;
+}
+
+export interface MatchRecord {
+  id: number;
+  opponent: string;
+  opponentAvatar: string;
+  result: 'win' | 'loss';
+  score: string;
+  date: Date;
+  gameType: '1v1' | 'tournament';
+  duration: number; // in minutes
 }
 
 export interface ApiResponse<T> {
