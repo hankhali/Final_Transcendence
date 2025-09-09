@@ -1,1 +1,1 @@
-{"root":["./src/main.ts","./src/translations.ts","./src/components/profilesettings.ts","./src/services/api.ts","./src/types/index.ts","./src/utils/helpers.ts"],"version":"5.8.3"}
+{"root":["./src/gamepage.ts","./src/main.ts","./src/ponggame.ts","./src/translations.ts","./src/components/profilesettings.ts","./src/types/index.ts"],"version":"5.8.3"}

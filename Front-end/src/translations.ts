@@ -3,10 +3,19 @@ export interface Translations {
   // Navigation
   nav: {
     home: string;
-    tournaments: string;
+    games: string;
     logout: string;
     profile: string;
     account: string;
+  };
+
+  // Language preferences
+  language: {
+    confirmTitle: string;
+    confirmMessage: string;
+    yes: string;
+    no: string;
+    setSuccess: string;
   };
 
   // Font size controls
@@ -25,48 +34,54 @@ export interface Translations {
     meetTheTeam: string;
   };
 
-  // Tournament page
-  tournaments: {
-    elite: string;
-    championship: string;
-    arena: string;
+  // Games page (tournaments and 1v1)
+  games: {
+    title: string;
     subtitle: string;
-    stats: {
-      elitePlayers: string;
-      champion: string;
-      glory: string;
-    };
-    features: {
-      strategic: {
-        title: string;
-        description: string;
-      };
-      prestige: {
-        title: string;
-        description: string;
-      };
-      competition: {
-        title: string;
-        description: string;
-      };
-    };
-    createCard: {
+    back: string;
+    oneVsOne: {
       title: string;
+      subtitle: string;
       description: string;
-      benefits: {
-        bracket: string;
-        progress: string;
-        ceremony: string;
+      features: {
+        instant: string;
+        ranked: string;
+        skill: string;
       };
-      button: string;
+      playNow: string;
+      findMatch: string;
+    };
+    ai: {
+      title: string;
+      subtitle: string;
+      description: string;
+      features: {
+        adaptive: string;
+        practice: string;
+        skills: string;
+      };
+      playNow: string;
+    };
+    tournaments: {
+      title: string;
+      subtitle: string;
+      description: string;
+      features: {
+        strategic: string;
+        prestige: string;
+        competition: string;
+      };
+      joinTournament: string;
+      createTournament: string;
+    };
+    stats: {
+      activePlayers: string;
+      ongoingMatches: string;
+      tournaments: string;
     };
     loginRequired: {
       title: string;
       description: string;
-      benefits: {
-        access: string;
-        status: string;
-      };
       button: string;
     };
   };
@@ -204,10 +219,17 @@ export const translations: Record<string, Translations> = {
   en: {
     nav: {
       home: "HOME",
-      tournaments: "TOURNAMENTS", 
+      games: "GAMES",
       logout: "LOGOUT",
       profile: "PROFILE",
       account: "ACCOUNT"
+    },
+    language: {
+      confirmTitle: "Language Preference",
+      confirmMessage: "Would you like to set English as your preferred language?",
+      yes: "Yes, set as preferred",
+      no: "Cancel",
+      setSuccess: "Language preference saved!"
     },
     fontControls: {
       label: "Font size:",
@@ -221,48 +243,53 @@ export const translations: Record<string, Translations> = {
       registerNow: "REGISTER NOW",
       meetTheTeam: "MEET THE TEAM"
     },
-    tournaments: {
-      elite: "ELITE",
-      championship: "CHAMPIONSHIP",
-      arena: "ARENA",
-      subtitle: "Where legends are born and champions rise to glory",
-      stats: {
-        elitePlayers: "ELITE PLAYERS",
-        champion: "CHAMPION",
-        glory: "GLORY"
-      },
+  games: {
+    title: 'Games',
+    subtitle: 'Choose your battle',
+    back: 'Back',
+    oneVsOne: {
+      title: '1v1 Battle',
+      subtitle: 'Face your opponent',
+      description: 'Challenge a friend or random player to an intense one-on-one ping pong match. Quick games, instant action!',
       features: {
-        strategic: {
-          title: "Strategic Gameplay",
-          description: "Master the art of precision and timing"
-        },
-        prestige: {
-          title: "Prestige System",
-          description: "Earn your place among the elite"
-        },
-        competition: {
-          title: "Intense Competition",
-          description: "Face the ultimate challenge"
-        }
+        instant: 'Instant matchmaking',
+        ranked: 'Ranked competitive play',
+        skill: 'Skill-based matching'
       },
-      createCard: {
-        title: "Forge Your Legacy",
-        description: "Create an exclusive 4-player tournament and witness the birth of a new champion",
-        benefits: {
-          bracket: "Custom Bracket System",
-          progress: "Real-time Match Progress",
-          ceremony: "Championship Ceremony"
+      playNow: 'PLAY NOW',
+      findMatch: 'FIND MATCH'
+    },
+    ai: {
+      title: 'AI Challenge',
+      subtitle: 'Face the machine',
+      description: 'Test your skills against our advanced AI opponents with different difficulty levels.',
+      features: {
+        adaptive: 'Adaptive difficulty',
+        practice: 'Perfect for practice',
+        skills: 'Improve your skills'
+      },
+      playNow: 'PLAY AI'
+    },      tournaments: {
+        title: "TOURNAMENTS",
+        subtitle: "Elite competition awaits",
+        description: "Join exclusive tournaments and compete against the best players for ultimate glory.",
+        features: {
+          strategic: "Strategic bracket system",
+          prestige: "Prestige rewards",
+          competition: "Elite competition"
         },
-        button: "Create Elite Tournament"
+        joinTournament: "JOIN TOURNAMENT",
+        createTournament: "CREATE TOURNAMENT"
+      },
+      stats: {
+        activePlayers: "ACTIVE PLAYERS",
+        ongoingMatches: "ONGOING MATCHES", 
+        tournaments: "LIVE TOURNAMENTS"
       },
       loginRequired: {
-        title: "Exclusive Access Required",
-        description: "Join our elite community to unlock tournament creation privileges",
-        benefits: {
-          access: "VIP Tournament Access",
-          status: "Elite Player Status"
-        },
-        button: "Unlock Access"
+        title: "Access Required",
+        description: "Login to unlock all game modes and compete with players worldwide",
+        button: "LOGIN TO PLAY"
       }
     },
     profile: {
@@ -390,10 +417,17 @@ export const translations: Record<string, Translations> = {
   fr: {
     nav: {
       home: "ACCUEIL",
-      tournaments: "TOURNOIS",
+      games: "JEUX",
       logout: "DÉCONNEXION",
       profile: "PROFIL",
       account: "COMPTE"
+    },
+    language: {
+      confirmTitle: "Préférence de langue",
+      confirmMessage: "Voulez-vous définir le français comme votre langue préférée ?",
+      yes: "Oui, définir comme préférée",
+      no: "Annuler",
+      setSuccess: "Préférence de langue sauvegardée !"
     },
     fontControls: {
       label: "Taille de police:",
@@ -407,48 +441,54 @@ export const translations: Record<string, Translations> = {
       registerNow: "S'INSCRIRE MAINTENANT",
       meetTheTeam: "RENCONTRER L'ÉQUIPE"
     },
-    tournaments: {
-      elite: "ÉLITE",
-      championship: "CHAMPIONNAT",
-      arena: "ARÈNE",
-      subtitle: "Où naissent les légendes et s'élèvent les champions",
+    games: {
+      title: "MODES DE JEU",
+      subtitle: "Choisissez votre chemin vers la gloire",
+      back: "Retour",
+      oneVsOne: {
+        title: "COMBATS 1V1",
+        subtitle: "Matchs rapides, action instantanée",
+        description: "Lancez-vous dans des combats un contre un à rythme effréné. Perfectionnez vos compétences et grimpez l'échelle classée.",
+        features: {
+          instant: "Matchmaking instantané",
+          ranked: "Progression classée",
+          skill: "Correspondance par compétence"
+        },
+        playNow: "JOUER MAINTENANT",
+        findMatch: "TROUVER UN MATCH"
+      },
+      ai: {
+        title: "Défi IA",
+        subtitle: "Affrontez la machine",
+        description: "Testez vos compétences contre nos adversaires IA avancés avec différents niveaux de difficulté.",
+        features: {
+          adaptive: "Difficulté adaptative",
+          practice: "Parfait pour s'entraîner",
+          skills: "Améliorez vos compétences"
+        },
+        playNow: "JOUER CONTRE IA"
+      },
+      tournaments: {
+        title: "TOURNOIS",
+        subtitle: "La compétition d'élite vous attend",
+        description: "Rejoignez des tournois exclusifs et affrontez les meilleurs joueurs pour la gloire ultime.",
+        features: {
+          strategic: "Système de bracket stratégique",
+          prestige: "Récompenses de prestige",
+          competition: "Compétition d'élite"
+        },
+        joinTournament: "REJOINDRE TOURNOI",
+        createTournament: "CRÉER TOURNOI"
+      },
       stats: {
-        elitePlayers: "JOUEURS D'ÉLITE",
-        champion: "CHAMPION",
-        glory: "GLOIRE"
-      },
-      features: {
-        strategic: {
-          title: "Gameplay Stratégique",
-          description: "Maîtrisez l'art de la précision et du timing"
-        },
-        prestige: {
-          title: "Système de Prestige",
-          description: "Gagnez votre place parmi l'élite"
-        },
-        competition: {
-          title: "Compétition Intense",
-          description: "Relevez le défi ultime"
-        }
-      },
-      createCard: {
-        title: "Forgez Votre Légende",
-        description: "Créez un tournoi exclusif à 4 joueurs et assistez à la naissance d'un nouveau champion",
-        benefits: {
-          bracket: "Système de Bracket Personnalisé",
-          progress: "Progression en Temps Réel",
-          ceremony: "Cérémonie de Championnat"
-        },
-        button: "Créer Tournoi Élite"
+        activePlayers: "JOUEURS ACTIFS",
+        ongoingMatches: "MATCHS EN COURS",
+        tournaments: "TOURNOIS EN DIRECT"
       },
       loginRequired: {
-        title: "Accès Exclusif Requis",
-        description: "Rejoignez notre communauté d'élite pour débloquer les privilèges de création de tournois",
-        benefits: {
-          access: "Accès VIP aux Tournois",
-          status: "Statut de Joueur Élite"
-        },
-        button: "Débloquer l'Accès"
+        title: "Accès Requis",
+        description: "Connectez-vous pour débloquer tous les modes de jeu et affronter des joueurs du monde entier",
+        button: "SE CONNECTER POUR JOUER"
       }
     },
     profile: {
@@ -576,10 +616,17 @@ export const translations: Record<string, Translations> = {
   es: {
     nav: {
       home: "INICIO",
-      tournaments: "TORNEOS",
+      games: "JUEGOS",
       logout: "CERRAR SESIÓN",
       profile: "PERFIL",
       account: "CUENTA"
+    },
+    language: {
+      confirmTitle: "Preferencia de idioma",
+      confirmMessage: "¿Te gustaría establecer el español como tu idioma preferido?",
+      yes: "Sí, establecer como preferido",
+      no: "Cancelar",
+      setSuccess: "¡Preferencia de idioma guardada!"
     },
     fontControls: {
       label: "Tamaño de fuente:",
@@ -593,48 +640,54 @@ export const translations: Record<string, Translations> = {
       registerNow: "REGISTRARSE AHORA",
       meetTheTeam: "CONOCER AL EQUIPO"
     },
-    tournaments: {
-      elite: "ÉLITE",
-      championship: "CAMPEONATO",
-      arena: "ARENA",
-      subtitle: "Donde nacen las leyendas y se alzan los campeones",
+    games: {
+      title: "MODOS DE JUEGO",
+      subtitle: "Elige tu camino hacia la gloria",
+      back: "Volver",
+      oneVsOne: {
+        title: "BATALLAS 1V1",
+        subtitle: "Partidas rápidas, acción instantánea",
+        description: "Sumérgete en batallas uno contra uno de ritmo acelerado. Perfecciona tus habilidades y escala la clasificación.",
+        features: {
+          instant: "Emparejamiento instantáneo",
+          ranked: "Progresión clasificada",
+          skill: "Emparejamiento por habilidad"
+        },
+        playNow: "JUGAR AHORA",
+        findMatch: "BUSCAR PARTIDA"
+      },
+      ai: {
+        title: "Desafío IA",
+        subtitle: "Enfrenta a la máquina",
+        description: "Pon a prueba tus habilidades contra nuestros oponentes IA avanzados con diferentes niveles de dificultad.",
+        features: {
+          adaptive: "Dificultad adaptativa",
+          practice: "Perfecto para practicar",
+          skills: "Mejora tus habilidades"
+        },
+        playNow: "JUGAR CONTRA IA"
+      },
+      tournaments: {
+        title: "TORNEOS",
+        subtitle: "La competencia élite te espera",
+        description: "Únete a torneos exclusivos y compite contra los mejores jugadores por la gloria definitiva.",
+        features: {
+          strategic: "Sistema de bracket estratégico",
+          prestige: "Recompensas de prestigio",
+          competition: "Competencia élite"
+        },
+        joinTournament: "UNIRSE A TORNEO",
+        createTournament: "CREAR TORNEO"
+      },
       stats: {
-        elitePlayers: "JUGADORES ÉLITE",
-        champion: "CAMPEÓN",
-        glory: "GLORIA"
-      },
-      features: {
-        strategic: {
-          title: "Jugabilidad Estratégica",
-          description: "Domina el arte de la precisión y el timing"
-        },
-        prestige: {
-          title: "Sistema de Prestigio",
-          description: "Gana tu lugar entre la élite"
-        },
-        competition: {
-          title: "Competencia Intensa",
-          description: "Enfrenta el desafío definitivo"
-        }
-      },
-      createCard: {
-        title: "Forja Tu Legado",
-        description: "Crea un torneo exclusivo de 4 jugadores y presencia el nacimiento de un nuevo campeón",
-        benefits: {
-          bracket: "Sistema de Bracket Personalizado",
-          progress: "Progreso de Partida en Tiempo Real",
-          ceremony: "Ceremonia de Campeonato"
-        },
-        button: "Crear Torneo Élite"
+        activePlayers: "JUGADORES ACTIVOS",
+        ongoingMatches: "PARTIDAS EN CURSO",
+        tournaments: "TORNEOS EN VIVO"
       },
       loginRequired: {
-        title: "Acceso Exclusivo Requerido",
-        description: "Únete a nuestra comunidad élite para desbloquear privilegios de creación de torneos",
-        benefits: {
-          access: "Acceso VIP a Torneos",
-          status: "Estado de Jugador Élite"
-        },
-        button: "Desbloquear Acceso"
+        title: "Acceso Requerido",
+        description: "Inicia sesión para desbloquear todos los modos de juego y competir con jugadores de todo el mundo",
+        button: "INICIAR SESIÓN PARA JUGAR"
       }
     },
     profile: {
@@ -783,6 +836,192 @@ export class LanguageManager {
       localStorage.setItem('neonPongLanguage', language);
       this.notifyListeners();
     }
+  }
+
+  setLanguageWithConfirmation(language: string): void {
+    if (!translations[language]) return;
+    
+    // Get translations for the target language to show confirmation in that language
+    const targetTranslations = translations[language];
+    
+    // Create a custom confirmation dialog
+    const confirmDialog = document.createElement('div');
+    confirmDialog.className = 'language-confirm-dialog';
+    confirmDialog.innerHTML = `
+      <div class="language-confirm-overlay">
+        <div class="language-confirm-content">
+          <div class="language-confirm-header">
+            <h3>${targetTranslations.language.confirmTitle}</h3>
+          </div>
+          <div class="language-confirm-message">
+            <p>${targetTranslations.language.confirmMessage}</p>
+          </div>
+          <div class="language-confirm-buttons">
+            <button class="language-confirm-yes btn-primary">
+              ${targetTranslations.language.yes}
+            </button>
+            <button class="language-confirm-no btn-secondary">
+              ${targetTranslations.language.no}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add styles for the dialog
+    const style = document.createElement('style');
+    style.textContent = `
+      .language-confirm-dialog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10000;
+        font-family: 'Orbitron', monospace;
+      }
+      
+      .language-confirm-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease-out;
+      }
+      
+      .language-confirm-content {
+        background: linear-gradient(135deg, rgba(0, 230, 255, 0.1), rgba(255, 0, 255, 0.1));
+        border: 2px solid #00E6FF;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 20px 40px rgba(0, 230, 255, 0.3);
+        animation: slideUp 0.3s ease-out;
+      }
+      
+      .language-confirm-header h3 {
+        color: #00E6FF;
+        margin: 0 0 20px 0;
+        font-size: 1.4rem;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      
+      .language-confirm-message p {
+        color: #fff;
+        margin: 0 0 30px 0;
+        font-size: 1.1rem;
+        text-align: center;
+        line-height: 1.6;
+      }
+      
+      .language-confirm-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+      }
+      
+      .language-confirm-buttons button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-family: 'Orbitron', monospace;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      .language-confirm-yes {
+        background: linear-gradient(135deg, #00E6FF, #0099CC);
+        color: #000;
+      }
+      
+      .language-confirm-yes:hover {
+        background: linear-gradient(135deg, #00CCFF, #0088BB);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 230, 255, 0.4);
+      }
+      
+      .language-confirm-no {
+        background: linear-gradient(135deg, #FF0080, #CC0066);
+        color: #fff;
+      }
+      
+      .language-confirm-no:hover {
+        background: linear-gradient(135deg, #FF0099, #DD0077);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 0, 128, 0.4);
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      @keyframes slideUp {
+        from { 
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to { 
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(confirmDialog);
+
+    // Handle button clicks
+    const yesButton = confirmDialog.querySelector('.language-confirm-yes') as HTMLButtonElement;
+    const noButton = confirmDialog.querySelector('.language-confirm-no') as HTMLButtonElement;
+    
+    const cleanup = () => {
+      document.body.removeChild(confirmDialog);
+      document.head.removeChild(style);
+    };
+
+    yesButton.addEventListener('click', () => {
+      this.setLanguage(language);
+      cleanup();
+      
+      // Show success message in the new language
+      if (window.showMessage) {
+        setTimeout(() => {
+          window.showMessage(targetTranslations.language.setSuccess, 'success');
+        }, 100);
+      }
+    });
+
+    noButton.addEventListener('click', cleanup);
+    
+    // Close on overlay click
+    confirmDialog.addEventListener('click', (e) => {
+      if (e.target === confirmDialog || e.target === confirmDialog.querySelector('.language-confirm-overlay')) {
+        cleanup();
+      }
+    });
+    
+    // Close on Escape key
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        cleanup();
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
   }
 
   getTranslations(): Translations {
