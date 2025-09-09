@@ -5,7 +5,7 @@
 
 /* Accessibility Variables */
 :root {
-  --font-size-multiplier: 1;
+  --font-size-multiplier: 0.8;
   --primary-color: #00E6FF;
   --secondary-color: #FF00FF;
   --accent-color: #FF6B6B;
@@ -484,7 +484,7 @@ p {
   top: 0;
   left: 0;
   width: 100%;
-  padding: 0.5rem 1.5rem; /* Reduced padding */
+  padding: 0 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -499,7 +499,7 @@ p {
 }
 
 .navbar-logo {
-  font-size: 1.3rem; /* Slightly smaller logo */
+  font-size: 1.5rem;
   font-weight: 700;
   color: #fff;
   text-decoration: none;
@@ -509,37 +509,37 @@ p {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   padding: 0.5rem 0;
-  margin-right: 1rem; /* Reduced margin */
 }
 
 .navbar-links-container {
   display: flex;
   align-items: center;
-  gap: 0.8rem; /* Further reduced gap between items */
-  margin-right: -0.5rem; /* Pull items slightly to the right */
+  gap: 2rem;
+  height: 100%;
 }
 
 .navbar-links {
   display: flex;
-  gap: 0.8rem; /* Reduced gap between navigation items */
+  gap: 1.5rem;
   align-items: center;
-  padding: 0.5rem 0; /* Reduced vertical padding */
+  height: 100%;
 }
 
 .navbar-link {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
   font-weight: 500;
-  font-size: 0.9rem; /* Slightly smaller font size */
-  padding: 0.4rem 0.8rem; /* Reduced padding */
-  padding: 0.8rem 1rem;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  padding: 1rem 1.2rem;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
   position: relative;
   transition: all 0.3s ease;
-  margin: 0 0.25rem;
-  border-radius: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  white-space: nowrap;
 }
 
 .navbar-link::before {
@@ -1490,6 +1490,14 @@ footer p {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  height: 100%;
+}
+
+.controls-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  height: 100%;
 }
 
 .accessibility-btn, .font-size-btn {

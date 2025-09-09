@@ -43,6 +43,8 @@ function getPageTitle(path: string): string {
       return "Login - Neon Pong";
     case "/profile":
       return "Profile - Neon Pong";
+    case "/logout":
+      return "Logged Out - Neon Pong";
     default:
       return "Page Not Found - Neon Pong";
   }
@@ -149,7 +151,10 @@ function showMessage(
 }
 // Global variables for accessibility features
 let isHighContrast = false;
-let fontSizeMultiplier = 1;
+let fontSizeMultiplier = 0.8;
+
+// Global authentication state
+let isLoggedIn = false;
 // Function to toggle high contrast mode
 function toggleHighContrast(): void {
   isHighContrast = !isHighContrast;
@@ -204,15 +209,67 @@ function initAccessibility() {
     document.body.classList.add('high-contrast');
   }
   // Load font size preference
-  const savedFontSize = parseFloat(localStorage.getItem('fontSizeMultiplier') || '1');
+  const savedFontSize = parseFloat(localStorage.getItem('fontSizeMultiplier') || '0.8');
   if (savedFontSize >= 0.8 && savedFontSize <= 1.5) {
     fontSizeMultiplier = savedFontSize;
+    document.documentElement.style.setProperty('--font-size-multiplier', fontSizeMultiplier.toString());
+  } else {
+    // Apply default font size if no valid saved preference
     document.documentElement.style.setProperty('--font-size-multiplier', fontSizeMultiplier.toString());
   }
 }
 // Call init on page load
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', initAccessibility);
+}
+
+// Function to update navbar based on login state
+function updateNavbar(): void {
+  const profileLink = document.querySelector('.navbar-link[href="/profile"]') as HTMLElement;
+  const accountLink = document.querySelector('.navbar-link[href="/ACCOUNT"]') as HTMLAnchorElement;
+  
+  if (profileLink) {
+    profileLink.style.display = isLoggedIn ? 'flex' : 'none';
+  }
+  
+  if (accountLink) {
+    accountLink.textContent = isLoggedIn ? 'LOGOUT' : 'ACCOUNT';
+    accountLink.href = isLoggedIn ? '/logout' : '/ACCOUNT';
+  }
+}
+
+// Function to handle login
+function handleLogin(username: string): void {
+  isLoggedIn = true;
+  currentUser = { id: Date.now(), username: username };
+  localStorage.setItem('isLoggedIn', 'true');
+  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  updateNavbar();
+  showMessage(`Welcome back, ${username}!`, "success");
+  navigateTo("/profile");
+}
+
+// Function to handle logout
+function handleLogout(): void {
+  isLoggedIn = false;
+  currentUser = null;
+  localStorage.removeItem('isLoggedIn');
+  localStorage.removeItem('currentUser');
+  updateNavbar();
+  showMessage("Logged out successfully!", "success");
+  navigateTo("/");
+}
+
+// Function to check stored login state
+function checkLoginState(): void {
+  const storedLoginState = localStorage.getItem('isLoggedIn');
+  const storedUser = localStorage.getItem('currentUser');
+  
+  if (storedLoginState === 'true' && storedUser) {
+    isLoggedIn = true;
+    currentUser = JSON.parse(storedUser);
+    updateNavbar();
+  }
 }
 // Navbar Component
 function createNavbar(): HTMLElement {
@@ -272,14 +329,19 @@ function createNavbar(): HTMLElement {
   ACCOUNTLink.setAttribute("role", "menuitem");
   ACCOUNTLink.addEventListener("click", (e) => {
     e.preventDefault();
-    const currentPath = window.location.pathname;
-    if (currentPath === "/login" || currentPath === "/register") {
-      // Toggle between login and register
-      const newPath = currentPath === "/login" ? "/register" : "/login";
-      navigateTo(newPath);
+    if (isLoggedIn) {
+      // Handle logout
+      handleLogout();
     } else {
-      // Default to login page
-      navigateTo("/login");
+      const currentPath = window.location.pathname;
+      if (currentPath === "/login" || currentPath === "/register") {
+        // Toggle between login and register
+        const newPath = currentPath === "/login" ? "/register" : "/login";
+        navigateTo(newPath);
+      } else {
+        // Default to login page
+        navigateTo("/login");
+      }
     }
   });
   navLinks.appendChild(homeLink);
@@ -292,6 +354,7 @@ function createNavbar(): HTMLElement {
   profileLink.className = "navbar-link";
   profileLink.textContent = "Profile";
   profileLink.setAttribute("role", "menuitem");
+  profileLink.style.display = "none"; // Initially hidden
   profileLink.addEventListener("click", (e) => {
     e.preventDefault();
     navigateTo("/profile");
@@ -747,29 +810,19 @@ function renderAuthPage(isLogin = true): HTMLElement {
     showLoading();
     try {
       if (isLogin) {
-        const result = await apiService.users.login(
-          usernameInput.value,
-          passwordInput.value
-        );
-        if (result.data) {
-          currentUser = { id: result.data.userId, username: usernameInput.value };
-          showMessage("Login successful!", "success");
-          navigateTo("/tournament");
+        // Dummy login - just check if username and password are not empty
+        if (usernameInput.value.trim() && passwordInput.value.trim()) {
+          handleLogin(usernameInput.value);
         } else {
-          showMessage(result.error || "Login failed", "error");
+          showMessage("Please enter both username and password", "error");
         }
       } else if (emailInput) {
-        const result = await apiService.users.register(
-          usernameInput.value,
-          passwordInput.value,
-          emailInput.value
-        );
-        if (result.data) {
-          currentUser = { id: result.data.userId, username: usernameInput.value };
+        // Dummy registration - just check if all fields are filled
+        if (usernameInput.value.trim() && passwordInput.value.trim() && emailInput.value.trim()) {
+          handleLogin(usernameInput.value);
           showMessage("Registration successful!", "success");
-          navigateTo("/tournament");
         } else {
-          showMessage(result.error || "Registration failed", "error");
+          showMessage("Please fill in all fields", "error");
         }
       }
     } catch (error) {
@@ -1695,7 +1748,11 @@ function setupRoutes(app: HTMLElement): void {
     "/register": () => renderAuthPage(false),
     "/tournament": renderTournamentPage,
     "/profile": renderProfilePage,
-    "/ACCOUNT": () => renderAuthPage(true)
+    "/ACCOUNT": () => renderAuthPage(true),
+    "/logout": () => {
+      handleLogout();
+      return renderHomePage();
+    }
     // Add other routes as they are implemented
   };
   const renderFunction = routes[path];
@@ -1767,6 +1824,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log('[App] Creating navigation bar...');
   const navbar = createNavbar();
   document.body.insertBefore(navbar, app);
+  
+  // Check login state after navbar is created
+  console.log('[App] Checking login state...');
+  checkLoginState();
   
   // Add loading overlay if it doesn't exist
   if (!document.getElementById("loading-overlay")) {
