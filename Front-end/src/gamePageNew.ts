@@ -14,6 +14,24 @@ export class GamePage {
     this.onNavigateBack = onNavigateBack;
   }
 
+  private getCustomization(): { mode: 'basic' | 'custom'; theme: 'neon' | 'retro' | 'dark'; powerUpsEnabled: boolean; powerUpTypes?: string[] } {
+    try {
+      const raw = localStorage.getItem('gameCustomization');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return { mode: 'basic', theme: 'neon', powerUpsEnabled: false, powerUpTypes: ['paddle_size','ball_speed'] };
+  }
+
+  private saveCustomization(data: { mode: 'basic' | 'custom'; theme: 'neon' | 'retro' | 'dark'; powerUpsEnabled: boolean; powerUpTypes?: string[] }) {
+    localStorage.setItem('gameCustomization', JSON.stringify(data));
+  }
+
+  private getOverridesFromCustomization(): Partial<import('./pongGame.js').GameConfig> | undefined {
+    const c = this.getCustomization();
+    if (c.mode === 'basic') return { theme: 'neon', powerUpsEnabled: false, powerUpTypes: ['paddle_size','ball_speed'] };
+    return { theme: c.theme, powerUpsEnabled: c.powerUpsEnabled, powerUpTypes: (c.powerUpTypes as any) };
+  }
+
   public render1v1Game(): void {
     this.gameMode = '1v1';
     this.renderGameInterface();
@@ -27,6 +45,8 @@ export class GamePage {
   }
 
   private renderGameInterface(): void {
+    const customization = this.getCustomization();
+    const selected = new Set(customization.powerUpTypes || ['paddle_size','ball_speed']);
     this.container.innerHTML = `
       <div class="game-page">
         <!-- Game Header -->
@@ -42,9 +62,15 @@ export class GamePage {
               </h2>
               <div class="game-status" id="game-status">Ready to Play</div>
             </div>
-            <button id="fullscreen-btn" class="game-btn secondary">
-              <i class="fas fa-expand"></i>
-            </button>
+            <div style="display:flex; gap:.5rem;">
+              <button id="settings-btn" class="game-btn secondary settings-btn" title="Game Settings" style="font-size: 1.1rem; padding: 12px 20px; font-weight: 600;">
+                <i class="fas fa-sliders-h"></i>
+                Customize
+              </button>
+              <button id="fullscreen-btn" class="game-btn secondary">
+                <i class="fas fa-expand"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -141,6 +167,54 @@ export class GamePage {
             </div>
           </div>
         </div>
+
+        <!-- Settings Modal -->
+        <div class="game-end-modal" id="settings-modal" style="display:none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <i class="fas fa-sliders-h"></i>
+              <h3>Game Settings</h3>
+            </div>
+            <div class="modal-body">
+              <div style="text-align:left; display:grid; gap:1rem;">
+                <div>
+                  <label style="font-weight:600;">Mode</label>
+                  <div style="display:flex; gap:1rem; margin-top:.5rem;">
+                    <label><input type="radio" name="mode" value="basic" ${customization.mode === 'basic' ? 'checked' : ''}> Basic (default)</label>
+                    <label><input type="radio" name="mode" value="custom" ${customization.mode === 'custom' ? 'checked' : ''}> Custom</label>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-weight:600;">Map Theme</label>
+                  <select id="theme-select" class="form-input" style="margin-top:.5rem;">
+                    <option value="neon" ${customization.theme === 'neon' ? 'selected' : ''}>Neon</option>
+                    <option value="retro" ${customization.theme === 'retro' ? 'selected' : ''}>Retro</option>
+                    <option value="dark" ${customization.theme === 'dark' ? 'selected' : ''}>Dark</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-weight:600; display:block;">Power-Ups</label>
+                  <label style="display:block; margin-top:.5rem;"><input id="powerups-toggle" type="checkbox" ${customization.powerUpsEnabled ? 'checked' : ''}> Enable power-ups</label>
+                  <div id="powerup-list" style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:.5rem; margin-top:.5rem;">
+                    <label><input type="checkbox" value="paddle_size" ${selected.has('paddle_size') ? 'checked' : ''}> Paddle Size Boost</label>
+                    <label><input type="checkbox" value="ball_speed" ${selected.has('ball_speed') ? 'checked' : ''}> Ball Speed Boost</label>
+                    <label><input type="checkbox" value="slow_opponent" ${selected.has('slow_opponent') ? 'checked' : ''}> Slow Opponent</label>
+                    <label><input type="checkbox" value="shrink_opponent" ${selected.has('shrink_opponent') ? 'checked' : ''}> Shrink Opponent</label>
+                    <label><input type="checkbox" value="curve_ball" ${selected.has('curve_ball') ? 'checked' : ''}> Curve Ball</label>
+                    <label><input type="checkbox" value="multi_ball" ${selected.has('multi_ball') ? 'checked' : ''}> Multi-Ball</label>
+                    <label><input type="checkbox" value="reverse_controls" ${selected.has('reverse_controls') ? 'checked' : ''}> Reverse Controls</label>
+                    <label><input type="checkbox" value="shield" ${selected.has('shield') ? 'checked' : ''}> Shield</label>
+                    <label><input type="checkbox" value="magnet" ${selected.has('magnet') ? 'checked' : ''}> Magnet</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button id="settings-cancel" class="game-btn secondary">Cancel</button>
+              <button id="settings-save" class="game-btn primary">Save</button>
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -151,8 +225,9 @@ export class GamePage {
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     if (!this.gameCanvas) return;
 
+    const overrides = this.getOverridesFromCustomization();
     // Create 1v1 game
-    this.game = create1v1Game(this.gameCanvas);
+    this.game = create1v1Game(this.gameCanvas, overrides);
     this.setupGameCallbacks();
   }
 
@@ -160,8 +235,9 @@ export class GamePage {
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     if (!this.gameCanvas) return;
 
+    const overrides = this.getOverridesFromCustomization();
     // Create AI game
-    this.game = createAIGame(this.gameCanvas, difficulty);
+    this.game = createAIGame(this.gameCanvas, difficulty, overrides);
     this.setupGameCallbacks();
   }
 
@@ -179,6 +255,80 @@ export class GamePage {
     });
   }
 
+  private setSettingsEnablement(): void {
+    const selectedMode = (document.querySelector('input[name="mode"]:checked') as HTMLInputElement)?.value as 'basic' | 'custom';
+    const themeSelect = document.getElementById('theme-select') as HTMLSelectElement;
+    const powerupsToggle = document.getElementById('powerups-toggle') as HTMLInputElement;
+    const powerupList = document.getElementById('powerup-list') as HTMLElement;
+    const disabled = selectedMode !== 'custom';
+    if (themeSelect) {
+      themeSelect.disabled = disabled;
+      themeSelect.style.opacity = disabled ? '0.6' : '1';
+    }
+    if (powerupsToggle) {
+      powerupsToggle.disabled = disabled;
+      powerupsToggle.parentElement && (powerupsToggle.parentElement.style.opacity = disabled ? '0.6' : '1');
+    }
+    if (powerupList) {
+      (powerupList as any).style.pointerEvents = disabled ? 'none' : 'auto';
+      powerupList.style.opacity = disabled ? '0.6' : '1';
+    }
+  }
+
+  private openSettingsModal(): void {
+    const modal = document.getElementById('settings-modal') as HTMLElement;
+    if (!modal) return;
+    modal.style.display = 'flex';
+
+    const cancelBtn = document.getElementById('settings-cancel');
+    const saveBtn = document.getElementById('settings-save');
+    const themeSelect = document.getElementById('theme-select') as HTMLSelectElement;
+    const powerupsToggle = document.getElementById('powerups-toggle') as HTMLInputElement;
+
+    const close = () => { modal.style.display = 'none'; };
+
+    // initialize enablement
+    this.setSettingsEnablement();
+
+    // react to mode change
+    document.querySelectorAll('input[name="mode"]').forEach(r => {
+      r.addEventListener('change', () => this.setSettingsEnablement());
+    });
+
+    cancelBtn?.addEventListener('click', close, { once: true });
+    saveBtn?.addEventListener('click', () => {
+      const selectedMode = (document.querySelector('input[name="mode"]:checked') as HTMLInputElement)?.value as 'basic' | 'custom';
+      const types: string[] = Array.from(document.querySelectorAll('#powerup-list input[type="checkbox"]'))
+        .filter((c: any) => c.checked)
+        .map((c: any) => c.value);
+
+      const next = {
+        mode: selectedMode || 'basic',
+        theme: (themeSelect?.value as any) || 'neon',
+        powerUpsEnabled: !!powerupsToggle?.checked,
+        powerUpTypes: types.length ? types : ['paddle_size','ball_speed']
+      } as { mode: 'basic' | 'custom'; theme: 'neon' | 'retro' | 'dark'; powerUpsEnabled: boolean; powerUpTypes?: string[] };
+      this.saveCustomization(next);
+      close();
+      // Re-init to apply
+      if (this.gameCanvas) {
+        if (this.gameMode === 'ai') {
+          this.game?.destroy();
+          this.game = null;
+          this.initializeAIGame('medium');
+        } else {
+          this.game?.destroy();
+          this.game = null;
+          this.initializeGame();
+        }
+      }
+    }, { once: true });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    }, { once: true });
+  }
+
   private setupEventListeners(): void {
     // Back button
     const backBtn = document.getElementById('back-btn');
@@ -193,6 +343,18 @@ export class GamePage {
     const fullscreenBtn = document.getElementById('fullscreen-btn');
     fullscreenBtn?.addEventListener('click', () => {
       this.toggleFullscreen();
+    });
+
+    // Settings
+    const settingsBtn = document.getElementById('settings-btn');
+    settingsBtn?.addEventListener('click', () => this.openSettingsModal());
+
+    // Defensive: capture clicks anywhere for settings button by id
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.id === 'settings-btn' || target.closest && target.closest('#settings-btn'))) {
+        this.openSettingsModal();
+      }
     });
 
     // Start game button
