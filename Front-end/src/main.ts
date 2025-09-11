@@ -1,4 +1,4 @@
-// This file is a TypeScript module
+
 import "./styles/style.css"; // Ensure your CSS is imported
 import "./styles/game-page.css"; // Game page styles
 import { createProfileSettings } from "./components/ProfileSettings";
@@ -996,7 +996,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   usernameInput.type = "text";
   usernameInput.className = "form-input";
   usernameInput.required = true;
-  usernameInput.placeholder = "Choose a username";
+  usernameInput.placeholder = "Write your username";
   
   // Password field (always shown)
   const passwordLabel = document.createElement("label");

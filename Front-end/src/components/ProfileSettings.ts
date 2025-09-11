@@ -1,6 +1,7 @@
 
 import type { UserProfile } from '../types/index.js';
 import { languageManager } from '../translations.js';
+import { apiService } from '../services/api.js';
 
 export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLElement {
   const t = languageManager.getTranslations();
@@ -470,17 +471,14 @@ function showDeleteProfileModal() {
         // Show loading state
         confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
         confirmButton.disabled = true;
-        
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // TODO: Add actual API call to delete profile
-        console.log('Profile deletion confirmed');
-        
+        // Call the actual API to delete the account
+  // Use apiService directly
+  const res = await apiService.users.deleteMyAccount();
+        if (res.error) throw new Error(res.error);
         modal.remove();
-        showMessage('Profile deleted successfully. Redirecting...', 'success');
-        
-        // Redirect to home page after deletion
+        showMessage('Account deleted successfully! Redirecting...', 'success');
+        // Clear localStorage and redirect to home page
+        localStorage.clear();
         setTimeout(() => {
           window.location.href = '/';
         }, 2000);
