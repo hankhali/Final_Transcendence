@@ -7,16 +7,15 @@ async function fetchApi(endpoint, options){
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const headers = {
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
-
+    let headers = { ...options.headers };
+    // Only set Content-Type if there is a body
+    if (options.body) {
+      headers["Content-Type"] = "application/json";
+    }
     const token = localStorage.getItem("token");
     if(token){
       headers["Authorization"] = `Bearer ${token}`;
     }
-
     const response = await fetch(url, {
       ...options,
       headers,
@@ -27,7 +26,19 @@ async function fetchApi(endpoint, options){
       throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    // Handle different response types
+    let data = null;
+    const contentType = response.headers.get('content-type');
+    
+    if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
+      data = { message: 'Success' };
+    } else {
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = { message: 'Success' };
+      }
+    }
 
     return {
       data,

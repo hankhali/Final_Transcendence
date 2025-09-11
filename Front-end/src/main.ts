@@ -139,6 +139,12 @@ function showMessage(
   text: string,
   type: "success" | "error" | "info" = "info"
 ) {
+  // Special handling for account deletion success
+  if (text.includes("Account deleted successfully") && type === "success") {
+    showAccountDeletionSuccess();
+    return;
+  }
+
   // Clear existing messages and timeouts
   const existingMessage = document.querySelector(".message");
   if (existingMessage) {
@@ -198,12 +204,381 @@ function showMessage(
     setTimeout(() => messageDiv.remove(), 300);
   }, 4000);
 }
+
+// Special premium design for account deletion success
+function showAccountDeletionSuccess() {
+  // Clear any existing messages
+  const existingMessage = document.querySelector(".message, .account-deletion-success");
+  if (existingMessage) {
+    existingMessage.remove();
+  }
+  if (window.messageTimeout) {
+    clearTimeout(window.messageTimeout);
+  }
+
+  // Create the premium success overlay
+  const successOverlay = document.createElement("div");
+  successOverlay.className = "account-deletion-success";
+  successOverlay.innerHTML = `
+    <div class="success-backdrop"></div>
+    <div class="success-container">
+      <div class="success-glow"></div>
+      <div class="success-content">
+        <div class="success-icon-container">
+          <div class="success-icon-bg"></div>
+          <div class="success-icon-ring"></div>
+          <i class="fas fa-check-circle success-icon"></i>
+          <div class="success-particles">
+            <div class="particle particle-1"></div>
+            <div class="particle particle-2"></div>
+            <div class="particle particle-3"></div>
+            <div class="particle particle-4"></div>
+            <div class="particle particle-5"></div>
+            <div class="particle particle-6"></div>
+          </div>
+        </div>
+        
+        <div class="success-text-container">
+          <h2 class="success-title">Account Deleted</h2>
+          <p class="success-subtitle">Successfully removed from Neon Pong</p>
+          <div class="success-description">
+            <p>Your profile, game history, and all data have been permanently deleted.</p>
+            <p>Redirecting to home page...</p>
+          </div>
+        </div>
+        
+        <div class="success-progress">
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+        </div>
+        
+        <div class="success-footer">
+          <div class="neon-line"></div>
+          <p class="goodbye-text">Thanks for playing! 🏓</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Add styles
+  const style = document.createElement("style");
+  style.textContent = `
+    .account-deletion-success {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .success-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, 
+        rgba(0, 0, 0, 0.95) 0%, 
+        rgba(15, 18, 40, 0.98) 50%, 
+        rgba(0, 0, 0, 0.95) 100%);
+      backdrop-filter: blur(20px);
+    }
+
+    .success-container {
+      position: relative;
+      background: linear-gradient(135deg, 
+        rgba(15, 18, 40, 0.95) 0%, 
+        rgba(8, 10, 28, 0.98) 100%);
+      border: 2px solid transparent;
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(0, 230, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      animation: successSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .success-glow {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, 
+        rgba(0, 230, 255, 0.1) 0%, 
+        rgba(255, 0, 255, 0.05) 50%, 
+        transparent 70%);
+      animation: successGlow 3s ease-in-out infinite;
+    }
+
+    .success-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .success-icon-container {
+      position: relative;
+      margin: 0 auto 2rem;
+      width: 120px;
+      height: 120px;
+    }
+
+    .success-icon-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, 
+        rgba(0, 230, 255, 0.2) 0%, 
+        rgba(255, 0, 255, 0.2) 100%);
+      border-radius: 50%;
+      animation: successPulse 2s ease-in-out infinite;
+    }
+
+    .success-icon-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 100%;
+      border: 3px solid transparent;
+      border-radius: 50%;
+      background: linear-gradient(45deg, 
+        rgba(0, 230, 255, 0.8), 
+        rgba(255, 0, 255, 0.8), 
+        rgba(0, 230, 255, 0.8));
+      background-clip: padding-box;
+      animation: successRotate 3s linear infinite;
+    }
+
+    .success-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      color: #00e6ff;
+      text-shadow: 
+        0 0 20px rgba(0, 230, 255, 0.8),
+        0 0 40px rgba(0, 230, 255, 0.6);
+      animation: successIconBounce 0.6s ease-out;
+    }
+
+    .success-particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #00e6ff;
+      border-radius: 50%;
+      animation: successParticle 2s ease-out infinite;
+    }
+
+    .particle-1 { top: 20%; left: 20%; animation-delay: 0s; }
+    .particle-2 { top: 30%; right: 20%; animation-delay: 0.2s; }
+    .particle-3 { bottom: 30%; left: 30%; animation-delay: 0.4s; }
+    .particle-4 { bottom: 20%; right: 30%; animation-delay: 0.6s; }
+    .particle-5 { top: 50%; left: 10%; animation-delay: 0.8s; }
+    .particle-6 { top: 50%; right: 10%; animation-delay: 1s; }
+
+    .success-text-container {
+      margin-bottom: 2rem;
+    }
+
+    .success-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00e6ff 0%, #ff00ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0 0 0.5rem 0;
+      text-shadow: 0 0 30px rgba(0, 230, 255, 0.5);
+      animation: successTitleGlow 2s ease-in-out infinite alternate;
+    }
+
+    .success-subtitle {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin: 0 0 1.5rem 0;
+      font-weight: 500;
+    }
+
+    .success-description {
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .success-description p {
+      margin: 0.5rem 0;
+    }
+
+    .success-progress {
+      margin: 2rem 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00e6ff, #ff00ff, #00e6ff);
+      background-size: 200% 100%;
+      border-radius: 2px;
+      animation: successProgress 2s ease-in-out;
+    }
+
+    .success-footer {
+      margin-top: 2rem;
+    }
+
+    .neon-line {
+      width: 100px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #00e6ff, transparent);
+      margin: 0 auto 1rem;
+      animation: successLineGlow 2s ease-in-out infinite;
+    }
+
+    .goodbye-text {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 1rem;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    /* Animations */
+    @keyframes successSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes successGlow {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.6; }
+    }
+
+    @keyframes successPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    @keyframes successRotate {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    @keyframes successIconBounce {
+      0% { transform: translate(-50%, -50%) scale(0); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes successParticle {
+      0% {
+        opacity: 0;
+        transform: scale(0) translate(0, 0);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1) translate(var(--random-x, 20px), var(--random-y, -20px));
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0) translate(var(--random-x, 40px), var(--random-y, -40px));
+      }
+    }
+
+    @keyframes successTitleGlow {
+      from { text-shadow: 0 0 30px rgba(0, 230, 255, 0.5); }
+      to { text-shadow: 0 0 50px rgba(0, 230, 255, 0.8), 0 0 80px rgba(255, 0, 255, 0.3); }
+    }
+
+    @keyframes successProgress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    @keyframes successLineGlow {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .success-container {
+        padding: 2rem 1.5rem;
+        margin: 1rem;
+      }
+      
+      .success-title {
+        font-size: 2rem;
+      }
+      
+      .success-icon-container {
+        width: 100px;
+        height: 100px;
+      }
+      
+      .success-icon {
+        font-size: 2.5rem;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(successOverlay);
+
+  // Auto-remove after 3 seconds
+  window.messageTimeout = window.setTimeout(() => {
+    successOverlay.style.animation = 'successSlideIn 0.5s ease-in reverse';
+    setTimeout(() => {
+      successOverlay.remove();
+      style.remove();
+    }, 500);
+  }, 3000);
+}
 // Global variables for accessibility features
 let isHighContrast = false;
 let fontSizeMultiplier = 0.8;
 
 // Global authentication state
 let isLoggedIn = false;
+// Make these variables globally accessible
+(window as any).isLoggedIn = isLoggedIn;
 // Function to toggle high contrast mode
 function toggleHighContrast(): void {
   isHighContrast = !isHighContrast;
@@ -293,11 +668,17 @@ function updateNavbar(): void {
 }
 
 // Function to handle login
-function handleLogin(username: string): void {
+function handleLogin(username: string, token?: string, userId?: number): void {
   isLoggedIn = true;
-  currentUser = { id: Date.now(), username: username };
+  currentUser = { id: userId || Date.now(), username: username };
+  // Update global variables
+  (window as any).isLoggedIn = isLoggedIn;
+  (window as any).currentUser = currentUser;
   localStorage.setItem('isLoggedIn', 'true');
   localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  if (token) {
+    localStorage.setItem('token', token);
+  }
   updateNavbar();
   showMessage(`Welcome back, ${username}!`, "success");
   navigateTo("/profile");
@@ -307,8 +688,12 @@ function handleLogin(username: string): void {
 function handleLogout(): void {
   isLoggedIn = false;
   currentUser = null;
+  // Update global variables
+  (window as any).isLoggedIn = isLoggedIn;
+  (window as any).currentUser = currentUser;
   localStorage.removeItem('isLoggedIn');
   localStorage.removeItem('currentUser');
+  localStorage.removeItem('token');
   updateNavbar();
   showMessage("Logged out successfully!", "success");
   navigateTo("/");
@@ -318,11 +703,24 @@ function handleLogout(): void {
 function checkLoginState(): void {
   const storedLoginState = localStorage.getItem('isLoggedIn');
   const storedUser = localStorage.getItem('currentUser');
+  const storedToken = localStorage.getItem('token');
   
-  if (storedLoginState === 'true' && storedUser) {
+  if (storedLoginState === 'true' && storedUser && storedToken) {
     isLoggedIn = true;
     currentUser = JSON.parse(storedUser);
+    // Update global variables
+    (window as any).isLoggedIn = isLoggedIn;
+    (window as any).currentUser = currentUser;
     updateNavbar();
+  } else if (storedLoginState === 'true' && (!storedUser || !storedToken)) {
+    // Clear invalid login state
+    isLoggedIn = false;
+    currentUser = null;
+    (window as any).isLoggedIn = isLoggedIn;
+    (window as any).currentUser = currentUser;
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('token');
   }
 }
 // Navbar Component
@@ -1006,7 +1404,7 @@ function renderAuthPage(isLogin = true): HTMLElement {
   passwordInput.type = "password";
   passwordInput.className = "form-input";
   passwordInput.required = true;
-  passwordInput.placeholder = "Create a password";
+  passwordInput.placeholder = "Enter your password";
 
   // Confirm Password (only for registration)
   let confirmPasswordInput: HTMLInputElement | null = null;
@@ -1090,8 +1488,9 @@ function renderAuthPage(isLogin = true): HTMLElement {
           if (res.error || !res.data) {
             showMessage(res.error || 'Login failed', 'error');
           } else {
-            // Use returned username if provided, otherwise fallback to input
-            handleLogin((res.data as any).username || username);
+            // Use returned data from API response
+            const data = res.data as any;
+            handleLogin(data.username || username, data.token, data.userId);
             showMessage('Login successful', 'success');
           }
         } else {
@@ -1108,7 +1507,8 @@ function renderAuthPage(isLogin = true): HTMLElement {
             showMessage(res.error || 'Registration failed', 'error');
           } else {
             // Registration succeeded; auto-login or redirect as desired
-            handleLogin(username);
+            const data = res.data as any;
+            handleLogin(username, data.token, data.userId);
             showMessage('Registration successful!', 'success');
           }
         } else {
@@ -2516,4 +2916,5 @@ window.addEventListener("popstate", () => {
 
 // Global functions for dashboard and profile features
 (window as any).switchTab = switchTab;
+(window as any).showMessage = showMessage;
 
