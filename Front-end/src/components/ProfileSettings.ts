@@ -479,16 +479,25 @@ function showDeleteProfileModal() {
           confirmButton.disabled = false;
         }, 10000);
         
+        // Check for token before sending delete request
+        const token = localStorage.getItem('token');
+        if (!token) {
+          clearTimeout(timeoutId);
+          showMessage('You are not authenticated. Please log in before deleting your account.', 'error');
+          confirmButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Profile Forever';
+          confirmButton.disabled = false;
+          return;
+        }
         // Call the actual API to delete the account
         const res = await apiService.users.deleteMyAccount();
-        
+
         // Clear timeout since request completed
         clearTimeout(timeoutId);
-  if (res.error) throw new Error(res.error);
-  showMessage('Account deleted successfully! Redirecting...', 'success');
-  localStorage.clear();
-  window.location.href = '/';
-  // modal.remove(); // Not needed, redirect happens instantly
+        if (res.error) throw new Error(res.error);
+        showMessage('Account deleted successfully! Redirecting...', 'success');
+        localStorage.clear();
+        window.location.href = '/';
+        // modal.remove(); // Not needed, redirect happens instantly
       } catch (error) {
         console.error('Error deleting profile:', error);
         showMessage(`Failed to delete profile: ${error.message}. Please try again.`, 'error');
@@ -516,5 +525,5 @@ function showDeleteProfileModal() {
 // Use the global showMessage function from main.ts
 const showMessage = (window as any).showMessage || ((text: string, type: string) => {
   console.log(`${type.toUpperCase()}: ${text}`);
-  alert(`${type.toUpperCase()}: ${text}`);
+  // No alert fallback; only use neon-styled message
 });
