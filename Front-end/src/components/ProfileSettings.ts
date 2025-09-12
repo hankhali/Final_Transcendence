@@ -45,15 +45,15 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   
   const avatarPreviewContainer = document.createElement('div');
   avatarPreviewContainer.className = 'avatar-preview-container';
-  
-  const avatarPreview = document.createElement('div');
-  avatarPreview.className = 'avatar-preview';
-  avatarPreview.innerHTML = `<i class="fas fa-user-circle"></i>`;
 
-  // Remove camera icon and center avatar icon above 'Change Avatar'
+  // Center avatar icon above the button
   avatarPreviewContainer.style.display = 'flex';
   avatarPreviewContainer.style.flexDirection = 'column';
   avatarPreviewContainer.style.alignItems = 'center';
+
+  const avatarPreview = document.createElement('div');
+  avatarPreview.className = 'avatar-preview';
+  avatarPreview.innerHTML = `<i class="fas fa-user-circle"></i>`;
 
   const avatarInput = document.createElement('input');
   avatarInput.type = 'file';
@@ -66,6 +66,9 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   changeButton.className = 'secondary-button';
   changeButton.textContent = t.profile.settings.changeAvatar;
   changeButton.style.marginTop = '1rem';
+  changeButton.style.display = 'block';
+  changeButton.style.marginLeft = 'auto';
+  changeButton.style.marginRight = 'auto';
   changeButton.addEventListener('click', () => avatarInput.click());
 
   avatarPreviewContainer.appendChild(avatarPreview);
