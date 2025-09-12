@@ -918,7 +918,49 @@ function renderTournamentPage(): HTMLElement {
       }
     });
     
-    createTournamentBtn?.addEventListener('click', showCreateTournamentModal);
+
+    // Add tournament start logic: fetch matches and start first match
+    createTournamentBtn?.addEventListener('click', async () => {
+      // For demo: prompt for tournament ID, or use a fixed one
+      const tournamentId = prompt('Enter tournament ID to start:');
+      if (!tournamentId) return;
+      showMessage('Starting tournament...', 'info');
+      const res = await apiService.tournaments.start(Number(tournamentId));
+      if (res.error || !res.data || !res.data.matches || res.data.matches.length === 0) {
+        showMessage(res.error || 'No matches found for this tournament.', 'error');
+        return;
+      }
+      // Always start the first match for demo
+      const match = res.data.matches[0];
+      if (!match) {
+        showMessage('No match found.', 'error');
+        return;
+      }
+      const app = document.getElementById("app");
+      if (app) {
+        let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
+        if (!gameContainer) {
+          gameContainer = document.createElement("div");
+          gameContainer.id = "game-container-wrapper";
+          gameContainer.className = "game-container-wrapper";
+          app.innerHTML = '';
+          app.appendChild(gameContainer);
+        } else {
+          gameContainer.innerHTML = '';
+        }
+        // Navigation back function
+        const navigateBack = () => {
+          navigateTo('/tournament');
+        };
+        // Create and render the game, passing matchId and tournamentId
+        const gamePage = create1v1GamePage(gameContainer, navigateBack);
+        if (gamePage && gamePage.game) {
+          gamePage.game.matchId = match.matchId;
+          gamePage.game.tournamentId = Number(tournamentId);
+        }
+        showMessage('🎮 Starting tournament match...', 'info');
+      }
+    });
     
   } else {
     // Login required section
@@ -1198,12 +1240,17 @@ function renderProfilePage(): HTMLElement {
     { id: "match-history", label: t.profile.tabs.history, icon: "fa-history" }
   ];
   
-  tabs.forEach((tab, index) => {
+  // Determine last active tab from localStorage or default to dashboard
+  const lastActiveTab = localStorage.getItem('profileActiveTab') || 'dashboard';
+  tabs.forEach((tab) => {
     const tabButton = document.createElement("button");
-    tabButton.className = `tab-button ${index === 0 ? 'active' : ''}`;
+    tabButton.className = `tab-button${tab.id === lastActiveTab ? ' active' : ''}`;
     tabButton.dataset.tab = tab.id;
     tabButton.innerHTML = `<i class="fas ${tab.icon}"></i> ${tab.label}`;
-    tabButton.addEventListener("click", () => switchTab(tab.id));
+    tabButton.addEventListener("click", () => {
+      switchTab(tab.id);
+      localStorage.setItem('profileActiveTab', tab.id);
+    });
     tabButtons.appendChild(tabButton);
   });
   
@@ -1358,6 +1405,11 @@ function renderProfilePage(): HTMLElement {
   tabContent.appendChild(statsTab);
   tabContent.appendChild(friendsTab);
   tabContent.appendChild(historyTab);
+
+  // Show last active tab on load
+  setTimeout(() => {
+    switchTab(lastActiveTab);
+  }, 0);
   
   tabContainer.appendChild(tabContent);
   profilePage.appendChild(tabContainer);

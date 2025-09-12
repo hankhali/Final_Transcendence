@@ -319,3 +319,5 @@ This project is part of the 42 School curriculum and follows their guidelines fo
 *Experience the future of retro gaming with Neon Pong!*
 
 </div>
+
+after registration u have to login
