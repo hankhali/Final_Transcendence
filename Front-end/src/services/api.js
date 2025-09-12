@@ -105,6 +105,14 @@ const apiService = {
       return fetchApi("/me", {
         method: "DELETE"
       });
+    },
+
+    // Update user profile (username, bio, password, etc.)
+    updateProfile: async (profileData) => {
+      return fetchApi("/me", {
+        method: "PATCH",
+        body: JSON.stringify(profileData)
+      });
     }
   },
 
