@@ -1,3 +1,10 @@
+.save-changes-button.success {
+  background: linear-gradient(90deg, #00ff99 0%, #00e6ff 100%);
+  color: #fff;
+  box-shadow: 0 0 16px 4px #00ff99, 0 0 32px 8px #00e6ff;
+  border: 1px solid #00ff99;
+  transition: background 0.3s, box-shadow 0.3s, border 0.3s;
+}
 /* Premium Profile Settings */
 .profile-settings {
   background: linear-gradient(135deg, rgba(15, 18, 40, 0.9) 0%, rgba(8, 10, 28, 0.95) 100%);

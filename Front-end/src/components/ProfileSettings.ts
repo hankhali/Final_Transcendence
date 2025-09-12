@@ -181,6 +181,15 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   advancedContent.style.display = 'none';
   
   // Password Update Section
+  // Old Password Field (for password change)
+  const oldPasswordField = createFormField({
+    label: 'Current Password',
+    name: 'oldPassword',
+    type: 'password',
+    placeholder: 'Enter your current password',
+    autoComplete: 'current-password'
+  });
+
   const passwordField = createFormField({
     label: t.profile.settings.newPassword,
     name: 'newPassword',
@@ -188,7 +197,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     placeholder: t.profile.settings.passwordPlaceholder,
     autoComplete: 'new-password'
   });
-  
+
   const confirmPasswordField = createFormField({
     label: t.profile.settings.confirmPassword,
     name: 'confirmPassword',
@@ -196,7 +205,8 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     placeholder: t.profile.settings.confirmPasswordPlaceholder,
     autoComplete: 'new-password'
   });
-  
+
+  advancedContent.appendChild(oldPasswordField);
   advancedContent.appendChild(passwordField);
   advancedContent.appendChild(confirmPasswordField);
   
@@ -317,24 +327,60 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     
     const formData = new FormData(form);
     const profileData: Record<string, any> = {};
-    
+
     // Get all form data
     formData.forEach((value, key) => {
       if (value) profileData[key] = value;
     });
-    
+
     // Get skill level
     const selectedSkill = form.querySelector('input[name="skillLevel"]:checked') as HTMLInputElement;
     if (selectedSkill) {
       profileData.skillLevel = selectedSkill.value;
     }
-    
+
+    // Password update logic
+    if (profileData.oldPassword && profileData.newPassword && profileData.confirmPassword) {
+      if (profileData.newPassword !== profileData.confirmPassword) {
+        showMessage('New password and confirmation do not match.', 'error');
+        return;
+      }
+      // Send oldPassword and password to backend (rename newPassword to password)
+      try {
+        const res = await apiService.users.updateProfile({
+          oldPassword: profileData.oldPassword,
+          password: profileData.newPassword
+        });
+        if (res.error) {
+          showMessage(`Failed to update password: ${res.error}`, 'error');
+          return;
+        }
+        showMessage(res.data?.message || 'Password updated successfully!', 'success');
+        const saveBtn = form.querySelector('.save-changes-button') as HTMLButtonElement;
+        if (saveBtn) {
+          saveBtn.classList.add('success');
+          setTimeout(() => saveBtn.classList.remove('success'), 2000);
+        }
+      } catch (error) {
+        console.error('Error updating password:', error);
+        showMessage('Failed to update password. Please try again.', 'error');
+      }
+      return;
+    }
+
+    // Other profile updates (username, bio, etc.)
     try {
-      // TODO: Add API call to update profile
-      console.log('Updating profile:', profileData);
-      
-      // Show success message
-      showMessage('Profile updated successfully!', 'success');
+      const res = await apiService.users.updateProfile(profileData);
+      if (res.error) {
+        showMessage(`Failed to update profile: ${res.error}`, 'error');
+        return;
+      }
+      showMessage(res.data?.message || 'Profile updated successfully!', 'success');
+      const saveBtn = form.querySelector('.save-changes-button') as HTMLButtonElement;
+      if (saveBtn) {
+        saveBtn.classList.add('success');
+        setTimeout(() => saveBtn.classList.remove('success'), 2000);
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       showMessage('Failed to update profile. Please try again.', 'error');
