@@ -1268,33 +1268,90 @@ function renderProfilePage(): HTMLElement {
   const dashboardTab = document.createElement("div");
   dashboardTab.className = "tab-pane active";
   dashboardTab.id = "dashboard";
-  dashboardTab.appendChild(createDashboardSection(mockUserData));
+  // Fetch real user profile and render dashboard
+  apiService.users.getMyProfile().then((res) => {
+    if (res.data && res.data.user) {
+      const userData = {
+        ...res.data.user,
+        matchHistory: res.data.gameHistory || [],
+        friends: res.data.user.friends || []
+      };
+      dashboardTab.appendChild(createDashboardSection(userData));
+    } else {
+      dashboardTab.textContent = "Failed to load dashboard.";
+    }
+  });
   
   // Profile Settings Tab
   const profileInfoTab = document.createElement("div");
   profileInfoTab.className = "tab-pane";
   profileInfoTab.id = "profile-info";
-  
-  const profileSettings = createProfileSettings(mockUserData);
-  profileInfoTab.appendChild(profileSettings);
+
+  // Fetch real user profile and render settings
+  apiService.users.getMyProfile().then((res) => {
+    if (res.data && res.data.user) {
+      const userData = {
+        ...res.data.user,
+        matchHistory: res.data.gameHistory || [],
+        friends: res.data.user.friends || []
+      };
+      const profileSettings = createProfileSettings(userData);
+      profileInfoTab.appendChild(profileSettings);
+    } else {
+      profileInfoTab.textContent = "Failed to load profile.";
+    }
+  });
   
   // Statistics Tab
   const statsTab = document.createElement("div");
   statsTab.className = "tab-pane";
   statsTab.id = "stats";
-  statsTab.appendChild(createStatsSection(mockUserData));
+  apiService.users.getMyProfile().then((res) => {
+    if (res.data && res.data.user) {
+      const userData = {
+        ...res.data.user,
+        matchHistory: res.data.gameHistory || [],
+        friends: res.data.user.friends || []
+      };
+      statsTab.appendChild(createStatsSection(userData));
+    } else {
+      statsTab.textContent = "Failed to load stats.";
+    }
+  });
   
   // Friends Tab
   const friendsTab = document.createElement("div");
   friendsTab.className = "tab-pane";
   friendsTab.id = "friends";
-  friendsTab.appendChild(createFriendsSection(mockUserData.friends));
+  apiService.users.getMyProfile().then((res) => {
+    if (res.data && res.data.user) {
+      const userData = {
+        ...res.data.user,
+        matchHistory: res.data.gameHistory || [],
+        friends: res.data.user.friends || []
+      };
+      friendsTab.appendChild(createFriendsSection(userData.friends));
+    } else {
+      friendsTab.textContent = "Failed to load friends.";
+    }
+  });
   
   // Match History Tab
   const historyTab = document.createElement("div");
   historyTab.className = "tab-pane";
   historyTab.id = "match-history";
-  historyTab.appendChild(createMatchHistorySection(mockUserData.matchHistory));
+  apiService.users.getMyProfile().then((res) => {
+    if (res.data && res.data.user) {
+      const userData = {
+        ...res.data.user,
+        matchHistory: res.data.gameHistory || [],
+        friends: res.data.user.friends || []
+      };
+      historyTab.appendChild(createMatchHistorySection(userData.matchHistory));
+    } else {
+      historyTab.textContent = "Failed to load match history.";
+    }
+  });
   
   tabContent.appendChild(dashboardTab);
   tabContent.appendChild(profileInfoTab);
