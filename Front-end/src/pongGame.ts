@@ -78,6 +78,10 @@ export class PongGame {
   private extraBalls: Ball[] = [];
   private collectedPowerUps: PowerUp[] = [];
 
+  // [ADDED BY HANIEH & COPILOT] For backend API integration
+  public matchId?: number;
+  public tournamentId?: number;
+
   constructor(canvas: HTMLCanvasElement, config?: Partial<GameConfig>) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;

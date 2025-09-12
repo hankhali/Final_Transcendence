@@ -118,6 +118,17 @@ const apiService = {
 
   // Tournament related endpoints
   tournaments: {
+    // Submit match result for a tournament
+    submitMatchResult: async (tournamentId, matchId, player1Score, player2Score) => {
+      return fetchApi(`/tournaments/${tournamentId}/finish`, {
+        method: "POST",
+        body: JSON.stringify({
+          matchId,
+          player1Score,
+          player2Score
+        })
+      });
+    },
     //Create tournament (4 or 8 players only)
     create: async (name, maxPlayers)=> {
       return fetchApi("/tournaments", {

@@ -478,6 +478,13 @@ export class GamePage {
     // Create 1v1 game with customization overrides
     const overrides = this.getOverridesFromCustomization();
     this.game = create1v1Game(this.gameCanvas, overrides);
+    // [ADDED] Set matchId and tournamentId for backend integration
+    if (this.game) {
+      // You may want to generate or fetch these IDs from your backend or game context
+      // For demo, we'll use dummy values. Replace with real logic as needed.
+      this.game.matchId = Date.now(); // Example: use timestamp as dummy matchId
+      this.game.tournamentId = 1; // Example: hardcoded tournamentId
+    }
     console.log('Game created:', this.game);
     this.setupGameCallbacks();
   }
@@ -489,6 +496,11 @@ export class GamePage {
     // Create AI game with customization overrides
     const overrides = this.getOverridesFromCustomization();
     this.game = createAIGame(this.gameCanvas, difficulty, overrides);
+    // [ADDED] Set matchId and tournamentId for backend integration
+    if (this.game) {
+      this.game.matchId = Date.now(); // Example: use timestamp as dummy matchId
+      this.game.tournamentId = 1; // Example: hardcoded tournamentId
+    }
     this.setupGameCallbacks();
   }
 
@@ -704,6 +716,32 @@ export class GamePage {
   }
 
   private showGameEndModal(winner: Player, gameTime: number): void {
+    // [ADDED BY HANIEH & COPILOT] Send match result to backend for game history
+    // This is required for game history and stats to work!
+    // Replace these with your actual matchId, tournamentId, and scores
+    const matchId = this.game?.matchId; // You need to set this when creating the game
+    const tournamentId = this.game?.tournamentId; // You need to set this when creating the game
+    const player1Score = this.game?.getPlayers().player1.score;
+    const player2Score = this.game?.getPlayers().player2.score;
+    if (matchId && tournamentId && typeof player1Score === 'number' && typeof player2Score === 'number') {
+      // Use the shared API service for match result submission
+        // Use the shared API service for match result submission
+        import('./services/api.js').then(({ apiService }) => {
+          apiService.tournaments.submitMatchResult(tournamentId, matchId, player1Score, player2Score)
+            .then(({ data, error }) => {
+              if (error) {
+                console.error('[ADDED] Error sending match result:', error);
+              } else {
+                console.log('[ADDED] Match result sent to backend:', data);
+              }
+            })
+            .catch(err => {
+              console.error('[ADDED] Error sending match result:', err);
+            });
+        });
+    } else {
+      console.warn('[ADDED] Missing matchId/tournamentId or scores, cannot send match result to backend');
+    }
     const modal = document.getElementById('game-end-modal');
     const winnerTitle = document.getElementById('winner-title');
     const winnerName = document.getElementById('winner-name');
