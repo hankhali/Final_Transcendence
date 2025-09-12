@@ -109,7 +109,7 @@ export const apiService = {
       });
     },
 
-    // Get user profile
+    // Get user profile by ID
     getProfile: async (userId: number): Promise<ApiResponse<User>> => {
       if (USE_MOCK_API) {
         const mock: User = {
@@ -124,8 +124,23 @@ export const apiService = {
       return fetchApi(`/users/${userId}`, {
         method: 'GET'
       });
-    }
-    ,
+    },
+
+    // Get authenticated user's profile (with gameHistory)
+    getMyProfile: async (): Promise<ApiResponse<any>> => {
+      return fetchApi('/me', {
+        method: 'GET'
+      });
+    },
+
+    // Update user profile (username, bio, password, avatar, etc.)
+    updateProfile: async (profileData: Record<string, any>): Promise<ApiResponse<any>> => {
+      return fetchApi('/me', {
+        method: 'PATCH',
+        body: JSON.stringify(profileData)
+      });
+    },
+
     // Delete my account (authenticated)
     deleteMyAccount: async (): Promise<ApiResponse<{ message: string }>> => {
       const token = localStorage.getItem('token');

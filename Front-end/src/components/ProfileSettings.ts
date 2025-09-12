@@ -53,13 +53,41 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
 
   const avatarPreview = document.createElement('div');
   avatarPreview.className = 'avatar-preview';
-  avatarPreview.innerHTML = `<i class="fas fa-user-circle"></i>`;
+  if (defaultProfile.avatar && defaultProfile.avatar.startsWith('data:image')) {
+    avatarPreview.innerHTML = `<img src="${defaultProfile.avatar}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+  } else {
+    avatarPreview.innerHTML = `<i class="fas fa-user-circle"></i>`;
+  }
 
   const avatarInput = document.createElement('input');
   avatarInput.type = 'file';
   avatarInput.accept = 'image/*';
   avatarInput.className = 'avatar-input';
   avatarInput.hidden = true;
+
+  // Handle avatar upload and preview
+  avatarInput.addEventListener('change', async (event) => {
+    const file = avatarInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string;
+      // Update preview
+      avatarPreview.innerHTML = `<img src="${base64}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+      // Send to backend
+      try {
+        const res = await apiService.users.updateProfile({ avatar: base64 });
+        if (res.error) {
+          showMessage(`Failed to update avatar: ${res.error}`, 'error');
+        } else {
+          showMessage('Avatar updated successfully!', 'success');
+        }
+      } catch (err) {
+        showMessage('Error uploading avatar.', 'error');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
 
   const changeButton = document.createElement('button');
   changeButton.type = 'button';
