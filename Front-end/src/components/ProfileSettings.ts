@@ -499,10 +499,11 @@ function showDeleteProfileModal() {
         window.location.href = '/';
         // modal.remove(); // Not needed, redirect happens instantly
       } catch (error) {
-        console.error('Error deleting profile:', error);
-        showMessage(`Failed to delete profile: ${error.message}. Please try again.`, 'error');
-        confirmButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Profile Forever';
-        confirmButton.disabled = false;
+  console.error('Error deleting profile:', error);
+  const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+  showMessage(`Failed to delete profile: ${errorMsg}. Please try again.`, 'error');
+  confirmButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Profile Forever';
+  confirmButton.disabled = false;
       }
     }
   });
