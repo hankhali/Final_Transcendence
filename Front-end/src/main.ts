@@ -1184,7 +1184,6 @@ function renderProfilePage(): HTMLElement {
   pageTitle.textContent = t.profile.title;
   profilePage.appendChild(pageTitle);
   
-  // Create tabs for different sections
   const tabContainer = document.createElement("div");
   tabContainer.className = "profile-tabs";
   
