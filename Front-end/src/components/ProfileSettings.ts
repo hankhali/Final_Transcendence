@@ -48,34 +48,32 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   
   const avatarPreview = document.createElement('div');
   avatarPreview.className = 'avatar-preview';
-  avatarPreview.innerHTML = `
-    <i class="fas fa-user-circle"></i>
-  `;
-  
-  const avatarUpload = document.createElement('div');
-  avatarUpload.className = 'avatar-upload';
-  avatarUpload.innerHTML = '<i class="fas fa-camera"></i>';
-  
+  avatarPreview.innerHTML = `<i class="fas fa-user-circle"></i>`;
+
+  // Remove camera icon and center avatar icon above 'Change Avatar'
+  avatarPreviewContainer.style.display = 'flex';
+  avatarPreviewContainer.style.flexDirection = 'column';
+  avatarPreviewContainer.style.alignItems = 'center';
+
   const avatarInput = document.createElement('input');
   avatarInput.type = 'file';
   avatarInput.accept = 'image/*';
   avatarInput.className = 'avatar-input';
   avatarInput.hidden = true;
-  
+
   const changeButton = document.createElement('button');
   changeButton.type = 'button';
   changeButton.className = 'secondary-button';
   changeButton.textContent = t.profile.settings.changeAvatar;
   changeButton.style.marginTop = '1rem';
   changeButton.addEventListener('click', () => avatarInput.click());
-  
+
   avatarPreviewContainer.appendChild(avatarPreview);
-  avatarPreviewContainer.appendChild(avatarUpload);
-  
+
   avatarContainer.appendChild(avatarPreviewContainer);
   avatarContainer.appendChild(changeButton);
   avatarContainer.appendChild(avatarInput);
-  
+
   avatarSection.appendChild(avatarLabel);
   avatarSection.appendChild(avatarContainer);
   avatarOuterContainer.appendChild(avatarSection);
