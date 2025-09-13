@@ -273,10 +273,12 @@ async function updateUserProfile(userId, updates){
 module.exports = {
     createUser,
     userLogIn,
-    deleteUserById,
+    // deleteUserById,
     deleteUser,
     getUserdata,
     getPublicProfile,
+    setAlias,
     updateUserProfile //include updating avatar
     // uploadAvatar
+
 };
