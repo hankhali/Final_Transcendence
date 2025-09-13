@@ -72,10 +72,10 @@ async function userRoutes(fastify, options){
         }
     });
 
-    // //log out
-    // fastify.post('/logout', async (request, reply) => {
-
-    // })
+    //log out
+    fastify.post('/logout', { preHandler: [fastify.authenticate] }, async (req, reply) => {
+        return { message: "Logged out successfully" };
+    });
 
     // //upload avatar
     // fastify.post('/upload', async (request, reply) => {
@@ -180,5 +180,6 @@ async function userRoutes(fastify, options){
     // });
 
 }
+
 
 module.exports = userRoutes;
