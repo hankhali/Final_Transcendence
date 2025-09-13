@@ -13,7 +13,7 @@
 
 const db = require('../queries/database');
 const bcrypt = require('bcrypt');
-const multer = require('multer');
+// const multer = require('multer');
 
 //insert a new user into the database
 async function createUser(username, password, email){
@@ -282,3 +282,4 @@ module.exports = {
     // uploadAvatar
 
 };
+
