@@ -248,6 +248,23 @@ async function updateUserProfile(userId, updates){
     
 }
 
+//1. search friends
+//2. add friends
+
+async function searchFriends(userId) {
+    
+    //1. query users who are not in the friend list of the logged in user (the query takes care of excluding already friend users (vise versa) + list all the not friends users)
+    //show users (excluding the logged in user) + (exculde all the users in the logged in user that are listed as friends) + (exclude users who added the logged in user)
+    const listUsers = db.prepare(`SELECT u.id, u.username, u.current_status FROM users u WHERE u.id != ? AND u.id NOT IN (SELECT f.friend_id FROM friends f WHERE f.user_id = ?)
+        AND u.id NOT IN (SELECT f.user_id FROM friends f WHERE f.friend_id = ?)`).all(userId, userId, userId);
+    if(listUsers.length === 0){ //if all() was an empty array
+        throw new Error('No friends yet');
+    }
+
+    return ({users: listUsers});
+
+}
+
 module.exports = {
     createUser,
     userLogIn,
@@ -255,10 +272,11 @@ module.exports = {
     getUserdata,
     getPublicProfile,
     setAlias,
+    searchFriends,
     updateUserProfile //include updating avatar
     // uploadAvatar
-
 };
+
 
 
 
