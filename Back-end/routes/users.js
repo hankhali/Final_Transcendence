@@ -11,6 +11,11 @@ const { getUserdata } = require('../controllers/users');
 const { getPublicProfile } = require('../controllers/users');
 const { updateUserProfile } = require('../controllers/users');
 const { setAlias } = require('../controllers/users');
+const { searchFriends } = require('../controllers/users');
+const { addFriends } = require('../controllers/users');
+
+
+
 const db = require('../queries/database');
 const fs = require('fs'); //filesystem
 const path = require('path'); //nodejs
@@ -48,6 +53,7 @@ async function userRoutes(fastify, options){
         }
     });
 
+    
     //log in authentication
     fastify.post('/login', async (request, reply) => {
         try{
@@ -62,23 +68,27 @@ async function userRoutes(fastify, options){
                     // expiresIn: '2h'
                 });
             //return token
-            reply.send({message: 'Login successful', token, userId: userData.userId}); //...userData
+            reply.send({message: 'Login successful', token, userId: userData.userId, current_status: 'online'}); //...userData
         }
         catch(error){
             return reply.code(400).send({error: error.message});
         }
     });
 
+    
     //log out
-    fastify.post('/logout', { preHandler: [fastify.authenticate] }, async (req, reply) => {
-        return { message: "Logged out successfully" };
+    fastify.post('/logout', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const userId = request.user.id;
+            db.prepare(`UPDATE users SET current_status = 'offline' WHERE id = ?`).run(userId);
+            reply.send({ message: "Logged out successfully" });
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+        }
     });
 
 
-    // //upload avatar
-    // fastify.post('/upload', async (request, reply) => {
-    //     reply.send('Successfully uploaded Avatar');
-    // })
 
 
     //show registered users (maybe unnecessary)
@@ -156,20 +166,6 @@ async function userRoutes(fastify, options){
     });
 
 
-    // //delete user by id (maybe unnecessary)
-    // fastify.delete('/users/:id', async (request, reply) => {
-    //     try{
-    //         const { id } = request.params;
-    //         const userIdDeleted = await deleteUserById(id);
-    //         reply.send(userIdDeleted);
-    //     }
-    //     catch(error){
-    //         return reply.code(400).send({error: error.message});
-    //     }
-    // });
-
-
-
 
     //let user upload files using multi-part
 
@@ -203,9 +199,39 @@ async function userRoutes(fastify, options){
     });
 
 
+    //search for friends to add (will list available users first)
+    fastify.get('/search-friends', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const userId = request.user.id;
+            const listedFriends = await searchFriends(userId);
+            reply.send(listedFriends);
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+    }
+    });
+    
+    fastify.post('/add-friends', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const userId = request.user.id;
+            const { friendId } = request.body;
+            if(!friendId){
+                return reply.code(400).send({error: 'friend id is required'});
+            }
 
+            const add = await addFriends(userId, friendId);
+            reply.send(add);
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+
+        }
+    });
+   
     
 }
 
 module.exports = userRoutes;
+
+
 

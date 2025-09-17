@@ -112,6 +112,19 @@ const apiService = {
       });
     },
 
+    searchForFriends: async () => {
+      return fetchApi("search-friends", {
+        method: "GET"
+      });
+    },
+
+    addFriends: async () => {
+      return fetchApi("add-friends", {
+        method: "POST"
+      });
+    },
+
+    
     // Upload avatar (expects a File object, returns uploaded filename)
     uploadAvatar: async (file) => {
       const token = localStorage.getItem("token");
