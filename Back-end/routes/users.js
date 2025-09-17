@@ -12,6 +12,8 @@ const { getPublicProfile } = require('../controllers/users');
 const { updateUserProfile } = require('../controllers/users');
 const { setAlias } = require('../controllers/users');
 const { searchFriends } = require('../controllers/users');
+const { addFriends } = require('../controllers/users');
+
 
 
 const db = require('../queries/database');
@@ -209,8 +211,27 @@ async function userRoutes(fastify, options){
     }
     });
     
+    fastify.post('/add-friends', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const userId = request.user.id;
+            const { friendId } = request.body;
+            if(!friendId){
+                return reply.code(400).send({error: 'friend id is required'});
+            }
+
+            const add = await addFriends(userId, friendId);
+            reply.send(add);
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+
+        }
+    });
+   
+    
 }
 
 module.exports = userRoutes;
+
 
 
