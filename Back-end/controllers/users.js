@@ -299,6 +299,44 @@ async function addFriends(userId, friendId){
     return {message: "Friend request sent!", friendId};
 }
 
+async function requestResponse(requestId, userId, action){
+    //check that the request exists so we can accept or reject
+    const request = db.prepare(`SELECT friend_id FROM friends WHERE id = ?`).get(requestId);
+    if(!request){
+        throw new Error('No requests available');
+    }
+
+    //dispaly the friend requests from users
+    // const viewPendingRequests = 
+
+
+    //only logged in user can accept/reject a request (receiver of the request)
+    if(request.friend_id !== userId){
+        throw new Error('Not authorized to make changes');
+    }
+
+    //check the request
+    if(action === 'accepted'){
+        db.prepare(`UPDATE friends SET friend_request = 'accepted' WHERE id = ?`).run(requestId);
+        return {message: "Friend request accepted!"};
+    }
+    else if(action === 'rejected'){
+        db.prepare(`UPDATE friends SET friend_request = 'rejected' WHERE id = ?`).run(requestId);
+        return {message: "Friend request rejected!"};
+    }
+    else{
+        throw new Error('Invalid action');
+    }
+
+}
+
+async function viewPendingRequests(userId){
+    const viewRequests = db.prepare(`SELECT id, user_id AS sender_id FROM friends WHERE friend_id = ? AND friend_request = 'pending'`).all(userId);
+    if(viewRequests.length === 0){
+        throw new Error('No pending requests');
+    }
+    console.log({pending: viewRequests});
+}
 
 module.exports = {
     createUser,
@@ -309,8 +347,11 @@ module.exports = {
     setAlias,
     searchFriends,
     addFriends,
+    requestResponse,
+    viewPendingRequests,
     updateUserProfile
 };
+
 
 
 
