@@ -265,6 +265,41 @@ async function searchFriends(userId) {
 
 }
 
+
+/*
+
+User A (sends a friend request) to User B
+User B (accept or reject) 
+*/
+async function addFriends(userId, friendId){
+    //check if users exists
+    const checkUsers = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+    const checkFriends = db.prepare('SELECT id FROM users WHERE id = ?').get(friendId);
+    if (!checkUsers || !checkFriends){
+        throw new Error('User not found');
+    }
+
+    //prevent duplicates, logged in user shouldnt be the same as friend id
+    if(userId === friendId){
+        throw new Error('you cannot add yourself as a friend');
+    }
+
+    //check that this user is not in the friend list and this user is not in the list of this friend
+    const friendshipExist = db.prepare('SELECT * FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)').get(userId, friendId, friendId, userId);
+    if(friendshipExist){
+        throw new Error('Friendship already exists');
+    }
+
+    //when a logged in user add a friend, the add request should go to them and show the notfication + reject or accept the add request
+    // logged in user wants to add a user user_id add friend_id make friend_request = 'pending'
+    //backend check: users exist, not the same user as logged in user, not already friends or a pending request
+    db.prepare(`INSERT INTO friends (user_id, friend_id, friend_request) VALUES (?, ?, 'pending')`).run(userId, friendId);
+
+    //return messages (request sent)
+    return {message: "Friend request sent!", friendId};
+}
+
+
 module.exports = {
     createUser,
     userLogIn,
@@ -273,9 +308,10 @@ module.exports = {
     getPublicProfile,
     setAlias,
     searchFriends,
-    updateUserProfile //include updating avatar
-    // uploadAvatar
+    addFriends,
+    updateUserProfile
 };
+
 
 
 
