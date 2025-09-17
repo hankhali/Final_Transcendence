@@ -273,8 +273,7 @@ async function updateUserProfile(userId, updates){
 module.exports = {
     createUser,
     userLogIn,
-    // deleteUserById,
-    deleteUser,
+    deleteMyAccount,
     getUserdata,
     getPublicProfile,
     setAlias,
@@ -282,4 +281,5 @@ module.exports = {
     // uploadAvatar
 
 };
+
 
