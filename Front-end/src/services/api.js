@@ -118,10 +118,26 @@ const apiService = {
       });
     },
 
-    addFriends: async () => {
+    addFriends: async (friendId) => {
       return fetchApi("add-friends", {
-        method: "POST"
-      });
+        method: "POST",
+        body: JSON.stringify({ friend_id: friendId })
+    });
+  },
+
+
+    sendRequestResponse: async (requestId, action) => {
+      return fetchApi(`/friend/request/${requestId}/respond`, {
+        method: "POST",
+        body: JSON.stringify({ action })
+    });
+  },
+
+
+    listRequests: async () => {
+      return fetchApi("/friend/requests", {
+        method: "GET"
+      })
     },
 
     
