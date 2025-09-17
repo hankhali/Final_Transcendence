@@ -134,13 +134,14 @@ const apiService = {
 
   // Tournament related endpoints
   tournaments: {
-    //Create tournament (4 or 8 players only)
-    create: async (name, maxPlayers)=> {
+    //Create tournament (local, with 4 player names)
+    create: async (name, maxPlayers, playerNames) => {
       return fetchApi("/tournaments", {
         method: "POST",
         body: JSON.stringify({ 
-          name, 
+          name,
           maxPlayers,
+          playerNames
         })
       });
     },
@@ -159,12 +160,12 @@ const apiService = {
       });
     },
 
-    // Join tournament with multiple aliases (4/8)
-    join: async (tournamentId, playerAliases) => {
+    // Join tournament with a single alias
+    join: async (tournamentId, tournament_alias) => {
       return fetchApi(`/tournaments/${tournamentId}/join`, {
         method: "POST",
         body: JSON.stringify({ 
-          playerAliases,  
+          tournament_alias
         })
       });
     },
