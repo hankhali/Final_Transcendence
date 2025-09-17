@@ -126,7 +126,7 @@ async function userRoutes(fastify, options){
 
 
     //fetch user public profile
-    fastify.get('/users/:id', async (request, reply) => {
+    fastify.get('/users/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
         try{
             const { id } = request.params;
             const data = await getPublicProfile(id);
@@ -172,10 +172,6 @@ async function userRoutes(fastify, options){
 
 
     //let user upload files using multi-part
-    fastify.get('/', async (_, reply) => {
-        reply.type('text/html').send(fs.readFileSync("./index.html", 'utf-8'));
-    });
-
 
     fastify.post('/uploads', { preHandler: [fastify.authenticate] }, async (request, reply) => {
         try{
@@ -207,3 +203,4 @@ async function userRoutes(fastify, options){
 }
 
 module.exports = userRoutes;
+
