@@ -228,11 +228,11 @@ async function updateUserProfile(userId, updates){
         db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, userId);
     }
 
-    // 4. Avatar (base64 string or file path)
-    if(updates.avatar){
-        // For simplicity, store base64 string directly (in production, save file and store path)
-        db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(updates.avatar, userId);
-    }
+    // 4. Avatar (file upload handled separately via /uploads endpoint)
+    // if(updates.avatar){
+    //     // For simplicity, store base64 string directly (in production, save file and store path)
+    //     db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(updates.avatar, userId);
+    // }
 
     // 5. Bio
     if(updates.bio){

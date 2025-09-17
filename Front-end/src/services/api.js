@@ -79,38 +79,56 @@ const apiService = {
       });
     },
 
-    //update user profile / information
-    //I should check the body to match the route
-    updateProfile: async() => {
+    // Update user profile (send only provided fields)
+    updateProfile: async (profileData) => {
+      // profileData: { username?, email?, alias?, password?, avatar? }
       return fetchApi("/me", {
         method: "PATCH",
-        body: JSON.stringify({
-          username,
-          email,
-          alias,
-          password,
-          avatar
-        })
+        body: JSON.stringify(profileData)
       });
     },
 
-    // Get user own profile
-    getMyProfile: async ()=> {
-      return fetchApi("/me", {
+    // Get user own profile (returns avatar URL if present)
+    getMyProfile: async () => {
+      const result = await fetchApi("/me", {
         method: "GET"
       });
+      // result.data.avatar may contain the avatar filename or URL
+      return result;
     },
 
+    // Get another user's public profile (returns avatar URL if present)
     getOthersProfile: async (userId) => {
-      return fetchApi(`/users/${userId}`, {
+      const result = await fetchApi(`/users/${userId}`, {
         method: "GET"
       });
+      // result.data.avatar may contain the avatar filename or URL
+      return result;
     },
 
     deleteMyAccount: async () => {
       return fetchApi("/me", {
         method: "DELETE"
       });
+    },
+
+    // Upload avatar (expects a File object, returns uploaded filename)
+    uploadAvatar: async (file) => {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const response = await fetch(`${API_BASE_URL}/uploads`, {
+        method: "POST",
+        // Do NOT set Content-Type header; browser will set it for FormData
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        body: formData
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`);
+      }
+      // Response: { message, file } where file is the avatar filename
+      return response.json();
     }
   },
 
@@ -168,7 +186,4 @@ const apiService = {
 };
 
 
-module.exports = {
-  fetchApi,
-  apiService
-};
+export { fetchApi, apiService };

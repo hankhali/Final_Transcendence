@@ -183,16 +183,21 @@ async function userRoutes(fastify, options){
             if(!data){
                 return reply.status(400).send({error: 'No file uploaded'});
             }
-            
-            // const uploadDir = path.join(__dirname, 'uploads');
-            // if(!fs.existsSync(uploadDir)) {
-            //     fs.mkdirSync(uploadDir);
-            // }
-
-            // const saveTo = path.join(uploadDir, data.filename);
-
-            const saveTo = path.join(__dirname, 'uploads', data.filename);
+            // Accept only common image MIME types
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(data.mimetype)) {
+                return reply.status(415).send({error: 'Unsupported file type. Allowed: PNG, JPEG, JPG, GIF, WEBP'});
+            }
+            const uploadDir = path.join(__dirname, '..', 'uploads');
+            if(!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir);
+            }
+            const saveTo = path.join(uploadDir, data.filename);
             await pump(data.file, fs.createWriteStream(saveTo));
+
+            // Save the filename in the user's avatar field in the database
+            const userId = request.user.id;
+            db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(data.filename, userId);
 
             reply.send({message: 'Uploaded!', file: data.filename});
         }

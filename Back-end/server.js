@@ -1,11 +1,18 @@
 const fastify = require('fastify')({logger: true});
+// Serve static files from uploads directory
+fastify.register(require('@fastify/static'), {
+    root: require('path').join(__dirname, 'uploads'),
+    prefix: '/uploads/',
+});
 // Enable CORS for frontend requests
 fastify.register(require('@fastify/cors'), { 
   origin: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 });
-// ...existing code...
+
+fastify.register(require('@fastify/multipart'));
+
 const db = require('./queries/database');
 
 fastify.register(require('./routes/users'));
