@@ -1,5 +1,6 @@
 
-// Base API URL - update this to match your backend
+
+// Base API URL - update this to match your backend   //check account deletion
 const API_BASE_URL = 'http://localhost:5001'; 
 
 // Generic fetch wrapper
@@ -7,15 +8,17 @@ async function fetchApi(endpoint, options){
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    let headers = { ...options.headers };
-    // Only set Content-Type if there is a body
-    if (options.body) {
-      headers["Content-Type"] = "application/json";
-    }
+    const headers = {
+      "Content-Type": "application/json",
+      ...options.headers,
+    };
+
     const token = localStorage.getItem("token");
     if(token){
       headers["Authorization"] = `Bearer ${token}`;
+      console.log(token);
     }
+
     const response = await fetch(url, {
       ...options,
       headers,
@@ -26,19 +29,7 @@ async function fetchApi(endpoint, options){
       throw new Error(errorData.error || `API error: ${response.status} ${response.statusText}`);
     }
 
-    // Handle different response types
-    let data = null;
-    const contentType = response.headers.get('content-type');
-    
-    if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
-      data = { message: 'Success' };
-    } else {
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        data = { message: 'Success' };
-      }
-    }
+    const data = await response.json();
 
     return {
       data,
@@ -88,6 +79,21 @@ const apiService = {
       });
     },
 
+    //update user profile / information
+    //I should check the body to match the route
+    updateProfile: async() => {
+      return fetchApi("/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          username,
+          email,
+          alias,
+          password,
+          avatar
+        })
+      });
+    },
+
     // Get user own profile
     getMyProfile: async ()=> {
       return fetchApi("/me", {
@@ -105,30 +111,11 @@ const apiService = {
       return fetchApi("/me", {
         method: "DELETE"
       });
-    },
-
-    // Update user profile (username, bio, password, etc.)
-    updateProfile: async (profileData) => {
-      return fetchApi("/me", {
-        method: "PATCH",
-        body: JSON.stringify(profileData)
-      });
     }
   },
 
   // Tournament related endpoints
   tournaments: {
-    // Submit match result for a tournament
-    submitMatchResult: async (tournamentId, matchId, player1Score, player2Score) => {
-      return fetchApi(`/tournaments/${tournamentId}/finish`, {
-        method: "POST",
-        body: JSON.stringify({
-          matchId,
-          player1Score,
-          player2Score
-        })
-      });
-    },
     //Create tournament (4 or 8 players only)
     create: async (name, maxPlayers)=> {
       return fetchApi("/tournaments", {
@@ -181,4 +168,7 @@ const apiService = {
 };
 
 
-export { fetchApi, apiService };
+module.exports = {
+  fetchApi,
+  apiService
+};
