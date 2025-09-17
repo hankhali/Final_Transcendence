@@ -101,18 +101,6 @@ async function userLogIn(username, password){
 }
 
 
-async function deleteUserById(userId){
-    //check if user about to be deleted exists
-    const user = db.prepare(`SELECT id FROM users WHERE id = ?`).get(userId);
-    if(!user){
-        throw new Error('User not found');
-    }
-
-    //delete exisiting user by id
-    db.prepare(`DELETE FROM users WHERE id = ?`).run(userId);
-    return {message: `User with ID ${userId} has been deleted`};
-}
-
 //A logged-in player opening their own dashboard would call getUserdata().
 //this is for authentcated users (who logged in and their token/session ID matches the requested profile ID)
 //The userId should not come from the client. You should take it from the JWT/session of the logged-in user (so they can only see their own data).
@@ -155,24 +143,32 @@ async function getPublicProfile(targetUserId){ //or username
 }
 
 
-async function deleteUser(userId){
-    const result = db.prepare('DELETE FROM users WHERE id = ?').run(userId);
-    if (result.changes === 0){
+
+
+
+async function deleteMyAccount(userId){
+    //check user exists
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    if (!user){
         throw new Error('User not found');
     }
-     // Optionally, confirm cascade worked (for debug/testing)
-    const remainingGames = db.prepare('SELECT COUNT(*) AS count FROM game_history WHERE user_id = ?').get(userId);
-    if (remainingGames.count > 0) {
-        console.warn(`Warning: Some game history still exists for user ${userId}`);
-    }
-    return { message: "Account deleted successfully" };
+
+    //delete user id
+    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    
+    //run a function to test that the stats are still there
+    //from game_history table
+    const matchHistory = db.prepare(`SELECT * FROM game_history
+        WHERE user_id IS NULL OR opponent_id IS NULL`).all();
+        
+        const tournaments = db.prepare(`SELECT * FROM tournaments WHERE winner_id IS NULL OR created_by IS NULL`).all();
+        
+        //print the results
+        console.log('matches with null users: ', matchHistory);
+        console.log('tournaments with null users: ', tournaments);
+
+        return { message: "Account deleted successfully" };
 }
-
-
-
-
-
-
 /*
 Validate file types.
 Limit file sizes.
@@ -180,24 +176,6 @@ Sanitize filenames.
 Store the image path in DB, not the image itself (unless small).
 Handle uploads securely.
 */
-
-// filename = '';
-// async function uploadAvatar(userId, avatar){
-//     const mystorage = multer.diskStorage({
-//         destination: './uploads',
-//         filename: (req, file, redirect) => {
-//             let date = Date.now();
-//             let fl = date + '.' + file.mimetype.split('/')[1];
-//             (null, fl);
-//             filename = fl;
-//         }
-//     })
-    
-//     const upload = multer({storage: mystorage});
-//     if(!upload){
-//         throw new Error('Error uploading Avatar');
-//     }
-// }
 
 
 
@@ -281,5 +259,6 @@ module.exports = {
     // uploadAvatar
 
 };
+
 
 
