@@ -6,14 +6,15 @@
 // /register is where the user will input their information
 const { createUser } = require('../controllers/users');
 const { userLogIn } = require('../controllers/users');
-const { deleteUserById } = require('../controllers/users');
-const { deleteUser } = require('../controllers/users');
+const { deleteMyAccount } = require('../controllers/users');
 const { getUserdata } = require('../controllers/users');
 const { getPublicProfile } = require('../controllers/users');
 const { updateUserProfile } = require('../controllers/users');
 const { setAlias } = require('../controllers/users');
 const db = require('../queries/database');
-
+const fs = require('fs'); //filesystem
+const path = require('path'); //nodejs
+const pump = require('pump'); //pump
 
 
 async function userRoutes(fastify, options){
@@ -54,18 +55,14 @@ async function userRoutes(fastify, options){
             const { username, password } = request.body;
             const userData = await userLogIn(username, password);
 
+
             //if valid, sign a token
             const token = fastify.jwt.sign({
                 id: userData.userId, username: userData.username}, {
-                    expiresIn: '2h'
+                    // expiresIn: '2h'
                 });
-            //return token, userId, and username
-            reply.send({
-                message: 'Login successful',
-                token,
-                userId: userData.userId,
-                username: userData.username
-            });
+            //return token
+            reply.send({message: 'Login successful', token, userId: userData.userId}); //...userData
         }
         catch(error){
             return reply.code(400).send({error: error.message});
@@ -76,6 +73,7 @@ async function userRoutes(fastify, options){
     fastify.post('/logout', { preHandler: [fastify.authenticate] }, async (req, reply) => {
         return { message: "Logged out successfully" };
     });
+
 
     // //upload avatar
     // fastify.post('/upload', async (request, reply) => {
@@ -147,22 +145,13 @@ async function userRoutes(fastify, options){
 
     //delete user's own profile
     fastify.delete('/me', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        try {
-            fastify.log.info('DELETE /me called');
-            fastify.log.info('Authorization header:', request.headers.authorization);
-            fastify.log.info('Request user:', request.user);
-            if (!request.user || !request.user.id) {
-                fastify.log.error('No authenticated user found');
-                return reply.code(401).send({ error: 'Unauthorized: No user found' });
-            }
-            const authUserId = request.user.id;
-            fastify.log.info(`Attempting to delete user with id: ${authUserId}`);
-            const deletion = await deleteUser(authUserId);
-            fastify.log.info(`Deletion result: ${JSON.stringify(deletion)}`);
+        try{
+            const authUserId  = request.user.id; //get from auth
+            const deletion = await deleteMyAccount(authUserId );
             return reply.code(200).send(deletion);
-        } catch (error) {
-            fastify.log.error('Error in DELETE /me:', error);
-            return reply.code(500).send({ error: error.message });
+        }
+        catch(error){
+            return reply.code(500).send({ error: error.message});
         }
     });
 
@@ -179,7 +168,42 @@ async function userRoutes(fastify, options){
     //     }
     // });
 
-}
 
+
+
+    //let user upload files using multi-part
+    fastify.get('/', async (_, reply) => {
+        reply.type('text/html').send(fs.readFileSync("./index.html", 'utf-8'));
+    });
+
+
+    fastify.post('/uploads', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const data = await request.file(); //single file
+            if(!data){
+                return reply.status(400).send({error: 'No file uploaded'});
+            }
+            
+            // const uploadDir = path.join(__dirname, 'uploads');
+            // if(!fs.existsSync(uploadDir)) {
+            //     fs.mkdirSync(uploadDir);
+            // }
+
+            // const saveTo = path.join(uploadDir, data.filename);
+
+            const saveTo = path.join(__dirname, 'uploads', data.filename);
+            await pump(data.file, fs.createWriteStream(saveTo));
+
+            reply.send({message: 'Uploaded!', file: data.filename});
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+        }
+    });
+
+
+
+    
+}
 
 module.exports = userRoutes;
