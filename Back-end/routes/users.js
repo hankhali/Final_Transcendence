@@ -13,6 +13,8 @@ const { updateUserProfile } = require('../controllers/users');
 const { setAlias } = require('../controllers/users');
 const { searchFriends } = require('../controllers/users');
 const { addFriends } = require('../controllers/users');
+const { requestResponse } = require('../controllers/users');
+const { viewPendingRequests } = require('../controllers/users');
 
 
 
@@ -228,10 +230,37 @@ async function userRoutes(fastify, options){
         }
     });
    
+    //for debug, list pending request
+    fastify.get('/friend/requests', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const userId = request.user.id;  // logged-in user
+            const pendingRequests = await viewPendingRequests(userId);
+        
+            reply.send({ pendingRequests });
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+        }
+    });
+
+    fastify.post('/friend/requests/:id/respond', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const requestId = request.params.id;
+            const userId = request.user.id;
+            const { action }= request.body;
+
+            const response = await requestResponse(requestId, userId, action);
+            reply.send(response);
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+        }
+    });
     
 }
 
 module.exports = userRoutes;
+
 
 
 
