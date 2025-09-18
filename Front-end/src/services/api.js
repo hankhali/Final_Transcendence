@@ -8,10 +8,11 @@ async function fetchApi(endpoint, options){
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const headers = {
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
+    // Only set Content-Type if body is present and method is not DELETE
+    const headers = { ...options.headers };
+    if (options.method !== "DELETE" && options.body) {
+      headers["Content-Type"] = "application/json";
+    }
 
     const token = localStorage.getItem("token");
     if(token){
@@ -113,25 +114,25 @@ const apiService = {
     },
 
     searchForFriends: async () => {
-      return fetchApi("search-friends", {
+      return fetchApi("/search-friends", {
         method: "GET"
       });
     },
 
     addFriends: async (friendId) => {
-      return fetchApi("add-friends", {
+      return fetchApi("/add-friends", {
         method: "POST",
-        body: JSON.stringify({ friend_id: friendId })
-    });
-  },
+        body: JSON.stringify({ friendId })
+      });
+    },
 
 
     sendRequestResponse: async (requestId, action) => {
-      return fetchApi(`/friend/request/${requestId}/respond`, {
+      return fetchApi(`/friend/requests/${requestId}/respond`, {
         method: "POST",
         body: JSON.stringify({ action })
-    });
-  },
+      });
+    },
 
 
     listRequests: async () => {

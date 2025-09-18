@@ -4,9 +4,10 @@ import { languageManager } from '../translations.js';
 import { apiService } from '../services/api.js';
 
 export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLElement {
-  const t = languageManager.getTranslations();
   const container = document.createElement('div');
   container.className = 'profile-settings';
+
+  const t = languageManager.getTranslations();
 
   // Initialize default values
   const defaultProfile: UserProfile = {

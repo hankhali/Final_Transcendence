@@ -2,6 +2,7 @@
 import "./styles/style.css"; // Ensure your CSS is imported
 import "./styles/game-page.css"; // Game page styles
 import { createProfileSettings } from "./components/ProfileSettings";
+import { createFriendsSection } from "./components/FriendsSection";
 import { languageManager } from "./translations";
 import { create1v1GamePage } from "./gamePage.js";
 import { apiService } from "./services/api";
@@ -1370,18 +1371,7 @@ function renderProfilePage(): HTMLElement {
   const friendsTab = document.createElement("div");
   friendsTab.className = "tab-pane";
   friendsTab.id = "friends";
-  apiService.users.getMyProfile().then((res) => {
-    if (res.data && res.data.user) {
-      const userData = {
-        ...res.data.user,
-        matchHistory: res.data.gameHistory || [],
-        friends: res.data.user.friends || []
-      };
-      friendsTab.appendChild(createFriendsSection(userData.friends));
-    } else {
-      friendsTab.textContent = "Failed to load friends.";
-    }
-  });
+  friendsTab.appendChild(createFriendsSection());
   
   // Match History Tab
   const historyTab = document.createElement("div");
@@ -1897,72 +1887,6 @@ export function createStatsSection(userData: any): HTMLElement {
   return statsContainer;
 }
 
-export function createFriendsSection(friends: any[]): HTMLElement {
-  const t = languageManager.getTranslations();
-  const friendsContainer = document.createElement("div");
-  friendsContainer.className = "friends-section";
-  
-  const friendsHeader = document.createElement("div");
-  friendsHeader.className = "section-header";
-  
-  const friendsTitle = document.createElement("h2");
-  friendsTitle.textContent = t.profile.friends.title;
-  
-  const addFriendBtn = document.createElement("button");
-  addFriendBtn.className = "primary-button";
-  addFriendBtn.innerHTML = `<i class="fas fa-user-plus"></i> ${t.profile.friends.addFriend}`;
-  addFriendBtn.addEventListener("click", showAddFriendModal);
-  
-  friendsHeader.appendChild(friendsTitle);
-  friendsHeader.appendChild(addFriendBtn);
-  friendsContainer.appendChild(friendsHeader);
-  
-  const friendsList = document.createElement("div");
-  friendsList.className = "friends-list";
-  
-  if (friends.length === 0) {
-    const emptyState = document.createElement("div");
-    emptyState.className = "empty-state";
-    emptyState.innerHTML = `
-      <i class="fas fa-user-friends"></i>
-      <p>No friends yet. Start by adding some friends!</p>
-    `;
-    friendsList.appendChild(emptyState);
-  } else {
-    friends.forEach(friend => {
-      const friendCard = document.createElement("div");
-      friendCard.className = "friend-card";
-      
-      const onlineStatus = friend.isOnline ? 'online' : 'offline';
-      const lastSeenText = friend.isOnline ? t.profile.friends.online : 
-        friend.lastSeen ? `${t.profile.friends.lastSeen} ${friend.lastSeen.toLocaleDateString()}` : 'Offline';
-      
-      friendCard.innerHTML = `
-        <div class="friend-avatar">
-          <img src="${friend.avatar}" alt="${friend.displayName}'s avatar" />
-          <div class="status-indicator ${onlineStatus}"></div>
-        </div>
-        <div class="friend-info">
-          <div class="friend-name">${friend.displayName}</div>
-          <div class="friend-username">@${friend.username}</div>
-          <div class="friend-status ${onlineStatus}">${lastSeenText}</div>
-        </div>
-        <div class="friend-actions">
-          <button class="secondary-button" onclick="challengeFriend('${friend.username}')">
-            <i class="fas fa-gamepad"></i> ${t.profile.friends.challenge}
-          </button>
-          <button class="danger-button" onclick="removeFriend(${friend.id})">
-            <i class="fas fa-user-minus"></i>
-          </button>
-        </div>
-      `;
-      friendsList.appendChild(friendCard);
-    });
-  }
-  
-  friendsContainer.appendChild(friendsList);
-  return friendsContainer;
-}
 
 export function createMatchHistorySection(matchHistory: any[]): HTMLElement {
   const t = languageManager.getTranslations();
