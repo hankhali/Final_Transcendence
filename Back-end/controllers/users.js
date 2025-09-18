@@ -37,18 +37,18 @@ async function createUser(username, password, email){
     }
 
 
+    // hanieh debug: log registration attempt
+    console.log('[hanieh debug] createUser called with:', { username, email });
     const hashedPassword = await bcrypt.hash(password, 10);
-    
     const stmt = db.prepare(`INSERT INTO users (username, password, email, alias) VALUES (?, ?, ?, ?)`);
     try{
         // Use username as default alias
         const sql = stmt.run(username, hashedPassword, email, username);
-        console.log('User Created Successfully!');
-        console.log(sql); //debug
-        return { id: sql.lastInsertRowid }; //returns the ID of the newly created user from sqlite
+        console.log('[hanieh debug] User Created Successfully!', sql);
+        return { id: sql.lastInsertRowid };
     }
     catch(error){
-        console.error('SQL Error:', error); //debug
+        console.error('[hanieh debug] SQL Error:', error);
         if(error.code === 'SQLITE_CONSTRAINT_UNIQUE' || error.code === 'SQLITE_CONSTRAINT'){
             throw new Error('Username or email already exists');
         }
@@ -118,8 +118,19 @@ async function getUserdata(userId){
     if(!getGameHistory){
         throw new Error('Error fetching game history');
     }
-    //return an object that contains user data and their game history
-    return {user: fetchData, gameHistory: getGameHistory};
+    // Fetch accepted friends (bidirectional)
+    const friends = db.prepare(`
+      SELECT u.id, u.username, u.avatar, u.current_status
+      FROM users u
+      JOIN friends f ON (
+        (f.user_id = ? AND f.friend_id = u.id)
+        OR (f.friend_id = ? AND f.user_id = u.id)
+      )
+      WHERE f.friend_request = 'accepted'
+    `).all(userId, userId);
+            console.log('[hanieh debug] getUserdata friends array:', friends);
+    //return an object that contains user data, their game history, and friends
+    return {user: fetchData, gameHistory: getGameHistory, friends};
 }
 
 
@@ -149,6 +160,8 @@ async function getPublicProfile(targetUserId){ //or username
 async function deleteMyAccount(userId){
     //check user exists
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    console.log('[DELETE DEBUG] Attempting to delete userId:', userId);
+    console.log('[DELETE DEBUG] User SELECT result:', user);
     if (!user){
         throw new Error('User not found');
     }
@@ -255,12 +268,17 @@ async function searchFriends(userId) {
     
     //1. query users who are not in the friend list of the logged in user (the query takes care of excluding already friend users (vise versa) + list all the not friends users)
     //show users (excluding the logged in user) + (exculde all the users in the logged in user that are listed as friends) + (exclude users who added the logged in user)
-    const listUsers = db.prepare(`SELECT u.id, u.username, u.current_status FROM users u WHERE u.id != ? AND u.id NOT IN (SELECT f.friend_id FROM friends f WHERE f.user_id = ?)
+        const listUsers = db.prepare(`SELECT u.id, u.username FROM users u WHERE u.id != ? AND u.id NOT IN (SELECT f.friend_id FROM friends f WHERE f.user_id = ?)
         AND u.id NOT IN (SELECT f.user_id FROM friends f WHERE f.friend_id = ?)`).all(userId, userId, userId);
-    if(listUsers.length === 0){ //if all() was an empty array
-        throw new Error('No friends yet');
-    }
-
+    // hanieh changed it: return empty array instead of error if no users found
+    console.log('[hanieh debug] searchFriends called for userId:', userId);
+    // Show all users except self
+    const allUsers = db.prepare('SELECT id, username FROM users WHERE id != ?').all(userId);
+    console.log('[hanieh debug] all other users:', allUsers);
+    // Show all friends and pending requests
+    const friendRows = db.prepare('SELECT * FROM friends WHERE user_id = ? OR friend_id = ?').all(userId, userId);
+    console.log('[hanieh debug] friend/pending rows:', friendRows);
+    console.log('[hanieh debug] filtered users:', listUsers);
     return ({users: listUsers});
 
 }
@@ -272,21 +290,26 @@ User A (sends a friend request) to User B
 User B (accept or reject) 
 */
 async function addFriends(userId, friendId){
+    // hanieh debug: log addFriends attempt
+    console.log('[hanieh debug] addFriends called with:', { userId, friendId });
     //check if users exists
     const checkUsers = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
     const checkFriends = db.prepare('SELECT id FROM users WHERE id = ?').get(friendId);
     if (!checkUsers || !checkFriends){
+        console.log('[hanieh debug] addFriends: user not found');
         throw new Error('User not found');
     }
 
     //prevent duplicates, logged in user shouldnt be the same as friend id
     if(userId === friendId){
+        console.log('[hanieh debug] addFriends: cannot add self');
         throw new Error('you cannot add yourself as a friend');
     }
 
     //check that this user is not in the friend list and this user is not in the list of this friend
     const friendshipExist = db.prepare('SELECT * FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)').get(userId, friendId, friendId, userId);
     if(friendshipExist){
+        console.log('[hanieh debug] addFriends: friendship already exists');
         throw new Error('Friendship already exists');
     }
 
@@ -294,7 +317,7 @@ async function addFriends(userId, friendId){
     // logged in user wants to add a user user_id add friend_id make friend_request = 'pending'
     //backend check: users exist, not the same user as logged in user, not already friends or a pending request
     db.prepare(`INSERT INTO friends (user_id, friend_id, friend_request) VALUES (?, ?, 'pending')`).run(userId, friendId);
-
+    console.log('[hanieh debug] addFriends: friend request sent');
     //return messages (request sent)
     return {message: "Friend request sent!", friendId};
 }
@@ -305,6 +328,7 @@ async function requestResponse(requestId, userId, action){
     if(!request){
         throw new Error('No requests available');
     }
+
     //dispaly the friend requests from users
     // const viewPendingRequests = 
 
@@ -329,15 +353,15 @@ async function requestResponse(requestId, userId, action){
 
 }
 
-
-
 async function viewPendingRequests(userId){
-    const viewRequests = db.prepare(`SELECT f.id, f.user_id AS sender_id, u.username AS sender_username
-        FROM friends f JOIN users u ON f.user_id = u.id WHERE f.friend_id = ? AND f.friend_request = 'pending'`).all(userId);
-     if (viewRequests.length === 0) {
-        return [];  // return empty array instead of throwing
-    }
-    return viewRequests;
+    // hanieh debug: log pending requests
+    // hanieh changed: always return property as 'pendingRequests' (array) for frontend compatibility
+    let viewRequests = db.prepare(`SELECT id, user_id AS sender_id FROM friends WHERE friend_id = ? AND friend_request = 'pending'`).all(userId);
+    console.log('[hanieh debug] viewPendingRequests for userId:', userId);
+    console.log('[hanieh debug] pending requests:', viewRequests);
+    console.log('[hanieh debug] typeof viewRequests:', typeof viewRequests, Array.isArray(viewRequests));
+    // hanieh changed: force pendingRequests to always be an array
+    return {pendingRequests: [].concat(viewRequests || [])};
 }
 
 module.exports = {
