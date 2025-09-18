@@ -1,10 +1,9 @@
-
 import "./styles/style.css"; // Ensure your CSS is imported
 import "./styles/game-page.css"; // Game page styles
 import { createProfileSettings } from "./components/ProfileSettings";
 import { createFriendsSection } from "./components/FriendsSection";
 import { languageManager } from "./translations";
-import { create1v1GamePage } from "./gamePage.js";
+import { create1v1GamePage, createAIGamePage } from "./gamePage.js";
 import { apiService } from "./services/api";
 
 // Global variables for message display
@@ -837,6 +836,58 @@ function renderTournamentPage(): HTMLElement {
           </div>
         </div>
         
+        <!-- AI Challenge Mode -->
+        <div class="game-mode-card ai">
+          <div class="card-background">
+            <div class="card-glow"></div>
+            <div class="card-particles"></div>
+          </div>
+          
+          <div class="mode-header">
+            <div class="mode-icon">
+              <div class="icon-rings">
+                <div class="ring ring-1"></div>
+                <div class="ring ring-2"></div>
+                <div class="ring ring-3"></div>
+              </div>
+              <i class="fas fa-robot"></i>
+            </div>
+            <div class="mode-title">
+              <h2>${t.games.ai.title}</h2>
+              <p>${t.games.ai.subtitle}</p>
+            </div>
+          </div>
+          
+          <div class="mode-content">
+            <p class="mode-description">${t.games.ai.description}</p>
+            
+            <div class="mode-features">
+              <div class="feature-item">
+                <i class="fas fa-brain"></i>
+                <span>${t.games.ai.features.adaptive}</span>
+              </div>
+              <div class="feature-item">
+                <i class="fas fa-dumbbell"></i>
+                <span>${t.games.ai.features.practice}</span>
+              </div>
+              <div class="feature-item">
+                <i class="fas fa-trophy"></i>
+                <span>${t.games.ai.features.skills}</span>
+              </div>
+            </div>
+            
+            <div class="mode-actions">
+              <button class="premium-game-btn" id="play-ai-btn">
+                <span class="btn-bg"></span>
+                <span class="btn-content">
+                  <i class="fas fa-robot"></i>
+                  ${t.games.ai.playNow}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
         <!-- Tournament Mode -->
         <div class="game-mode-card tournament">
           <div class="card-background">
@@ -893,7 +944,105 @@ function renderTournamentPage(): HTMLElement {
     
     // Add event listeners
     const play1v1Btn = gameModesSection.querySelector('#play-1v1-btn') as HTMLButtonElement;
+    const playAiBtn = gameModesSection.querySelector('#play-ai-btn') as HTMLButtonElement;
     const createTournamentBtn = gameModesSection.querySelector('#create-tournament-btn') as HTMLButtonElement;
+    
+    // Replace the existing AI Challenge event listener with this:
+    if (playAiBtn) {
+      console.log('AI Button found and adding event listener');
+      playAiBtn.addEventListener('click', () => {
+        console.log('AI Challenge button clicked!');
+        // Show difficulty selection modal
+        showAIDifficultyModal();
+      });
+    } else {
+      console.error('AI Button not found!');
+    }
+    
+    // Add the AI difficulty selection modal function
+    function showAIDifficultyModal(): void {
+      const modal = document.createElement('div');
+      modal.className = 'ai-difficulty-modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>🤖 Choose AI Difficulty</h3>
+            <p>Select the challenge level for your AI opponent</p>
+          </div>
+          <div class="difficulty-options">
+            <button class="difficulty-btn easy" data-difficulty="easy">
+              <div class="difficulty-icon">🟢</div>
+              <div class="difficulty-info">
+                <h4>Easy</h4>
+                <p>Perfect for beginners</p>
+                <small>Slower reactions, more mistakes</small>
+              </div>
+            </button>
+            <button class="difficulty-btn medium" data-difficulty="medium">
+              <div class="difficulty-icon">🟡</div>
+              <div class="difficulty-info">
+                <h4>Medium</h4>
+                <p>Balanced challenge</p>
+                <small>Moderate skill level</small>
+              </div>
+            </button>
+            <button class="difficulty-btn hard" data-difficulty="hard">
+              <div class="difficulty-icon">🔴</div>
+              <div class="difficulty-info">
+                <h4>Hard</h4>
+                <p>Expert level</p>
+                <small>Fast reactions, strategic play</small>
+              </div>
+            </button>
+          </div>
+          <div class="modal-actions">
+            <button class="cancel-btn" id="cancel-ai-btn">Cancel</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Add event listeners for difficulty selection
+      modal.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const difficulty = (e.currentTarget as HTMLElement).dataset.difficulty as 'easy' | 'medium' | 'hard';
+          startAIGame(difficulty);
+          document.body.removeChild(modal);
+        });
+      });
+      
+      // Add cancel button listener
+      modal.querySelector('#cancel-ai-btn')?.addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+    }
+    
+    // Add the start AI game function
+    function startAIGame(difficulty: 'easy' | 'medium' | 'hard'): void {
+      const app = document.getElementById("app");
+      if (app) {
+        let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
+        if (!gameContainer) {
+          gameContainer = document.createElement("div");
+          gameContainer.id = "game-container-wrapper";
+          gameContainer.className = "game-container-wrapper";
+          app.innerHTML = '';
+          app.appendChild(gameContainer);
+        } else {
+          gameContainer.innerHTML = '';
+        }
+        
+        // Create navigation back function
+        const navigateBack = () => {
+          navigateTo('/tournament'); // Navigate back to games page
+        };
+        
+        // Create and render the AI game
+        createAIGamePage(gameContainer, difficulty, navigateBack);
+        showMessage(`🤖 Starting AI Challenge (${difficulty})...`, 'info');
+      }
+    }
     
     play1v1Btn?.addEventListener('click', () => {
       // Create game page and render inside a dedicated container
@@ -2510,9 +2659,6 @@ function setupRoutes(app: HTMLElement): void {
   // Re-append the navbar to ensure it's always there, or manage its position via CSS fixed.
   // Given your index.html has a fixed navbar outside #app's dynamic content,
   // we just need to ensure the correct element is updated.
-  // Let's assume the navbar lives *outside* the #app for better fixed positioning.
-  // If your index.html structure is different, please re-evaluate where createNavbar() is called.
-  // For this scenario, we assume the navbar is already fixed in the DOM, and we just update its active state.
   // Update active navbar link after page render
   document.querySelectorAll(".navbar-link").forEach((link) => {
     link.classList.remove("active");
@@ -2593,4 +2739,88 @@ window.addEventListener("popstate", () => {
 // Global functions for dashboard and profile features
 (window as any).switchTab = switchTab;
 (window as any).showMessage = showMessage;
+
+// Add this function after the existing functions
+function showAIDifficultyModal(): void {
+  // Create modal HTML
+  const modalHTML = `
+    <div id="ai-difficulty-modal" class="modal-overlay">
+      <div class="modal-content">
+        <h2>Choose AI Difficulty</h2>
+        <div class="difficulty-options">
+          <button class="difficulty-btn easy" data-difficulty="easy">
+            <div class="difficulty-icon">🟢</div>
+            <div class="difficulty-name">Easy</div>
+            <div class="difficulty-desc">Relaxed gameplay</div>
+          </button>
+          <button class="difficulty-btn medium" data-difficulty="medium">
+            <div class="difficulty-icon"></div>
+            <div class="difficulty-name">Medium</div>
+            <div class="difficulty-desc">Balanced challenge</div>
+          </button>
+          <button class="difficulty-btn hard" data-difficulty="hard">
+            <div class="difficulty-icon">🔴</div>
+            <div class="difficulty-name">Hard</div>
+            <div class="difficulty-desc">Intense competition</div>
+          </button>
+        </div>
+        <button class="close-modal-btn">Cancel</button>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to page
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Add event listeners
+  const modal = document.getElementById('ai-difficulty-modal');
+  const difficultyBtns = modal?.querySelectorAll('.difficulty-btn');
+  const closeBtn = modal?.querySelector('.close-modal-btn');
+  
+  // Handle difficulty selection
+  difficultyBtns?.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const difficulty = btn.getAttribute('data-difficulty') as 'easy' | 'medium' | 'hard';
+      startAIGame(difficulty);
+      modal?.remove();
+    });
+  });
+  
+  // Handle close button
+  closeBtn?.addEventListener('click', () => {
+    modal?.remove();
+  });
+  
+  // Handle clicking outside modal
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+}
+
+function startAIGame(difficulty: 'easy' | 'medium' | 'hard'): void {
+  const app = document.getElementById("app");
+  if (app) {
+    let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
+    if (!gameContainer) {
+      gameContainer = document.createElement("div");
+      gameContainer.id = "game-container-wrapper";
+      gameContainer.className = "game-container-wrapper";
+      app.innerHTML = '';
+      app.appendChild(gameContainer);
+    } else {
+      gameContainer.innerHTML = '';
+    }
+    
+    // Create navigation back function
+    const navigateBack = () => {
+      navigateTo('/tournament'); // Navigate back to games page
+    };
+    
+    // Create and render the AI game
+    createAIGamePage(gameContainer, difficulty, navigateBack);
+    showMessage(`🤖 Starting AI Challenge (${difficulty})...`, 'info');
+  }
+}
 

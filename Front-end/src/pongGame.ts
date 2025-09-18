@@ -60,6 +60,40 @@ interface PowerUp {
   collector?: 'player1' | 'player2';
 }
 
+// AI System Interfaces
+interface AIGameState {
+  ball: Ball;
+  extraBalls: Ball[];
+  player1: Player;
+  player2: Player;
+  powerUps: PowerUp[];
+  timestamp: number;
+}
+
+interface BallPrediction {
+  x: number;
+  y: number;
+  timeToReach: number;
+  willHitPaddle: boolean;
+  bounces: number;
+}
+
+interface AIStrategy {
+  mode: 'defensive' | 'aggressive' | 'balanced';
+  targetY: number;
+  confidence: number;
+  shouldCollectPowerUp: boolean;
+  targetPowerUp?: PowerUp;
+}
+
+interface AIPersonality {
+  reactionDelay: number;        // 100-300ms delay
+  predictionAccuracy: number;   // 0.7-0.95 (70%-95% accuracy)
+  speedVariation: number;       // 0.8-1.2 speed multiplier
+  aggressiveness: number;       // 0.3-0.8 (how aggressive in returns)
+  powerUpPriority: number;      // 0.4-0.9 (likelihood to go for power-ups)
+}
+
 export class PongGame {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -81,6 +115,17 @@ export class PongGame {
   // [ADDED BY HANIEH & COPILOT] For backend API integration
   public matchId?: number;
   public tournamentId?: number;
+
+  // Advanced AI System Properties
+  private aiGameState: AIGameState | null = null;
+  private aiLastUpdateTime = 0;
+  private aiUpdateInterval = 1000; // 1 second refresh rate as required
+  private aiPersonality: AIPersonality;
+  private aiCurrentStrategy: AIStrategy;
+  private aiKeyboardState = { up: false, down: false };
+  private aiReactionQueue: Array<{action: 'up' | 'down' | 'stop', executeAt: number}> = [];
+  private aiPredictionHistory: BallPrediction[] = [];
+  private aiDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
 
   constructor(canvas: HTMLCanvasElement, config?: Partial<GameConfig>) {
     this.canvas = canvas;
@@ -117,10 +162,10 @@ export class PongGame {
 
     this.player2 = {
       id: 'player2',
-      name: 'Player 2',
+      name: 'AI Opponent',
       score: 0,
       y: this.config.canvasHeight / 2 - this.config.paddleHeight / 2,
-      isAI: true
+      isAI: false  // Start as false, will be set to true when AI game is created
     };
 
     // Initialize ball
@@ -143,12 +188,28 @@ export class PongGame {
       elapsedTime: 0
     };
 
+    console.log('Game state initialized:', this.gameState);
+
     this.setupEventListeners();
     this.render();
+
+    // Initialize AI personality based on difficulty
+    this.initializeAIPersonality();
+    this.aiCurrentStrategy = {
+      mode: 'balanced',
+      targetY: this.config.canvasHeight / 2,
+      confidence: 0.5,
+      shouldCollectPowerUp: false
+    };
   }
 
   // Public Methods
   public startGame(): void {
+    console.log('Starting game...');
+    console.log('Game state before start:', this.gameState);
+    console.log('Player1:', this.player1);
+    console.log('Player2:', this.player2);
+    
     this.gameState.isPlaying = true;
     this.gameState.isPaused = false;
     this.gameState.isGameOver = false;
@@ -156,6 +217,8 @@ export class PongGame {
     this.resetBall();
     this.animationId = null;
     this.gameLoop();
+    
+    console.log('Game started successfully');
   }
 
   public pauseGame(): void {
@@ -198,7 +261,9 @@ export class PongGame {
   }
 
   public setPlayer2AI(isAI: boolean): void {
+    console.log('Setting Player2 AI to:', isAI);
     this.player2.isAI = isAI;
+    console.log('Player2 isAI after setting:', this.player2.isAI);
   }
 
   public setPlayerNames(player1Name: string, player2Name: string): void {
@@ -260,7 +325,14 @@ export class PongGame {
   }
 
   private gameLoop(): void {
+    console.log('Game loop running - isPlaying:', this.gameState.isPlaying, 'isPaused:', this.gameState.isPaused, 'isGameOver:', this.gameState.isGameOver);
+    
     if (!this.gameState.isPlaying || this.gameState.isPaused || this.gameState.isGameOver) {
+      console.log('Game loop stopping because:', {
+        notPlaying: !this.gameState.isPlaying,
+        isPaused: this.gameState.isPaused,
+        isGameOver: this.gameState.isGameOver
+      });
       return;
     }
 
@@ -270,6 +342,8 @@ export class PongGame {
   }
 
   private update(): void {
+    console.log('Update method called - game state:', this.gameState);
+    
     // Update elapsed time
     this.gameState.elapsedTime = Date.now() - this.gameState.startTime;
 
@@ -308,7 +382,7 @@ export class PongGame {
   private updatePaddles(): void {
     const p1Speed = this.getEffectivePaddleSpeed(this.player1);
     const p2Speed = this.getEffectivePaddleSpeed(this.player2);
-
+  
     // Player 1 controls (W/S)
     const p1Reverse = this.player1.temporaryReverseControlsUntilMs && Date.now() < this.player1.temporaryReverseControlsUntilMs;
     if (this.keys['w']) {
@@ -317,9 +391,10 @@ export class PongGame {
     if (this.keys['s']) {
       this.player1.y += p1Reverse ? -p1Speed : p1Speed;
     }
-
+  
     // Player 2 controls (Arrow Up/Down)
     if (!this.player2.isAI) {
+      console.log('Player2 is NOT AI, using manual controls');
       const p2Reverse = this.player2.temporaryReverseControlsUntilMs && Date.now() < this.player2.temporaryReverseControlsUntilMs;
       if (this.keys['arrowup']) {
         this.player2.y -= p2Reverse ? -p2Speed : p2Speed;
@@ -328,23 +403,262 @@ export class PongGame {
         this.player2.y += p2Reverse ? -p2Speed : p2Speed;
       }
     } else {
-      // AI logic for Player 2
+      console.log('Player2 IS AI, calling updateAI...');
       this.updateAI(p2Speed);
+      
+      // Handle AI power-ups
+      if (this.config.powerUpsEnabled) {
+        this.handleAIPowerUps();
+      }
     }
-
+  
     // Clamp paddles to canvas bounds
     this.clampPaddle(this.player1);
     this.clampPaddle(this.player2);
   }
 
   private updateAI(aiSpeed: number): void {
-    const paddleCenter = this.player2.y + this.getPaddleHeight(this.player2) / 2;
+    console.log('AI updateAI called');
+    
+    // Simple AI: just follow the ball's Y position
     const ballY = this.ball.y;
+    const paddleCenterY = this.player2.y + this.getPaddleHeight(this.player2) / 2;
+    const difference = ballY - paddleCenterY;
+    
+    console.log('Ball Y:', ballY, 'Paddle Center Y:', paddleCenterY, 'Difference:', difference);
+    
+    if (Math.abs(difference) > 10) { // Dead zone to prevent jittering
+      if (difference > 0) {
+        console.log('AI moving DOWN');
+        this.player2.y += aiSpeed;
+      } else {
+        console.log('AI moving UP');
+        this.player2.y -= aiSpeed;
+      }
+    } else {
+      console.log('AI staying still (in dead zone)');
+    }
+  }
 
-    if (ballY < paddleCenter - 10) {
-      this.player2.y -= aiSpeed * 0.8; // Make AI slightly slower
-    } else if (ballY > paddleCenter + 10) {
-      this.player2.y += aiSpeed * 0.8;
+  private updateAIGameState(): void {
+    // AI can only "see" the game state once per second
+    this.aiGameState = {
+      ball: { ...this.ball },
+      extraBalls: [...this.extraBalls],
+      player1: { ...this.player1 },
+      player2: { ...this.player2 },
+      powerUps: [...this.powerUps],
+      timestamp: Date.now()
+    };
+    
+    // Analyze current situation and plan strategy
+    this.analyzeGameSituation();
+  }
+
+  private analyzeGameSituation(): void {
+    if (!this.aiGameState) return;
+    
+    // Predict ball trajectory
+    const prediction = this.predictBallTrajectory(this.aiGameState.ball);
+    this.aiPredictionHistory.push(prediction);
+    
+    // Keep only recent predictions
+    if (this.aiPredictionHistory.length > 5) {
+      this.aiPredictionHistory.shift();
+    }
+    
+    // Determine strategy based on game state
+    this.determineAIStrategy(prediction);
+    
+    // Plan actions with human-like reaction delay
+    this.planAIActions(prediction);
+  }
+
+  private predictBallTrajectory(ball: Ball): BallPrediction {
+    // Simulate ball movement with physics
+    let x = ball.x;
+    let y = ball.y;
+    let vx = ball.velocityX;
+    let vy = ball.velocityY;
+    let bounces = 0;
+    let timeSteps = 0;
+    const maxSteps = 1000; // Prevent infinite loops
+    
+    const paddleX = this.config.canvasWidth - this.config.paddleWidth * 2;
+    
+    // Add prediction error based on AI personality
+    const errorFactor = 1 - this.aiPersonality.predictionAccuracy;
+    const predictionError = (Math.random() - 0.5) * errorFactor * 100;
+    
+    while (x > paddleX && x < this.config.canvasWidth && timeSteps < maxSteps) {
+      x += vx;
+      y += vy;
+      timeSteps++;
+      
+      // Handle wall bounces
+      if (y <= 0 || y >= this.config.canvasHeight) {
+        vy = -vy;
+        y = Math.max(0, Math.min(y, this.config.canvasHeight));
+        bounces++;
+      }
+      
+      // Stop if ball is moving away from AI
+      if (vx < 0) break;
+    }
+    
+    return {
+      x: x,
+      y: y + predictionError,
+      timeToReach: timeSteps,
+      willHitPaddle: x >= paddleX && x <= this.config.canvasWidth,
+      bounces: bounces
+    };
+  }
+
+  private determineAIStrategy(prediction: BallPrediction): void {
+    const scoreGap = this.player2.score - this.player1.score;
+    const ballComingTowardsAI = this.ball.velocityX > 0;
+    
+    // Determine mode based on game state
+    let mode: 'defensive' | 'aggressive' | 'balanced' = 'balanced';
+    
+    if (scoreGap < -2) {
+      mode = 'aggressive'; // Behind, need to be more aggressive
+    } else if (scoreGap > 2) {
+      mode = 'defensive'; // Ahead, play it safe
+    } else if (!ballComingTowardsAI) {
+      mode = 'balanced'; // Ball going away, prepare position
+    }
+    
+    // Calculate target position
+    let targetY = this.config.canvasHeight / 2; // Default center position
+    
+    if (prediction.willHitPaddle && ballComingTowardsAI) {
+      // Position to intercept the ball
+      targetY = prediction.y;
+      
+      // Add strategic positioning based on aggressiveness
+      if (mode === 'aggressive') {
+        // Try to hit at an angle
+        const paddleHeight = this.getPaddleHeight(this.player2);
+        const offset = (Math.random() - 0.5) * paddleHeight * this.aiPersonality.aggressiveness;
+        targetY += offset;
+      }
+    }
+    
+    // Check for power-up opportunities
+    let shouldCollectPowerUp = false;
+    let targetPowerUp: PowerUp | undefined;
+    
+    if (this.config.powerUpsEnabled && this.powerUps.length > 0) {
+      const nearbyPowerUp = this.findNearestPowerUp();
+      if (nearbyPowerUp && Math.random() < this.aiPersonality.powerUpPriority) {
+        const distanceToPlayer = Math.abs(nearbyPowerUp.x - (this.config.canvasWidth - this.config.paddleWidth));
+        const distanceToBall = Math.abs(this.ball.x - (this.config.canvasWidth - this.config.paddleWidth));
+        
+        // Only go for power-up if it's closer than the ball or ball is far away
+        if (distanceToPlayer < distanceToBall * 0.7) {
+          shouldCollectPowerUp = true;
+          targetPowerUp = nearbyPowerUp;
+          targetY = nearbyPowerUp.y;
+        }
+      }
+    }
+    
+    this.aiCurrentStrategy = {
+      mode,
+      targetY: Math.max(0, Math.min(targetY, this.config.canvasHeight)),
+      confidence: prediction.willHitPaddle ? 0.8 : 0.4,
+      shouldCollectPowerUp,
+      targetPowerUp
+    };
+  }
+
+  private findNearestPowerUp(): PowerUp | undefined {
+    if (!this.powerUps.length) return undefined;
+    
+    const aiX = this.config.canvasWidth - this.config.paddleWidth;
+    let nearest: PowerUp | undefined;
+    let minDistance = Infinity;
+    
+    for (const powerUp of this.powerUps) {
+      if (!powerUp.active) continue;
+      
+      const distance = Math.sqrt(
+        Math.pow(powerUp.x - aiX, 2) + 
+        Math.pow(powerUp.y - (this.player2.y + this.getPaddleHeight(this.player2) / 2), 2)
+      );
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearest = powerUp;
+      }
+    }
+    
+    return nearest;
+  }
+
+  private planAIActions(prediction: BallPrediction): void {
+    const currentPaddleCenter = this.player2.y + this.getPaddleHeight(this.player2) / 2;
+    const targetY = this.aiCurrentStrategy.targetY;
+    const difference = targetY - currentPaddleCenter;
+    const threshold = 15; // Dead zone to prevent jittering
+    
+    if (Math.abs(difference) > threshold) {
+      const action = difference > 0 ? 'down' : 'up';
+      const delay = this.aiPersonality.reactionDelay + (Math.random() * 50); // Add some randomness
+      const executeAt = Date.now() + delay;
+      
+      // Clear conflicting actions
+      this.aiReactionQueue = this.aiReactionQueue.filter(a => a.executeAt > Date.now());
+      
+      // Add new action
+      this.aiReactionQueue.push({ action, executeAt });
+      
+      // Add stop action after movement (human-like behavior)
+      const stopDelay = delay + 100 + (Math.random() * 100);
+      this.aiReactionQueue.push({ action: 'stop', executeAt: Date.now() + stopDelay });
+    }
+  }
+
+  private processAIReactionQueue(now: number): void {
+    // Process all actions that should execute now
+    this.aiReactionQueue = this.aiReactionQueue.filter(action => {
+      if (action.executeAt <= now) {
+        switch (action.action) {
+          case 'up':
+            this.aiKeyboardState.up = true;
+            this.aiKeyboardState.down = false;
+            break;
+          case 'down':
+            this.aiKeyboardState.down = true;
+            this.aiKeyboardState.up = false;
+            break;
+          case 'stop':
+            this.aiKeyboardState.up = false;
+            this.aiKeyboardState.down = false;
+            break;
+        }
+        return false; // Remove from queue
+      }
+      return true; // Keep in queue
+    });
+  }
+
+  private executeAIKeyboardInput(aiSpeed: number): void {
+    // Apply speed variation for human-like movement
+    const variationFactor = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1
+    const effectiveSpeed = aiSpeed * this.aiPersonality.speedVariation * variationFactor;
+    
+    // Check for reverse controls power-up
+    const p2Reverse = this.player2.temporaryReverseControlsUntilMs && 
+                     Date.now() < this.player2.temporaryReverseControlsUntilMs;
+    
+    // Execute keyboard input (simulating human keyboard input)
+    if (this.aiKeyboardState.up) {
+      this.player2.y -= p2Reverse ? -effectiveSpeed : effectiveSpeed;
+    } else if (this.aiKeyboardState.down) {
+      this.player2.y += p2Reverse ? -effectiveSpeed : effectiveSpeed;
     }
   }
 
@@ -470,7 +784,11 @@ export class PongGame {
   }
 
   private checkGameEnd(): void {
+    console.log('Checking game end - Player1 score:', this.player1.score, 'Player2 score:', this.player2.score, 'Max score:', this.config.maxScore);
+    console.log('Game state:', this.gameState);
+    
     if (this.player1.score >= this.config.maxScore || this.player2.score >= this.config.maxScore) {
+      console.log('Game ending! Winner:', this.player1.score >= this.config.maxScore ? this.player1.name : this.player2.name);
       this.gameState.isGameOver = true;
       this.gameState.isPlaying = false;
       this.gameState.winner = this.player1.score >= this.config.maxScore ? this.player1 : this.player2;
@@ -1076,6 +1394,90 @@ export class PongGame {
     }
   }
 
+  private handleAIPowerUps(): void {
+    // Auto-collect power-ups when AI paddle touches them
+    for (const pu of this.powerUps) {
+      if (!pu.active) continue;
+      
+      const aiX = this.config.canvasWidth - this.config.paddleWidth;
+      const aiY = this.player2.y;
+      const aiHeight = this.getPaddleHeight(this.player2);
+      
+      const distance = Math.sqrt(
+        Math.pow(pu.x - aiX, 2) + 
+        Math.pow(pu.y - (aiY + aiHeight / 2), 2)
+      );
+      
+      if (distance < pu.radius + this.config.paddleWidth / 2) {
+        this.collectPowerUp(pu, 'player2');
+        pu.active = false;
+      }
+    }
+    
+    // Strategically use power-ups
+    if (this.collectedPowerUps.length > 0 && Math.random() < 0.3) {
+      // 30% chance per frame to use power-up when available
+      const powerUp = this.collectedPowerUps.find(pu => pu.collector === 'player2');
+      if (powerUp) {
+        this.activateAIPowerUp();
+      }
+    }
+  }
+
+  private activateAIPowerUp(): void {
+    // AI logic for power-up activation
+    const aiPowerUps = this.collectedPowerUps.filter(pu => pu.collector === 'player2');
+    if (aiPowerUps.length === 0) return;
+    
+    // Choose power-up based on strategy
+    const powerUp = aiPowerUps[0]; // Use first available for simplicity
+    const playerPowerUps = this.config.player2PowerUps;
+    
+    if (playerPowerUps && playerPowerUps[powerUp.type] && playerPowerUps[powerUp.type] > 0) {
+      playerPowerUps[powerUp.type]--;
+      this.applyPowerUp(powerUp, 'player2');
+      
+      // Remove from collected power-ups
+      const index = this.collectedPowerUps.indexOf(powerUp);
+      if (index > -1) {
+        this.collectedPowerUps.splice(index, 1);
+      }
+    }
+  }
+
+  private initializeAIPersonality(): void {
+    const personalities = {
+      easy: {
+        reactionDelay: 250,
+        predictionAccuracy: 0.75,
+        speedVariation: 0.85,
+        aggressiveness: 0.4,
+        powerUpPriority: 0.5
+      },
+      medium: {
+        reactionDelay: 180,
+        predictionAccuracy: 0.85,
+        speedVariation: 0.95,
+        aggressiveness: 0.6,
+        powerUpPriority: 0.7
+      },
+      hard: {
+        reactionDelay: 120,
+        predictionAccuracy: 0.92,
+        speedVariation: 1.1,
+        aggressiveness: 0.8,
+        powerUpPriority: 0.85
+      }
+    };
+    
+    this.aiPersonality = personalities[this.aiDifficulty];
+  }
+
+  public setAIDifficulty(difficulty: 'easy' | 'medium' | 'hard'): void {
+    this.aiDifficulty = difficulty;
+    this.initializeAIPersonality();
+  }
+
   // Cleanup method
   public destroy(): void {
     if (this.animationId) {
@@ -1121,6 +1523,13 @@ export function createAIGame(canvas: HTMLCanvasElement, difficulty: 'easy' | 'me
     ...overrides
   });
   
+  // Set AI after game creation
   game.setPlayer2AI(true);
+  game.setAIDifficulty(difficulty);
+  game.setPlayerNames('Player 1', 'AI Opponent');
+  
+  console.log('AI Game created with difficulty:', difficulty);
+  console.log('Player2 isAI:', game.getPlayers().player2.isAI);
+  
   return game;
 }
