@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const db = new Database('database.db');
 
+
 async function createTables() {
   try {
     db.exec(`
