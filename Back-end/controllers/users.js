@@ -305,7 +305,6 @@ async function requestResponse(requestId, userId, action){
     if(!request){
         throw new Error('No requests available');
     }
-
     //dispaly the friend requests from users
     // const viewPendingRequests = 
 
@@ -330,12 +329,15 @@ async function requestResponse(requestId, userId, action){
 
 }
 
+
+
 async function viewPendingRequests(userId){
-    const viewRequests = db.prepare(`SELECT id, user_id AS sender_id FROM friends WHERE friend_id = ? AND friend_request = 'pending'`).all(userId);
-    if(viewRequests.length === 0){
-        throw new Error('No pending requests');
+    const viewRequests = db.prepare(`SELECT f.id, f.user_id AS sender_id, u.username AS sender_username
+        FROM friends f JOIN users u ON f.user_id = u.id WHERE f.friend_id = ? AND f.friend_request = 'pending'`).all(userId);
+     if (viewRequests.length === 0) {
+        return [];  // return empty array instead of throwing
     }
-    console.log({pending: viewRequests});
+    return viewRequests;
 }
 
 module.exports = {
