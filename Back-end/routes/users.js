@@ -234,10 +234,8 @@ async function userRoutes(fastify, options){
     fastify.get('/friend/requests', { preHandler: [fastify.authenticate] }, async (request, reply) => {
         try{
             const userId = request.user.id;  // logged-in user
-            // hanieh added: unwrap array from object for frontend compatibility
-            const result = await viewPendingRequests(userId);
-            // If result is an object with pendingRequests property, unwrap it
-            const pendingRequests = Array.isArray(result) ? result : result.pendingRequests;
+            const pendingRequests = await viewPendingRequests(userId);
+        
             reply.send({ pendingRequests });
         }
         catch(error){

@@ -128,7 +128,6 @@ async function getUserdata(userId){
       )
       WHERE f.friend_request = 'accepted'
     `).all(userId, userId);
-            console.log('[hanieh debug] getUserdata friends array:', friends);
     //return an object that contains user data, their game history, and friends
     return {user: fetchData, gameHistory: getGameHistory, friends};
 }
@@ -355,13 +354,11 @@ async function requestResponse(requestId, userId, action){
 
 async function viewPendingRequests(userId){
     // hanieh debug: log pending requests
-    // hanieh changed: always return property as 'pendingRequests' (array) for frontend compatibility
-    let viewRequests = db.prepare(`SELECT id, user_id AS sender_id FROM friends WHERE friend_id = ? AND friend_request = 'pending'`).all(userId);
+    // hanieh changed: return property as 'pendingRequests' (array) for frontend compatibility
+    const viewRequests = db.prepare(`SELECT id, user_id AS sender_id FROM friends WHERE friend_id = ? AND friend_request = 'pending'`).all(userId);
     console.log('[hanieh debug] viewPendingRequests for userId:', userId);
     console.log('[hanieh debug] pending requests:', viewRequests);
-    console.log('[hanieh debug] typeof viewRequests:', typeof viewRequests, Array.isArray(viewRequests));
-    // hanieh changed: force pendingRequests to always be an array
-    return {pendingRequests: [].concat(viewRequests || [])};
+    return {pendingRequests: Array.isArray(viewRequests) ? viewRequests : []};
 }
 
 module.exports = {

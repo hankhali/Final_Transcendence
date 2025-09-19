@@ -716,7 +716,7 @@ export class GamePage {
   }
 
   private showGameEndModal(winner: Player, gameTime: number): void {
-    // [ADDED BY HANIEH & COPILOT] Send match result to backend for game history
+    // [ADDED BY HANIEH] Send match result to backend for game history
     // This is required for game history and stats to work!
     // Replace these with your actual matchId, tournamentId, and scores
     const matchId = this.game?.matchId; // You need to set this when creating the game

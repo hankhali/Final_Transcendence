@@ -62,20 +62,12 @@ export function createFriendsSection(): HTMLElement {
     });
   };
 
-  // Friends List Section
-  const friendsListSection = document.createElement("div");
-  friendsListSection.className = "friends-list-section";
-  const friendsListTitle = document.createElement("h3");
-  friendsListTitle.textContent = "Your Friends";
-  friendsListTitle.style.color = "#00e6ff";
-  friendsListTitle.style.marginBottom = "1rem";
-  friendsListSection.appendChild(friendsListTitle);
+  // Friends List
   const friendsList = document.createElement("div");
   friendsList.className = "friends-list";
-  friendsListSection.appendChild(friendsList);
-  container.appendChild(friendsListSection);
+  container.appendChild(friendsList);
 
-  // Pending Requests Section
+  // Pending Requests
   const pendingSection = document.createElement("div");
   pendingSection.className = "pending-requests-section";
   const pendingTitle = document.createElement("h3");
@@ -90,11 +82,7 @@ export function createFriendsSection(): HTMLElement {
   function loadFriends() {
     friendsList.innerHTML = "";
     apiService.users.getMyProfile().then((res) => {
-      // hanieh debug: print friends array received from backend
-      console.log('[hanieh debug] getMyProfile response:', res);
-  // hanieh fixed: read friends from top-level res.data.friends
-  const friends = res.data?.friends || [];
-      console.log('[hanieh debug] friends array:', friends);
+      const friends = res.data?.user?.friends || [];
       if (friends.length === 0) {
         friendsList.innerHTML = `<div class='no-friends'>No friends yet. Start by adding some friends!</div>`;
       } else {
@@ -120,49 +108,23 @@ export function createFriendsSection(): HTMLElement {
     pendingList.innerHTML = "";
     apiService.users.listRequests().then((res) => {
       // Debug log: print API response for pending requests
-      // hanieh debug: print pendingRequests type, length, and contents
-      // hanieh added: always treat pendingRequests as array for compatibility
-      let pendingRequests = res.data?.pendingRequests;
-      if (!Array.isArray(pendingRequests)) {
-        if (pendingRequests && typeof pendingRequests === 'object' && 'length' in pendingRequests) {
-          pendingRequests = Array.from(pendingRequests);
-        } else if (pendingRequests && typeof pendingRequests === 'object') {
-          pendingRequests = Object.values(pendingRequests);
-        } else {
-          pendingRequests = [];
-        }
-      }
       console.log('[hanieh debug] pending requests API response:', res.data);
-      console.log('[hanieh debug] Array.isArray:', Array.isArray(pendingRequests));
-      console.log('[hanieh debug] pendingRequests:', pendingRequests);
-      const pending = pendingRequests;
+      const pending = res.data?.pendingRequests || res.data?.pending || [];
       if (pending.length > 0) {
         pending.forEach((req: any) => {
-          // Fetch sender's username if not present
-          if (!req.sender_username) {
-            apiService.users.getOthersProfile(req.sender_id).then((profileRes: any) => {
-              const username = profileRes.data?.user?.username || `User #${req.sender_id}`;
-              renderPendingCard(req, username);
-            });
-          } else {
-            renderPendingCard(req, req.sender_username);
-          }
+          const reqCard = document.createElement("div");
+          reqCard.className = "pending-card";
+          reqCard.innerHTML = `
+            <span>From: ${req.sender_id}</span>
+            <button class="accept-btn">Accept</button>
+            <button class="reject-btn">Reject</button>
+          `;
+          reqCard.querySelector(".accept-btn")!.onclick = () => respondToRequest(req.id, "accepted");
+          reqCard.querySelector(".reject-btn")!.onclick = () => respondToRequest(req.id, "rejected");
+          pendingList.appendChild(reqCard);
         });
       } else {
         pendingList.innerHTML = "<div class='no-pending'>No friend requests.</div>";
-      }
-
-      function renderPendingCard(req: any, username: string) {
-        const reqCard = document.createElement("div");
-        reqCard.className = "pending-card";
-        reqCard.innerHTML = `
-          <span>From: ${username}</span>
-          <button class="accept-btn">Accept</button>
-          <button class="reject-btn">Reject</button>
-        `;
-        reqCard.querySelector(".accept-btn")!.onclick = () => respondToRequest(req.id, "accepted");
-        reqCard.querySelector(".reject-btn")!.onclick = () => respondToRequest(req.id, "rejected");
-        pendingList.appendChild(reqCard);
       }
     });
   }
@@ -218,18 +180,8 @@ export function createFriendsSection(): HTMLElement {
 
   // Helper: show message
   function showMessage(msg: string) {
-    // Custom toast notification
-    let toast = document.createElement('div');
-    toast.className = 'custom-toast';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.classList.add('show');
-    }, 10);
-    setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 400);
-    }, 2500);
+    // Simple message display
+    alert(msg);
   }
 
   // Initial load
