@@ -15,6 +15,7 @@ const { searchFriends } = require('../controllers/users');
 const { addFriends } = require('../controllers/users');
 const { requestResponse } = require('../controllers/users');
 const { viewPendingRequests } = require('../controllers/users');
+const { viewSentRequests } = require('../controllers/users'); // hanieh changed: import for sent requests endpoint
 
 
 
@@ -256,6 +257,17 @@ async function userRoutes(fastify, options){
             return reply.code(400).send({error: error.message});
         }
     });
+
+        // hanieh changed: Added sent requests endpoint so sender can see their outgoing requests
+        fastify.get('/friend/requests/sent', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+            try {
+                const userId = request.user.id;
+                const sentRequests = await viewSentRequests(userId);
+                reply.send({ sentRequests });
+            } catch (error) {
+                return reply.code(400).send({ error: error.message });
+            }
+        });
     
 }
 

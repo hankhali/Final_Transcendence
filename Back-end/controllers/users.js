@@ -118,18 +118,18 @@ async function getUserdata(userId){
     if(!getGameHistory){
         throw new Error('Error fetching game history');
     }
-    // Fetch accepted friends (bidirectional)
-    const friends = db.prepare(`
-      SELECT u.id, u.username, u.avatar, u.current_status
-      FROM users u
-      JOIN friends f ON (
-        (f.user_id = ? AND f.friend_id = u.id)
-        OR (f.friend_id = ? AND f.user_id = u.id)
-      )
-      WHERE f.friend_request = 'accepted'
-    `).all(userId, userId);
-    //return an object that contains user data, their game history, and friends
-    return {user: fetchData, gameHistory: getGameHistory, friends};
+        // Fetch accepted friends (bidirectional)
+        const friends = db.prepare(`
+            SELECT u.id, u.username, u.avatar, u.current_status
+            FROM users u
+            JOIN friends f ON (
+                (f.user_id = ? AND f.friend_id = u.id)
+                OR (f.friend_id = ? AND f.user_id = u.id)
+            )
+            WHERE f.friend_request = 'accepted'
+        `).all(userId, userId);
+        // hanieh changed: return friends inside user object for frontend compatibility
+        return {user: {...fetchData, friends}, gameHistory: getGameHistory};
 }
 
 
@@ -340,6 +340,9 @@ async function requestResponse(requestId, userId, action){
     //check the request
     if(action === 'accepted'){
         db.prepare(`UPDATE friends SET friend_request = 'accepted' WHERE id = ?`).run(requestId);
+        // hanieh debug: log accepted friends after update
+        const accepted = db.prepare(`SELECT * FROM friends WHERE id = ?`).get(requestId);
+        console.log('[hanieh debug] Accepted friend request row:', accepted);
         return {message: "Friend request accepted!"};
     }
     else if(action === 'rejected'){
@@ -353,9 +356,14 @@ async function requestResponse(requestId, userId, action){
 }
 
 async function viewPendingRequests(userId){
-    // hanieh debug: log pending requests
+    // hanieh changed: join users table to get sender username for pending requests
     // hanieh changed: return property as 'pendingRequests' (array) for frontend compatibility
-    const viewRequests = db.prepare(`SELECT id, user_id AS sender_id FROM friends WHERE friend_id = ? AND friend_request = 'pending'`).all(userId);
+    const viewRequests = db.prepare(`
+        SELECT f.id, f.user_id AS sender_id, u.username AS sender_username
+        FROM friends f
+        JOIN users u ON u.id = f.user_id
+        WHERE f.friend_id = ? AND f.friend_request = 'pending'
+    `).all(userId);
     console.log('[hanieh debug] viewPendingRequests for userId:', userId);
     console.log('[hanieh debug] pending requests:', viewRequests);
     return {pendingRequests: Array.isArray(viewRequests) ? viewRequests : []};
@@ -372,8 +380,24 @@ module.exports = {
     addFriends,
     requestResponse,
     viewPendingRequests,
+    // hanieh changed: Added viewSentRequests for sender to see outgoing requests
+    viewSentRequests,
     updateUserProfile
 };
+// hanieh changed: Added viewSentRequests for sender to see outgoing requests
+// hanieh changed: Now returns receiver username for each sent request
+async function viewSentRequests(userId) {
+    // Returns requests sent by the logged-in user that are still pending, with receiver username
+    const sentRequests = db.prepare(`
+        SELECT f.id, f.friend_id AS receiver_id, u.username AS receiver_username
+        FROM friends f
+        JOIN users u ON u.id = f.friend_id
+        WHERE f.user_id = ? AND f.friend_request = 'pending'
+    `).all(userId);
+    console.log('[hanieh debug] viewSentRequests for userId:', userId);
+    console.log('[hanieh debug] sent requests:', sentRequests);
+    return Array.isArray(sentRequests) ? sentRequests : [];
+}
 
 
 

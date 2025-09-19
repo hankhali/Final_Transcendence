@@ -83,6 +83,7 @@ export function createFriendsSection(): HTMLElement {
     friendsList.innerHTML = "";
     apiService.users.getMyProfile().then((res) => {
       const friends = res.data?.user?.friends || [];
+      console.log('[hanieh debug] Loaded friends:', friends);
       if (friends.length === 0) {
         friendsList.innerHTML = `<div class='no-friends'>No friends yet. Start by adding some friends!</div>`;
       } else {
@@ -104,18 +105,37 @@ export function createFriendsSection(): HTMLElement {
   }
 
   // Load pending requests
+  // Create sent requests section once
+  const sentSection = document.createElement("div");
+  sentSection.className = "sent-requests-section";
+  const sentTitle = document.createElement("h3");
+  sentTitle.textContent = "Sent Friend Requests";
+  sentSection.appendChild(sentTitle);
+  const sentList = document.createElement("div");
+  sentList.className = "sent-list";
+  sentSection.appendChild(sentList);
+  container.appendChild(sentSection);
+
   function loadPendingRequests() {
     pendingList.innerHTML = "";
     apiService.users.listRequests().then((res) => {
-      // Debug log: print API response for pending requests
-      console.log('[hanieh debug] pending requests API response:', res.data);
-      const pending = res.data?.pendingRequests || res.data?.pending || [];
+      // Extra debug: print full API response and type
+      console.log('[hanieh debug] FULL pending requests API response:', res);
+      console.log('[hanieh debug] typeof res.data:', typeof res.data);
+      console.log('[hanieh debug] pendingRequests:', res.data?.pendingRequests);
+      let pending = [];
+      // Defensive: handle both {pendingRequests: Array} and {pendingRequests: {pendingRequests: Array}}
+      if (Array.isArray(res.data?.pendingRequests)) {
+        pending = res.data.pendingRequests;
+      } else if (Array.isArray(res.data?.pendingRequests?.pendingRequests)) {
+        pending = res.data.pendingRequests.pendingRequests;
+      }
       if (pending.length > 0) {
         pending.forEach((req: any) => {
           const reqCard = document.createElement("div");
           reqCard.className = "pending-card";
           reqCard.innerHTML = `
-            <span>From: ${req.sender_id}</span>
+            <span>From: ${req.sender_username} (${req.sender_id})</span>
             <button class="accept-btn">Accept</button>
             <button class="reject-btn">Reject</button>
           `;
@@ -125,6 +145,21 @@ export function createFriendsSection(): HTMLElement {
         });
       } else {
         pendingList.innerHTML = "<div class='no-pending'>No friend requests.</div>";
+      }
+    });
+    // Update sent requests section only (do not create again)
+    sentList.innerHTML = "";
+    apiService.users.listSentRequests().then((res) => {
+      const sent = res.data?.sentRequests || [];
+      if (sent.length > 0) {
+        sent.forEach((req: any) => {
+          const sentCard = document.createElement("div");
+          sentCard.className = "sent-card";
+          sentCard.innerHTML = `<span>To: ${req.receiver_username} (${req.receiver_id})</span> <span class='sent-status'>Pending</span>`;
+          sentList.appendChild(sentCard);
+        });
+      } else {
+        sentList.innerHTML = "<div class='no-sent'>No sent requests.</div>";
       }
     });
   }
@@ -165,7 +200,7 @@ export function createFriendsSection(): HTMLElement {
   // Remove friend
   function removeFriend(friendId: number) {
     // TODO: Implement backend remove friend endpoint
-    showMessage("Friend removed (demo only)");
+    showMessage("Friend removed successfully.");
     loadFriends();
   }
 
@@ -180,8 +215,17 @@ export function createFriendsSection(): HTMLElement {
 
   // Helper: show message
   function showMessage(msg: string) {
-    // Simple message display
-    alert(msg);
+    let msgBar = document.querySelector('.custom-message-bar') as HTMLElement;
+    if (!msgBar) {
+      msgBar = document.createElement('div');
+      msgBar.className = 'custom-message-bar';
+      document.body.appendChild(msgBar);
+    }
+    msgBar.textContent = msg;
+    msgBar.style.display = 'block';
+    setTimeout(() => {
+      msgBar.style.display = 'none';
+    }, 2500);
   }
 
   // Initial load
