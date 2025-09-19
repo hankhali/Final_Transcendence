@@ -86,10 +86,10 @@ export class GamePage {
                   <i class="fas fa-gamepad"></i>
                 </div>
                 <h3>Ready to Play!</h3>
-                <p class="controls-info">
-                  <strong>Player 1:</strong> W/S or Arrow Keys<br>
-                  ${this.gameMode === '1v1' ? '<strong>Player 2:</strong> I/K or Mouse' : '<strong>AI:</strong> Automated'}
-                </p>
+                  <p class="controls-info">
+                    <strong>Player 1:</strong> W/S or Arrow Keys<br>
+                    ${this.gameMode === '1v1' ? '<strong>Player 2:</strong> I/K or Mouse<br><span style="font-weight:normal;">Player 1 vs Player 2</span>' : '<strong>AI:</strong> Automated<br><span style="font-weight:normal;">Player 1 vs AI</span>'}
+                  </p>
                 <button id="start-game-btn" class="game-btn primary">
                   <i class="fas fa-play"></i>
                   Start Game
@@ -122,7 +122,7 @@ export class GamePage {
             <div class="stat-card">
               <div class="stat-label">${this.gameMode === '1v1' ? 'Player 2' : 'AI'}</div>
               <div class="stat-value" id="player2-score">0</div>
-              <div class="stat-name" id="player2-name">${this.gameMode === '1v1' ? 'Player 2' : 'AI Opponent'}</div>
+              <div class="stat-name" id="player2-name">${this.gameMode === '1v1' ? 'Player 2' : 'AI'}</div>
             </div>
           </div>
         </div>
@@ -467,9 +467,15 @@ export class GamePage {
     if (winnerTitle) winnerTitle.textContent = `🏆 ${winner.name} Wins!`;
     if (winnerName) winnerName.textContent = winner.name;
     if (gameSummary) {
-      gameSummary.textContent = winner.id === 'player1' ? 
-        'Congratulations! You defeated your opponent!' : 
-        'Good game! Better luck next time!';
+        if (this.gameMode === '1v1') {
+          gameSummary.textContent = winner.id === 'player1' ? 
+            'Congratulations! Player 1 defeated Player 2!' : 
+            'Congratulations! Player 2 defeated Player 1!';
+        } else {
+          gameSummary.textContent = winner.id === 'player1' ? 
+            'Congratulations! You defeated your opponent!' : 
+            'Good game! Better luck next time!';
+        }
     }
     if (finalScore) {
       finalScore.textContent = `${players.player1.score} - ${players.player2.score}`;

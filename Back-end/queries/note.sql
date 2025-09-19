@@ -1,5 +1,5 @@
 # Migration: Add opponent_id column to game_history if missing
-# [HANIEH & COPILOT] This column is required for match result logic in tournaments.js
+# [HANIEH ]
 ALTER TABLE game_history ADD COLUMN opponent_id INTEGER;
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

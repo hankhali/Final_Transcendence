@@ -112,7 +112,7 @@ export class PongGame {
   private extraBalls: Ball[] = [];
   private collectedPowerUps: PowerUp[] = [];
 
-  // [ADDED BY HANIEH & COPILOT] For backend API integration
+  // [ADDED BY HANIEH]
   public matchId?: number;
   public tournamentId?: number;
 
@@ -162,10 +162,10 @@ export class PongGame {
 
     this.player2 = {
       id: 'player2',
-      name: 'AI Opponent',
-      score: 0,
-      y: this.config.canvasHeight / 2 - this.config.paddleHeight / 2,
-      isAI: false  // Start as false, will be set to true when AI game is created
+  name: (config && (config as any).gameMode === 'ai') ? 'AI Opponent' : 'Player 2',
+  score: 0,
+  y: this.config.canvasHeight / 2 - this.config.paddleHeight / 2,
+  isAI: (config && (config as any).gameMode === 'ai') ? true : false
     };
 
     // Initialize ball
