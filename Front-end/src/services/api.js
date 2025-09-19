@@ -141,6 +141,12 @@ const apiService = {
       })
     },
 
+      // hanieh changed: Add sent requests API for sender
+      listSentRequests: async () => {
+        return fetchApi("/friend/requests/sent", {
+          method: "GET"
+        });
+      },
     
     // Upload avatar (expects a File object, returns uploaded filename)
     uploadAvatar: async (file) => {

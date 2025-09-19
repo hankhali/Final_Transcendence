@@ -4,11 +4,11 @@ fastify.register(require('@fastify/static'), {
     root: require('path').join(__dirname, 'uploads'),
     prefix: '/uploads/',
 });
-// Enable CORS for frontend requests
+// hanieh fixed: Enable CORS for all frontend requests (any origin)
 fastify.register(require('@fastify/cors'), { 
-  origin: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+    origin: true, // Allows requests from any origin
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 });
 
 fastify.register(require('@fastify/multipart'));
