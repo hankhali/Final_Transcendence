@@ -162,7 +162,7 @@ export class GamePage {
     });
 
     // Fullscreen button
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
+  g fullscreenBtn = document.getElementById('fullscreen-btn');
     fullscreenBtn?.addEventListener('click', () => {
       this.toggleFullscreen();
     });
