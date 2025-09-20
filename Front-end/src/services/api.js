@@ -1,3 +1,19 @@
+// hanieh added: Standalone 1v1 match endpoints
+const onevone = {
+  start: async (player2Username) => {
+    return fetchApi('/onevone/start', {
+      method: 'POST',
+      body: JSON.stringify({ player2Username })
+    });
+  },
+  submitResult: async (matchId, player1Score, player2Score) => {
+    return fetchApi('/onevone/finish', {
+      method: 'POST',
+      body: JSON.stringify({ matchId, player1Score, player2Score })
+    });
+  }
+};
+
 
 
 // Base API URL - update this to match your backend   //check account deletion
@@ -219,8 +235,17 @@ const apiService = {
         method: "DELETE",
       });
     }
+      ,
+      // Submit match result (for game history)
+      submitMatchResult: async (tournamentId, matchId, userScore, opponentScore) => {
+        // Usage: submitMatchResult(tournamentId, matchId, userScore, opponentScore)
+        return fetchApi(`/tournaments/${tournamentId}/finish`, {
+          method: "POST",
+          body: JSON.stringify({ matchId, userScore, opponentScore })
+        });
+      }
   }
 };
 
 
-export { fetchApi, apiService };
+export { fetchApi, apiService, onevone }; // hanieh added

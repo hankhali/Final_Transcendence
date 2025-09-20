@@ -223,19 +223,24 @@ async function startTournament(tournamentId){
     if(!tournament){
         throw new Error('Tournament not found');
     }
-    //by search
-    //user who created the tournament 
-    //mark tournament as started
-    //check if tournament already started*
-
     db.prepare(`UPDATE tournaments SET status = 'started', played_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
-    
+
+    // Log all matchIds in game_history for this tournament
+    const allMatches = db.prepare('SELECT id, user_id, opponent_id, round, tournament_id FROM game_history WHERE tournament_id = ?').all(tournamentId);
+    console.log('[DEBUG] All matches in DB for tournament', tournamentId, allMatches);
+    allMatches.forEach((m, idx) => {
+        console.log(`[DEBUG] DB match[${idx}] id:`, m.id);
+    });
+
     //start the match depending on the number of players (4 = semifinal / 2 = final)
     const matches = await createMatch(tournamentId);
-    console.log(matches); //send it to fronted via API response
+    if (matches && matches.length) {
+        matches.forEach((m, idx) => {
+            console.log(`[DEBUG] Backend matches[${idx}] matchId:`, m.matchId);
+        });
+    }
+    console.log('[DEBUG] Matches created and returned to frontend:', matches);
     return{ message: `Tournament ${tournament.name} has started!`, matches};
-
-    //matches are played in the fronted, results will be submitted via calling updateMatchResults function
 }
 
 //check winners of the semi-final and update result
@@ -243,8 +248,16 @@ async function startTournament(tournamentId){
 //fetch final winner and declare tournament champion
 //function to update match resutls and insert them into game history
 async function updateMatchResults(matchId, userScore, opponentScore){
+    // Log all matchIds in game_history before updating
+    const allMatches = db.prepare('SELECT id, user_id, opponent_id, round, tournament_id FROM game_history').all();
+    console.log('[DEBUG] All matches in DB before updateMatchResults:', allMatches);
+    allMatches.forEach((m, idx) => {
+        console.log(`[DEBUG] DB match[${idx}] id:`, m.id);
+    });
+
     const match = db.prepare('SELECT id, user_id, opponent_id, round, tournament_id FROM game_history WHERE id = ?').get(matchId);
     if(!match){
+        console.error('[DEBUG] No match found for matchId:', matchId);
         throw new Error('No match found');
     }
 

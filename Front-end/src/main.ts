@@ -57,7 +57,7 @@ function updateAllTranslations(): void {
 }
 
 // Utility function to navigate between pages
-export function navigateTo(path: string) {
+function navigateTo(path: string) {
   showLoading();
   // Simulate network delay for a smoother loading experience
   setTimeout(() => {
@@ -76,8 +76,6 @@ export function navigateTo(path: string) {
     hideLoading();
   }, 300); // Simulate 300ms loading
 }
-
-
 
 // Helper to get page title based on path
 function getPageTitle(path: string): string {
@@ -98,34 +96,23 @@ function getPageTitle(path: string): string {
       return "Page Not Found - Neon Pong";
   }
 }
+// Function to show the loading overlay
+function showLoading(): void {
+  let overlay = document.getElementById("loading-overlay");
+  if (!overlay) {
+    overlay = createLoadingOverlay();
+  }
+  overlay.classList.remove("hidden");
+}
 // Function to create a generic loading overlay
 function createLoadingOverlay(): HTMLElement {
+  // Basic loading overlay implementation
   const overlay = document.createElement("div");
-  overlay.className = "loading-overlay hidden"; // Start hidden
   overlay.id = "loading-overlay";
-  overlay.setAttribute("role", "status");
-  overlay.setAttribute("aria-live", "assertive");
-  const spinner = document.createElement("div");
-  spinner.className = "spinner";
-  overlay.appendChild(spinner);
-  const loadingText = document.createElement("p");
-  loadingText.className = "loading-text";
-  loadingText.textContent = "Loading...";
-  loadingText.setAttribute("aria-label", "Content is loading");
-  overlay.appendChild(loadingText);
+  overlay.className = "loading-overlay";
+  overlay.innerHTML = '<div class="spinner"></div>';
+  document.body.appendChild(overlay);
   return overlay;
-}
-// Function to show the loading overlay
-function showLoading() {
-  const app = document.getElementById("app");
-  if (app) {
-    let overlay = document.getElementById("loading-overlay");
-    if (!overlay) {
-      overlay = createLoadingOverlay();
-      app.appendChild(overlay);
-    }
-    overlay.classList.remove("hidden");
-  }
 }
 // Function to hide the loading overlay
 function hideLoading() {
@@ -135,43 +122,33 @@ function hideLoading() {
   }
 }
 // Function to display messages (error/success/info)
-function showMessage(
-  text: string,
-  type: "success" | "error" | "info" = "info"
-) {
-  // Special handling for account deletion success
-  if (text.includes("Account deleted successfully") && type === "success") {
-    showAccountDeletionSuccess();
-    return;
-  }
-
-  // Clear existing messages and timeouts
-  const existingMessage = document.querySelector(".message");
+function showMessage(text: string, type: "success" | "error" | "info" = "info"): void {
+  // Remove any existing message
+  const existingMessage = document.querySelector('.message');
   if (existingMessage) {
-    existingMessage.classList.add("removing");
     setTimeout(() => existingMessage.remove(), 300);
   }
-  if (window.messageTimeout) {
-    clearTimeout(window.messageTimeout);
+  if ((window as any).messageTimeout) {
+    clearTimeout((window as any).messageTimeout);
   }
 
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${type}-message`;
-  
+
   // Add icon based on message type
   let iconClass = "";
   if (type === "success") iconClass = "fas fa-check-circle";
   else if (type === "error") iconClass = "fas fa-exclamation-circle";
   else iconClass = "fas fa-info-circle";
-  
+
   const icon = document.createElement("i");
   icon.className = iconClass;
-  
+
   // Create message content container
   const messageContent = document.createElement("div");
   messageContent.className = "message-content";
   messageContent.textContent = text;
-  
+
   // Create close button
   const closeButton = document.createElement("button");
   closeButton.className = "close-button";
@@ -1477,6 +1454,10 @@ function renderProfilePage(): HTMLElement {
     } else {
       dashboardTab.textContent = "Failed to load dashboard.";
     }
+    hideLoading();
+  }).catch(() => {
+    dashboardTab.textContent = "Failed to load dashboard.";
+    hideLoading();
   });
   
   // Profile Settings Tab
@@ -1497,6 +1478,10 @@ function renderProfilePage(): HTMLElement {
     } else {
       profileInfoTab.textContent = "Failed to load profile.";
     }
+    hideLoading();
+  }).catch(() => {
+    profileInfoTab.textContent = "Failed to load profile.";
+    hideLoading();
   });
   
   // Statistics Tab
@@ -1537,6 +1522,10 @@ function renderProfilePage(): HTMLElement {
     } else {
       historyTab.textContent = "Failed to load match history.";
     }
+    hideLoading();
+  }).catch(() => {
+    historyTab.textContent = "Failed to load match history.";
+    hideLoading();
   });
   
   tabContent.appendChild(dashboardTab);
@@ -1687,7 +1676,7 @@ function createDashboardSection(userData: any): HTMLElement {
 }
 
 // Weekly Performance Chart
-export function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
+function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const chartContainer = document.createElement("div");
   chartContainer.className = "chart-container weekly-chart";
@@ -1753,7 +1742,7 @@ export function createWeeklyPerformanceChart(weeklyStats: any[]): HTMLElement {
 }
 
 // Skill Progression Chart
-export function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
+function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const chartContainer = document.createElement("div");
   chartContainer.className = "chart-container skill-chart";
@@ -1826,7 +1815,7 @@ export function createSkillProgressionChart(skillProgression: any[]): HTMLElemen
 }
 
 // Recent Matches Summary
-export function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
+function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "recent-matches-summary";
@@ -1852,7 +1841,7 @@ export function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
         <div class="opponent-name">${match.opponent}</div>
         <div class="match-details">${match.score} • ${match.duration}min</div>
       </div>
-      <div class="match-date">${match.date.toLocaleDateString()}</div>
+  <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
     `;
     
     matchesList.appendChild(matchItem);
@@ -1870,7 +1859,7 @@ export function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
 }
 
 // Advanced Statistics Panel
-export function createAdvancedStatsPanel(userData: any): HTMLElement {
+function createAdvancedStatsPanel(userData: any): HTMLElement {
   const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "advanced-stats-panel";
@@ -1905,7 +1894,7 @@ export function createAdvancedStatsPanel(userData: any): HTMLElement {
 }
 
 // Achievements Section
-export function createAchievementsSection(userData: any): HTMLElement {
+function createAchievementsSection(userData: any): HTMLElement {
   const t = languageManager.getTranslations();
   const container = document.createElement("div");
   container.className = "achievements-section";
@@ -1984,7 +1973,7 @@ export function createAchievementsSection(userData: any): HTMLElement {
   return container;
 }
 
-export function switchTab(tabId: string) {
+function switchTab(tabId: string) {
   // Update tab buttons
   document.querySelectorAll('.tab-button').forEach(btn => {
     btn.classList.remove('active');
@@ -1998,7 +1987,7 @@ export function switchTab(tabId: string) {
   document.getElementById(tabId)?.classList.add('active');
 }
 
-export function createStatsSection(userData: any): HTMLElement {
+function createStatsSection(userData: any): HTMLElement {
   const t = languageManager.getTranslations();
   const statsContainer = document.createElement("div");
   statsContainer.className = "stats-section";
@@ -2035,9 +2024,7 @@ export function createStatsSection(userData: any): HTMLElement {
   statsContainer.appendChild(statsGrid);
   return statsContainer;
 }
-
-
-export function createMatchHistorySection(matchHistory: any[]): HTMLElement {
+function createMatchHistorySection(matchHistory: any[]): HTMLElement {
   const t = languageManager.getTranslations();
   const historyContainer = document.createElement("div");
   historyContainer.className = "match-history-section";
@@ -2081,18 +2068,17 @@ export function createMatchHistorySection(matchHistory: any[]): HTMLElement {
       </div>
       <div class="match-details">
         <div class="match-score">${match.score}</div>
-        <div class="match-date">${match.date.toLocaleDateString()}</div>
+  <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
         <div class="match-duration">${match.duration} ${t.profile.history.min}</div>
       </div>
     `;
     historyList.appendChild(matchCard);
   });
-  
   historyContainer.appendChild(historyList);
   return historyContainer;
 }
 
-export function showAddFriendModal() {
+function showAddFriendModal() {
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
   modal.innerHTML = `
@@ -2123,7 +2109,7 @@ export function showAddFriendModal() {
   document.body.appendChild(modal);
 }
 
-export function addFriend() {
+function addFriend() {
   const usernameInput = document.getElementById("friend-username") as HTMLInputElement;
   const username = usernameInput.value.trim();
   
@@ -2135,11 +2121,11 @@ export function addFriend() {
   }
 }
 
-export function challengeFriend(username: string) {
+function challengeFriend(username: string) {
   showMessage(`Challenge sent to ${username}!`, "info");
 }
 
-export function removeFriend(friendId: number) {
+function removeFriend(friendId: number) {
   if (confirm("Are you sure you want to remove this friend?")) {
     console.log(`Removing friend with ID: ${friendId}`);
     showMessage("Friend removed", "info");
@@ -2155,7 +2141,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Create Tournament Modal
-export function showCreateTournamentModal() {
+function showCreateTournamentModal() {
   console.log("showCreateTournamentModal called - isLoggedIn:", isLoggedIn, "currentUser:", currentUser);
   
   // Check if user is logged in
@@ -2823,4 +2809,11 @@ function startAIGame(difficulty: 'easy' | 'medium' | 'hard'): void {
     showMessage(`🤖 Starting AI Challenge (${difficulty})...`, 'info');
   }
 }
+
+
+
+
+
+
+
 

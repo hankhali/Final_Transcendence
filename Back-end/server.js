@@ -1,3 +1,6 @@
+// hanieh added: Register onevone route for standalone 1v1 matches
+// This is for frontend 1v1 games, not tournaments
+// I am responsible for frontend, so I added this route registration
 const fastify = require('fastify')({logger: true});
 // Serve static files from uploads directory
 fastify.register(require('@fastify/static'), {
@@ -17,6 +20,7 @@ const db = require('./queries/database');
 
 fastify.register(require('./routes/users'));
 fastify.register(require('./routes/tournaments'));
+fastify.register(require('./routes/onevone')); // hanieh added
 require('dotenv').config();
 fastify.register(require('@fastify/jwt'), {
     secret: process.env.JWT_SECRET
