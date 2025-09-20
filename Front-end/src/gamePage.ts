@@ -1,7 +1,22 @@
+// @ts-ignore
+import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
+/// <reference path="./services/api.d.ts" />
 // Game Page Component - Handles the actual game interface
 import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
 
 export class GamePage {
+  // hanieh added: Store tournament aliases
+  private tournamentAliases: { [playerId: string]: string } = {};
+
+
+  // hanieh added: Reset aliases and show modal for new tournament
+  public renderTournamentGame(): void {
+    this.tournamentAliases = {};
+    this.gameMode = 'tournament';
+    this.renderGameInterface();
+  window.requestAnimationFrame(() => this.showTournamentAliasModal());
+  }
+  // Helper to get tournamentId from context (replace with your logic)
   private container: HTMLElement;
   public game: PongGame | null = null;
   public setPlayerNames(player1Name: string, player2Name: string): void {
@@ -19,17 +34,43 @@ export class GamePage {
     this.onNavigateBack = onNavigateBack;
   }
 
+  // hanieh added: Show tournament alias modal and store alias
+  private showTournamentAliasModal(): void {
+    const modal = document.getElementById('tournament-alias-modal') as HTMLElement;
+    const input = document.getElementById('tournament-alias-input') as HTMLInputElement;
+    const submitBtn = document.getElementById('submit-tournament-alias-btn') as HTMLButtonElement;
+    const errorDiv = document.getElementById('tournament-alias-error') as HTMLElement;
+    if (modal && input && submitBtn && errorDiv) {
+      modal.style.display = 'flex';
+      input.value = '';
+      errorDiv.style.display = 'none';
+      submitBtn.onclick = () => {
+        const alias = input.value.trim();
+        if (!alias) {
+          errorDiv.textContent = 'You must enter an alias to play in this tournament!';
+          errorDiv.style.display = 'block';
+          return;
+        }
+        // For demo, use a static playerId. Replace with actual player/user id logic.
+        const playerId = 'player1';
+        this.tournamentAliases[playerId] = alias;
+        modal.style.display = 'none';
+        this.initializeGame();
+      };
+    }
+  }
+
 
   public render1v1Game(): void {
     this.gameMode = '1v1';
     this.renderGameInterface();
-    this.initializeGame();
+  window.requestAnimationFrame(() => this.initializeGame()); // hanieh added: ensure canvas exists
   }
 
   public renderAIGame(difficulty: 'easy' | 'medium' | 'hard' = 'medium'): void {
     this.gameMode = 'ai';
     this.renderGameInterface();
-    this.initializeAIGame(difficulty);
+  window.requestAnimationFrame(() => this.initializeAIGame(difficulty)); // hanieh added: ensure canvas exists
   }
 
   private renderGameInterface(): void {
@@ -44,7 +85,7 @@ export class GamePage {
             </button>
             <div class="game-info">
               <h2 class="game-title">
-                ${this.gameMode === '1v1' ? '1v1 Battle' : 'AI Challenge'}
+                ${this.gameMode === '1v1' ? '1v1 Battle' : this.gameMode === 'tournament' ? 'Tournament' : 'AI Challenge'}
               </h2>
               <div class="game-status" id="game-status">Ready to Play</div>
             </div>
@@ -53,6 +94,27 @@ export class GamePage {
                 <i class="fas fa-expand"></i>
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Custom modal for opponent username input (1v1) -->
+        <div id="username-modal" class="modal" style="display:none;">
+          <div class="modal-content">
+            <span class="close" id="close-username-modal">&times;</span>
+            <h2>Enter opponent username for 1v1 match</h2>
+            <input type="text" id="opponent-username-input" placeholder="Opponent username" />
+            <button id="submit-username-btn" class="game-btn primary">Start Match</button>
+            <div id="username-error" class="error-message" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Tournament alias modal -->
+        <div id="tournament-alias-modal" class="modal" style="display:none;">
+          <div class="modal-content">
+            <h2>Enter your alias for this tournament</h2>
+            <input type="text" id="tournament-alias-input" placeholder="Your alias" />
+            <button id="submit-tournament-alias-btn" class="game-btn primary">Save Alias</button>
+            <div id="tournament-alias-error" class="error-message" style="display:none;"></div>
           </div>
         </div>
 
@@ -105,7 +167,6 @@ export class GamePage {
             </div>
           </div>
         </div>
-        <!-- Game End Modal REMOVED -->
       </div>
     `;
 
@@ -121,31 +182,93 @@ export class GamePage {
       return;
     }
 
-  // Always basic Pong, no overrides
-  this.game = create1v1Game(this.gameCanvas);
-    // [ADDED] Set matchId and tournamentId for backend integration
-    if (this.game) {
-      // You may want to generate or fetch these IDs from your backend or game context
-      // For demo, we'll use dummy values. Replace with real logic as needed.
-      this.game.matchId = Date.now(); // Example: use timestamp as dummy matchId
-      this.game.tournamentId = 1; // Example: hardcoded tournamentId
+    if (this.gameMode === 'tournament') {
+      const tournamentId = this.getTournamentIdFromContext();
+      // Tournament game logic (replace with actual API call if needed)
+      this.game = create1v1Game(this.gameCanvas);
+      this.game.matchId = 0; // Replace with actual matchId from backend if needed
+      this.game.tournamentId = tournamentId;
+      this.setupGameCallbacks();
+      console.log('[hanieh added] Tournament game created with tournamentId:', tournamentId);
+    } else if (this.gameMode === '1v1') {
+      // hanieh added: Show custom modal for opponent username
+      const modal = document.getElementById('username-modal') as HTMLElement;
+      const input = document.getElementById('opponent-username-input') as HTMLInputElement;
+      const submitBtn = document.getElementById('submit-username-btn') as HTMLButtonElement;
+      const errorDiv = document.getElementById('username-error') as HTMLElement;
+      const closeBtn = document.getElementById('close-username-modal') as HTMLElement;
+      if (modal && input && submitBtn && errorDiv && closeBtn) {
+        modal.style.display = 'flex';
+        input.value = '';
+        errorDiv.style.display = 'none';
+        submitBtn.onclick = () => {
+          const opponentUsername = input.value.trim();
+          if (!opponentUsername) {
+            errorDiv.textContent = 'You must enter a valid username for your opponent!';
+            errorDiv.style.display = 'block';
+            return;
+          }
+          modal.style.display = 'none';
+          import('./services/api.js').then(({ onevone }) => {
+            onevone.start(opponentUsername).then((response: { data?: { matchId?: number }, error?: any }) => {
+              const { data, error } = response;
+              if (error) {
+                errorDiv.textContent = 'Could not start 1v1 match: ' + error;
+                errorDiv.style.display = 'block';
+                modal.style.display = 'flex';
+                return;
+              }
+              const matchId = data?.matchId;
+              if (!matchId) {
+                errorDiv.textContent = 'Could not start 1v1 game: No valid matchId from backend.';
+                errorDiv.style.display = 'block';
+                modal.style.display = 'flex';
+                return;
+              }
+              if (this.gameCanvas) {
+                this.game = create1v1Game(this.gameCanvas);
+                this.game.matchId = matchId;
+                this.game.tournamentId = undefined;
+                this.setupGameCallbacks();
+                console.log('[hanieh added] 1v1 game created with matchId:', this.game.matchId);
+              } else {
+                errorDiv.textContent = 'Game canvas not found.';
+                errorDiv.style.display = 'block';
+                modal.style.display = 'flex';
+              }
+            });
+          });
+        };
+        closeBtn.onclick = () => {
+          modal.style.display = 'none';
+        };
+      }
+    } else {
+      // Non-tournament game (demo/AI)
+      this.game = create1v1Game(this.gameCanvas);
+      this.game.matchId = 0;
+      this.game.tournamentId = 1;
+      this.setupGameCallbacks();
+      console.log('Game created:', this.game);
     }
-    console.log('Game created:', this.game);
-    this.setupGameCallbacks();
   }
 
   private initializeAIGame(difficulty: 'easy' | 'medium' | 'hard'): void {
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     if (!this.gameCanvas) return;
 
-  // Always basic Pong, no overrides
-  this.game = createAIGame(this.gameCanvas, difficulty);
-    // [ADDED] Set matchId and tournamentId for backend integration
-    if (this.game) {
-      this.game.matchId = Date.now(); // Example: use timestamp as dummy matchId
-      this.game.tournamentId = 1; // Example: hardcoded tournamentId
-    }
+    // For AI games, use demo IDs (or adapt for tournament if needed)
+    this.game = createAIGame(this.gameCanvas, difficulty);
+    this.game.matchId = Date.now();
+    this.game.tournamentId = 1;
     this.setupGameCallbacks();
+    // ...existing code...
+  }
+
+  // Helper to get tournamentId from context (replace with your logic)
+  private getTournamentIdFromContext(): number {
+    // TODO: Replace with actual logic to get tournamentId (e.g., from route, state, or user selection)
+    return 1;
   }
 
   private setupGameCallbacks(): void {
@@ -162,6 +285,7 @@ export class GamePage {
     });
   }
 
+    // hanieh added: openSettingsModal is not used, but kept for future settings modal logic
   private openSettingsModal(): void {
     // Settings modal removed
   }
@@ -276,32 +400,67 @@ export class GamePage {
     updateTimer();
   }
 
+    // hanieh added: showGameEndModal is not used, but kept for future modal logic
   private showGameEndModal(winner: Player, gameTime: number): void {
-    // [ADDED BY HANIEH] Send match result to backend for game history
-    // This is required for game history and stats to work!
-    // Replace these with your actual matchId, tournamentId, and scores
-    const matchId = this.game?.matchId; // You need to set this when creating the game
-    const tournamentId = this.game?.tournamentId; // You need to set this when creating the game
+    // hanieh added: Send match result to backend for game history
+    const matchId = this.game?.matchId;
+    const tournamentId = this.game?.tournamentId;
     const player1Score = this.game?.getPlayers().player1.score;
     const player2Score = this.game?.getPlayers().player2.score;
-    if (matchId && tournamentId && typeof player1Score === 'number' && typeof player2Score === 'number') {
-      // Use the shared API service for match result submission
-        // Use the shared API service for match result submission
+    console.log('[DEBUG] Preparing to submit match result:', {
+      matchId,
+      tournamentId,
+      player1Score,
+      player2Score,
+      game: this.game
+    });
+    if (typeof matchId === 'number' && typeof player1Score === 'number' && typeof player2Score === 'number') {
+      if (this.gameMode === '1v1') {
+        // hanieh added: Use onevone.submitResult for standalone 1v1
+        import('./services/api.js').then(({ onevone }) => {
+          onevone.submitResult(matchId, player1Score, player2Score)
+            .then(({ data, error }) => {
+              if (error) {
+                console.error('[hanieh added] Error sending 1v1 match result:', error);
+              } else {
+                console.log('[hanieh added] 1v1 match result sent to backend:', data);
+              }
+            })
+            .catch((err: unknown) => {
+              console.error('[hanieh added] Error sending 1v1 match result:', err);
+            });
+        });
+      } else if (this.gameMode === 'tournament' && typeof tournamentId === 'number') {
         import('./services/api.js').then(({ apiService }) => {
           apiService.tournaments.submitMatchResult(tournamentId, matchId, player1Score, player2Score)
             .then(({ data, error }) => {
               if (error) {
-                console.error('[ADDED] Error sending match result:', error);
+                console.error('[ADDED] Error sending tournament match result:', error);
               } else {
-                console.log('[ADDED] Match result sent to backend:', data);
+                console.log('[ADDED] Tournament match result sent to backend:', data);
               }
             })
-            .catch(err => {
-              console.error('[ADDED] Error sending match result:', err);
+            .catch((err: unknown) => {
+              console.error('[ADDED] Error sending tournament match result:', err);
             });
         });
+      } else {
+        console.warn('[ADDED] Missing tournamentId for tournament match result', {
+          matchId,
+          tournamentId,
+          player1Score,
+          player2Score,
+          game: this.game
+        });
+      }
     } else {
-      console.warn('[ADDED] Missing matchId/tournamentId or scores, cannot send match result to backend');
+      console.warn('[ADDED] Missing matchId or scores, cannot send match result to backend', {
+        matchId,
+        tournamentId,
+        player1Score,
+        player2Score,
+        game: this.game
+      });
     }
   // Game End Modal logic REMOVED
   }

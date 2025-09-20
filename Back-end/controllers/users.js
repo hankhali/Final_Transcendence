@@ -111,25 +111,43 @@ async function getUserdata(userId){
         throw new Error(`User with ID ${userId} not found`);
     }
 
-    const getGameHistory = db.prepare(`SELECT * FROM game_history WHERE user_id = ? ORDER BY played_at DESC`).all(userId);
+    // Join opponent info and map fields for frontend compatibility
+    const getGameHistory = db.prepare(`
+        SELECT gh.*, u.username AS opponent, u.avatar AS opponentAvatar
+        FROM game_history gh
+        LEFT JOIN users u ON u.id = gh.opponent_id
+        WHERE gh.user_id = ?
+        ORDER BY gh.played_at DESC
+    `).all(userId);
     console.log('[DEBUG] getUserdata for userId:', userId);
     console.log('[DEBUG] Fetched user:', fetchData);
     console.log('[DEBUG] Fetched gameHistory:', getGameHistory);
     if(!getGameHistory){
         throw new Error('Error fetching game history');
     }
-        // Fetch accepted friends (bidirectional)
-        const friends = db.prepare(`
-            SELECT u.id, u.username, u.avatar, u.current_status
-            FROM users u
-            JOIN friends f ON (
-                (f.user_id = ? AND f.friend_id = u.id)
-                OR (f.friend_id = ? AND f.user_id = u.id)
-            )
-            WHERE f.friend_request = 'accepted'
-        `).all(userId, userId);
-        // hanieh changed: return friends inside user object for frontend compatibility
-        return {user: {...fetchData, friends}, gameHistory: getGameHistory};
+    // Map fields for frontend
+    const mappedHistory = getGameHistory.map(row => ({
+        id: row.id,
+        opponent: row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown'),
+        opponentAvatar: row.opponentAvatar || '',
+        score: `${row.user_score}-${row.opponent_score}`,
+        duration: row.played_at ? '5' : '', // Set to '5' min for now, replace with actual duration if available
+        result: row.result === 'finished' ? (row.user_score > row.opponent_score ? 'win' : 'loss') : 'pending',
+        date: row.played_at,
+        gameType: row.round === '1v1' ? '1v1' : 'tournament'
+    }));
+    // Fetch accepted friends (bidirectional)
+    const friends = db.prepare(`
+        SELECT u.id, u.username, u.avatar, u.current_status
+        FROM users u
+        JOIN friends f ON (
+            (f.user_id = ? AND f.friend_id = u.id)
+            OR (f.friend_id = ? AND f.user_id = u.id)
+        )
+        WHERE f.friend_request = 'accepted'
+    `).all(userId, userId);
+    // hanieh changed: return friends inside user object for frontend compatibility
+    return {user: {...fetchData, friends}, gameHistory: mappedHistory};
 }
 
 
