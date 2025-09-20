@@ -328,6 +328,8 @@ function checkLoginState(): void {
     (window as any).isLoggedIn = isLoggedIn;
     (window as any).currentUser = currentUser;
     updateNavbar();
+      // hanieh added: Always redirect to profile settings after login
+      navigateTo("/profile");
   } else if (storedLoginState === 'true' && (!storedUser || !storedToken)) {
     // Clear invalid login state
     isLoggedIn = false;
