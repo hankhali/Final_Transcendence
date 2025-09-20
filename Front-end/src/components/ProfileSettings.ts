@@ -279,8 +279,36 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   `;
   
   gameHistoryButton.querySelector('button')?.addEventListener('click', () => {
-    console.log('Game History clicked');
-    showMessage('Game History feature coming soon!', 'info');
+    // hanieh added: Fetch and display real game stats
+    showMessage('Loading your game stats...', 'info');
+    apiService.users.getMyProfile().then((res) => {
+      if (res.error) {
+        showMessage('Failed to fetch game stats: ' + res.error, 'error');
+        return;
+      }
+      const stats = res.user;
+      const history = res.gameHistory || [];
+      let statsHtml = `<div class="game-stats-modal"><h2>Game Stats</h2>`;
+      statsHtml += `<p><strong>Username:</strong> ${stats.username}</p>`;
+      statsHtml += `<p><strong>Games Played:</strong> ${stats.player_matches || 0}</p>`;
+      statsHtml += `<p><strong>Wins:</strong> ${stats.player_wins || 0}</p>`;
+      statsHtml += `<h3>Match History</h3><ul>`;
+      if (history.length === 0) {
+        statsHtml += `<li>No matches played yet.</li>`;
+      } else {
+        for (const match of history) {
+          statsHtml += `<li>${match.date ? new Date(match.date).toLocaleString() : ''} - ${match.gameType} vs ${match.opponent} | Score: ${match.score} | Result: ${match.result}</li>`;
+        }
+      }
+      statsHtml += `</ul></div>`;
+      // Show stats in a modal
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `<div class='modal-content'>${statsHtml}<button class='modal-close'>Close</button></div>`;
+      modal.querySelector('.modal-close')?.addEventListener('click', () => modal.remove());
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+      document.body.appendChild(modal);
+    });
   });
   
   form.appendChild(gameHistoryButton);
