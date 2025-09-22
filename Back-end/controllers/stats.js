@@ -131,8 +131,12 @@ async function getUserStats(userId) {
     const progressionRows = db.prepare('SELECT played_at, user_score, opponent_score FROM game_history WHERE user_id = ? ORDER BY played_at ASC').all(userId);
     let cumulativeWins = 0, cumulativeLosses = 0;
     progressionRows.forEach(row => {
-        if (row.user_score > row.opponent_score) cumulativeWins++;
-        if (row.user_score < row.opponent_score) cumulativeLosses++;
+        // Convert scores to numbers
+        const userScore = Number(row.user_score);
+        const opponentScore = Number(row.opponent_score);
+        if (isNaN(userScore) || isNaN(opponentScore)) return;
+        if (userScore > opponentScore) cumulativeWins++;
+        if (userScore < opponentScore) cumulativeLosses++;
         let date = typeof row.played_at === 'string' && row.played_at.length >= 10 ? row.played_at.slice(0, 10) : (row.played_at ? String(row.played_at) : 'Unknown');
         let skill = Math.round((cumulativeWins - cumulativeLosses) * 100 / ((cumulativeWins + cumulativeLosses) || 1));
         skillProgression.push({
