@@ -284,7 +284,7 @@ function updateNavbar(): void {
 }
 
 // Function to handle login
-function handleLogin(username: string, token?: string, userId?: number): void {
+async function handleLogin(username: string, token?: string, userId?: number): Promise<void> {
   isLoggedIn = true;
   currentUser = { id: userId || Date.now(), username: username };
   // Update global variables
@@ -295,9 +295,20 @@ function handleLogin(username: string, token?: string, userId?: number): void {
   if (token) {
     localStorage.setItem('token', token);
   }
-  updateNavbar();
-  showMessage(`Welcome back, ${username}!`, "success");
-  navigateTo("/profile");
+    updateNavbar();  
+    const setWelcomeMessage = (name: string) => {
+      showMessage(`Welcome back, ${name}!`, "success");
+      navigateTo("/profile");
+    };
+    apiService.users.getMyProfile().then(res => {
+      let displayName = username;
+      if (res && res.data && res.data.displayName) {
+        displayName = res.data.displayName;
+      }
+      setWelcomeMessage(displayName);
+    }).catch(() => {
+      setWelcomeMessage(username);
+    });
 }
 
 // Function to handle logout
@@ -1556,9 +1567,11 @@ function createDashboardSection(userData: any): HTMLElement {
   // Dashboard Header with Welcome Message
   const dashboardHeader = document.createElement("div");
   dashboardHeader.className = "dashboard-header";
+  // Use displayName from userData if available
+  let displayName = userData && userData.alias ? userData.alias : "Pro Player";
   dashboardHeader.innerHTML = `
     <div class="welcome-banner">
-      <h2>${t.profile.dashboard.welcome}</h2>
+      <h2>WELCOME BACK, ${displayName}!</h2>
       <p>${t.profile.dashboard.overview}</p>
     </div>
   `;
