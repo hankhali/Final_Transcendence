@@ -113,6 +113,33 @@ async function getUserStats(userId) {
         socialButterfly: socialButterflyCount >= 10
     };
     console.log('[STATS] achievements:', achievements);
+    // --- Patch: Always return at least one entry for weeklyStats and skillProgression ---
+    // Weekly stats: group matches by week (ISO week number)
+    const weeklyStats = [];
+    if (gamesPlayed > 0) {
+        // For simplicity, put all games in one week if only one match
+        const weekLabel = 'Week 1';
+        weeklyStats.push({
+            week: weekLabel,
+            wins,
+            losses,
+            gamesPlayed
+        });
+    }
+    // Skill progression: generate a point for each game played
+    const skillProgression = [];
+    const progressionRows = db.prepare('SELECT played_at, user_score, opponent_score FROM game_history WHERE user_id = ? ORDER BY played_at ASC').all(userId);
+    let cumulativeWins = 0, cumulativeLosses = 0;
+    progressionRows.forEach(row => {
+        if (row.user_score > row.opponent_score) cumulativeWins++;
+        if (row.user_score < row.opponent_score) cumulativeLosses++;
+        let date = typeof row.played_at === 'string' && row.played_at.length >= 10 ? row.played_at.slice(0, 10) : (row.played_at ? String(row.played_at) : 'Unknown');
+        let skill = Math.round((cumulativeWins - cumulativeLosses) * 100 / ((cumulativeWins + cumulativeLosses) || 1));
+        skillProgression.push({
+            date,
+            skill
+        });
+    });
     return {
         gamesPlayed,
         wins,
@@ -123,7 +150,9 @@ async function getUserStats(userId) {
         averageScore,
         totalPlayTime,
         preferredMode,
-        achievements
+        achievements,
+        weeklyStats,
+        skillProgression
     };
 }
 

@@ -1461,15 +1461,18 @@ function renderProfilePage(): HTMLElement {
       if (res.data && res.data.user) {
         const userData = {
           ...res.data.user,
-          matchHistory: res.data.gameHistory || [],
+          stats: res.data.stats || {},
+          matchHistory: res.data.stats?.matchHistory || res.data.gameHistory || [],
           friends: res.data.user.friends || []
         };
+        console.log('[Dashboard] [FORCE REFRESH] userData for dashboard:', userData);
         dashboardTab.appendChild(createDashboardSection(userData));
       } else {
         dashboardTab.textContent = "Failed to load dashboard.";
       }
       hideLoading();
-    }).catch(() => {
+    }).catch((err) => {
+      console.error('[Dashboard] [FORCE REFRESH] Failed to load dashboard:', err);
       dashboardTab.textContent = "Failed to load dashboard.";
       hideLoading();
     });
@@ -1772,7 +1775,8 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
   const chartWrapper = document.createElement("div");
   chartWrapper.className = "line-chart-wrapper";
   
-  if (!skillProgression || skillProgression.length === 0) {
+  // Defensive: filter out invalid entries and handle empty arrays
+  if (!Array.isArray(skillProgression) || skillProgression.length === 0 || skillProgression.some(point => typeof point.skill !== 'number' || isNaN(point.skill))) {
     const empty = document.createElement('div');
     empty.className = 'chart-empty';
     empty.textContent = 'No skill progression data';
