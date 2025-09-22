@@ -236,13 +236,12 @@ const apiService = {
       });
     }
       ,
-      // Submit match result (for game history)
-      submitMatchResult: async (tournamentId, matchId, userScore, opponentScore) => {
-        // Usage: submitMatchResult(tournamentId, matchId, userScore, opponentScore)
-        return fetchApi(`/tournaments/${tournamentId}/finish`, {
-          method: "POST",
-          body: JSON.stringify({ matchId, userScore, opponentScore })
-        });
+        // Update user profile (send only provided fields)
+        updateProfile: async (profileData) => {
+          return fetchApi("/me", {
+            method: "PATCH",
+            body: JSON.stringify(profileData)
+          });
       }
   }
 };
