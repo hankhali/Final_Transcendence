@@ -1513,13 +1513,10 @@ function renderProfilePage(): HTMLElement {
   statsTab.className = "tab-pane";
   statsTab.id = "stats";
   apiService.users.getMyProfile().then((res) => {
-    if (res.data && res.data.user) {
-      const userData = {
-        ...res.data.user,
-        matchHistory: res.data.gameHistory || [],
-        friends: res.data.user.friends || []
-      };
-      statsTab.appendChild(createStatsSection(userData));
+    if (res.data && res.data.stats) {
+      statsTab.appendChild(createStatsSection(res.data.stats));
+    } else if (res.data && res.data.user) {
+      statsTab.appendChild(createStatsSection(res.data.user));
     } else {
       statsTab.textContent = "Failed to load stats.";
     }
@@ -2012,6 +2009,17 @@ function switchTab(tabId: string) {
 }
 
 function createStatsSection(userData: any): HTMLElement {
+  // Debug: log received userData and stats used for rendering
+  console.log('[StatsSection] Received userData:', userData);
+  const statsObj = userData.stats || userData;
+  console.log('[StatsSection] Stats used for rendering:', statsObj);
+  console.log('[StatsSection] gamesPlayed:', statsObj.gamesPlayed, 'wins:', statsObj.wins, 'losses:', statsObj.losses, 'winRate:', statsObj.winRate);
+  if (!statsObj) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'stats-error';
+    errorDiv.textContent = 'No stats available.';
+    return errorDiv;
+  }
   const t = languageManager.getTranslations();
   const statsContainer = document.createElement("div");
   statsContainer.className = "stats-section";
@@ -2023,11 +2031,18 @@ function createStatsSection(userData: any): HTMLElement {
   const statsGrid = document.createElement("div");
   statsGrid.className = "stats-grid";
   
+  // Use stats from userData.stats if available, fallback to 0 for missing values
+  // (removed duplicate declaration)
+  function parseStat(val, fallback = 0) {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string' && !isNaN(Number(val))) return Number(val);
+    return fallback;
+  }
   const stats = [
-    { label: t.profile.statistics.gamesPlayed, value: userData.gamesPlayed, icon: "fa-gamepad" },
-    { label: t.profile.statistics.wins, value: userData.wins, icon: "fa-trophy", color: "success" },
-    { label: t.profile.statistics.losses, value: userData.losses, icon: "fa-times-circle", color: "danger" },
-    { label: t.profile.statistics.winRate, value: `${userData.winRate}%`, icon: "fa-percentage", color: "info" }
+    { label: t.profile.statistics.gamesPlayed, value: parseStat(statsObj.gamesPlayed), icon: "fa-gamepad" },
+    { label: t.profile.statistics.wins, value: parseStat(statsObj.wins), icon: "fa-trophy", color: "success" },
+    { label: t.profile.statistics.losses, value: parseStat(statsObj.losses), icon: "fa-times-circle", color: "danger" },
+    { label: t.profile.statistics.winRate, value: typeof statsObj.winRate === 'number' ? `${statsObj.winRate}%` : (typeof statsObj.winRate === 'string' && !isNaN(Number(statsObj.winRate)) ? `${Number(statsObj.winRate)}%` : '0%'), icon: "fa-percentage", color: "info" }
   ];
   
   stats.forEach(stat => {
