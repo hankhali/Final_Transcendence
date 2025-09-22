@@ -131,7 +131,7 @@ async function getUserdata(userId){
         opponent: row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown'),
         opponentAvatar: row.opponentAvatar || '',
         score: `${row.user_score}-${row.opponent_score}`,
-        duration: row.played_at ? '5' : '', // Set to '5' min for now, replace with actual duration if available
+    // duration removed, not needed
         result: row.result === 'finished' ? (row.user_score > row.opponent_score ? 'win' : 'loss') : 'pending',
         date: row.played_at,
         gameType: row.round === '1v1' ? '1v1' : 'tournament'
@@ -183,21 +183,26 @@ async function deleteMyAccount(userId){
         throw new Error('User not found');
     }
 
-    //delete user id
-    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
-    
-    //run a function to test that the stats are still there
-    //from game_history table
-    const matchHistory = db.prepare(`SELECT * FROM game_history
-        WHERE user_id IS NULL OR opponent_id IS NULL`).all();
-        
-        const tournaments = db.prepare(`SELECT * FROM tournaments WHERE winner_id IS NULL OR created_by IS NULL`).all();
-        
-        //print the results
-        console.log('matches with null users: ', matchHistory);
-        console.log('tournaments with null users: ', tournaments);
-
-        return { message: "Account deleted successfully" };
+    // Before deleting user, update game_history rows where user is opponent
+    // hanieh edited: set user_id and opponent_id to NULL before deleting user
+    try {
+        const res1 = db.prepare('DELETE FROM game_history WHERE user_id = ? OR opponent_id = ?').run(userId, userId);
+        console.log('[DELETE DEBUG] DELETE FROM game_history WHERE user_id = ? OR opponent_id = ?:', res1);
+        // Now delete user
+        const res2 = db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+        console.log('[DELETE DEBUG] DELETE FROM users:', res2);
+    } catch (err) {
+        console.error('[DELETE DEBUG] ERROR during game_history/user update:', err);
+        throw err;
+    }
+    // Optional: delete matches where user is player (if desired)
+    // db.prepare('DELETE FROM game_history WHERE user_id = ?').run(userId);
+    // Debug output
+    const matchHistory = db.prepare(`SELECT * FROM game_history WHERE user_id IS NULL OR opponent_id IS NULL OR opponent_id = -1`).all();
+    const tournaments = db.prepare(`SELECT * FROM tournaments WHERE winner_id IS NULL OR created_by IS NULL`).all();
+    console.log('matches with null or placeholder users: ', matchHistory);
+    console.log('tournaments with null users: ', tournaments);
+    return { message: "Account deleted successfully" };
 }
 /*
 Validate file types.
