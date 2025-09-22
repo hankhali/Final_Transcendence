@@ -330,7 +330,7 @@ export const translations: Record<string, Translations> = {
         centuryClub: "Century Club",
         centuryDesc: "Play 100 total games",
         perfectPlayer: "Perfect Player",
-        perfectDesc: "Win a game 21-0",
+  perfectDesc: "Win a game 5-0",
         socialButterfly: "Social Butterfly",
         socialDesc: "Add 10 friends"
       },
@@ -529,7 +529,7 @@ export const translations: Record<string, Translations> = {
         centuryClub: "Club du Centenaire",
         centuryDesc: "Jouer 100 jeux au total",
         perfectPlayer: "Joueur Parfait",
-        perfectDesc: "Gagner un jeu 21-0",
+  perfectDesc: "Gagner un jeu 5-0",
         socialButterfly: "Papillon Social",
         socialDesc: "Ajouter 10 amis"
       },
@@ -728,7 +728,7 @@ export const translations: Record<string, Translations> = {
         centuryClub: "Club del Centenario",
         centuryDesc: "Jugar 100 juegos en total",
         perfectPlayer: "Jugador Perfecto",
-        perfectDesc: "Ganar un juego 21-0",
+  perfectDesc: "Ganar un juego 5-0",
         socialButterfly: "Mariposa Social",
         socialDesc: "Agregar 10 amigos"
       },

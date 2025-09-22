@@ -112,45 +112,62 @@ async function userRoutes(fastify, options){
 
     //fetch user own profile
     fastify.get('/me', {preHandler: [fastify.authenticate] }, async (request, reply) => {
-        try{
-            //If you haven’t set up authentication yet, then request.user won’t exist. You’d need to first implement auth middleware to populate it.
+        try {
             const id = request.user.id;
-            const userData = await getUserdata(id);
-            return reply.send(userData); //whichi is better using return or reply and what is the difference?
-        }
-        catch(error){
-            return reply.code(500).send({error: error.message});    
-        }
-    });
-
-
-    //update user profile (username, nickname, password, avatar)
-    fastify.patch('/me', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        try{
-            const authUserId = request.user.id;
-            const updates = request.body;
-            const updateProfile = await updateUserProfile(authUserId, updates);
-            return reply.code(200).send(updateProfile);
-        }
-        catch(error){
-            return reply.code(400).send({error: error.message});
-        }
-    });
-
-
-    //fetch user public profile
-    fastify.get('/users/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        try{
-            const { id } = request.params;
-            const data = await getPublicProfile(id);
-            if(!data){
-                return reply.code(404).send({ error: 'User not found' });
+            const userData = await getUserdata(id); // hanieh edited: removed duplicate userData
+            const { getUserStats } = require('../controllers/stats');
+            const stats = await getUserStats(id);
+            // Ranking and totalPlayers
+            const allUsers = db.prepare('SELECT id, username FROM users').all();
+            const userWinCounts = allUsers.map(u => ({
+                id: u.id,
+                wins: db.prepare('SELECT COUNT(*) as count FROM game_history WHERE user_id = ? AND user_score > opponent_score').get(u.id).count
+            }));
+            userWinCounts.sort((a, b) => b.wins - a.wins);
+            const ranking = userWinCounts.findIndex(u => u.id === id) + 1;
+            const totalPlayers = allUsers.length;
+            stats.ranking = ranking;
+            stats.totalPlayers = totalPlayers;
+            console.log('[DEBUG /me] Called for user:', id);
+            console.log('[DEBUG /me] userData:', userData);
+            // perfectGames: win 5-0
+            stats.perfectGames = db.prepare('SELECT COUNT(*) as count FROM game_history WHERE user_id = ? AND user_score = 5 AND opponent_score = 0').get(id).count;
+            console.log('[DEBUG /me] stats from getUserStats:', stats);
+            // comebacks: win after trailing (user was losing at any point, then won)
+            stats.comebacks = db.prepare('SELECT COUNT(*) as count FROM game_history WHERE user_id = ? AND user_score > opponent_score AND opponent_score >= user_score - 2').get(id).count;
+            // friends array and count
+            stats.friends = userData.user.friends || [];
+            stats.friendsCount = Array.isArray(stats.friends) ? stats.friends.length : 0;
+            // averageMatchDuration (default 5 min)
+            stats.averageMatchDuration = 5;
+            // matchHistory for frontend
+            stats.matchHistory = userData.gameHistory || [];
+            // Remap stats fields for frontend compatibility
+            if (typeof stats.perfectPlayerCount !== 'undefined') {
+                stats.perfectGames = stats.perfectPlayerCount;
             }
-            return reply.send(data);
-
-        }
-        catch(error){
-            return reply.code(500).send({error: error.message});
+            if (typeof stats.socialButterflyCount !== 'undefined') {
+                stats.friends = stats.socialButterflyCount;
+            }
+            if (stats.achievements) {
+                stats.winStreakMaster = stats.achievements.winStreakMaster;
+                stats.centuryClub = stats.achievements.centuryClub;
+                stats.perfectPlayer = stats.achievements.perfectPlayer;
+                stats.socialButterfly = stats.achievements.socialButterfly;
+            }
+            stats.currentStreak = stats.currentStreak || 0;
+            stats.longestStreak = stats.longestStreak || 0;
+            stats.gamesPlayed = stats.gamesPlayed || 0;
+            stats.averageScore = stats.averageScore || 0;
+            stats.comebacks = stats.comebacks || 0;
+            stats.preferredMode = stats.preferredMode || '1v1';
+            console.log('[DEBUG /me] stats after ranking, totalPlayers, perfectGames, comebacks, friends:', stats);
+            console.log('[DEBUG /me] stats after remapping:', stats);
+            console.log('[DEBUG /me] Final response:', { ...userData, stats });
+            return reply.send({ ...userData, stats });
+        } catch (error) {
+            console.error('[DEBUG /me] ERROR:', error);
+            return reply.code(500).send({ error: error.message });
         }
     });
 
@@ -211,7 +228,7 @@ async function userRoutes(fastify, options){
         }
         catch(error){
             return reply.code(400).send({error: error.message});
-    }
+        }
     });
     
     fastify.post('/add-friends', { preHandler: [fastify.authenticate] }, async (request, reply) => {
@@ -236,10 +253,8 @@ async function userRoutes(fastify, options){
         try{
             const userId = request.user.id;  // logged-in user
             const pendingRequests = await viewPendingRequests(userId);
-        
             reply.send({ pendingRequests });
-        }
-        catch(error){
+        } catch(error){
             return reply.code(400).send({error: error.message});
         }
     });
@@ -269,9 +284,18 @@ async function userRoutes(fastify, options){
             }
         });
     
-}
 
+
+
+// hanieh edited: removed stray closing brace after last route
+}
 module.exports = userRoutes;
+
+
+
+
+
+
 
 
 

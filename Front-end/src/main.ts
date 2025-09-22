@@ -1455,22 +1455,30 @@ function renderProfilePage(): HTMLElement {
   const dashboardTab = document.createElement("div");
   dashboardTab.className = "tab-pane active";
   dashboardTab.id = "dashboard";
-  // Fetch real user profile and render dashboard
-  apiService.users.getMyProfile().then((res) => {
-    if (res.data && res.data.user) {
-      const userData = {
-        ...res.data.user,
-        matchHistory: res.data.gameHistory || [],
-        friends: res.data.user.friends || []
-      };
-      dashboardTab.appendChild(createDashboardSection(userData));
-    } else {
+  function loadDashboard() {
+    dashboardTab.innerHTML = '';
+    apiService.users.getMyProfile().then((res) => {
+      if (res.data && res.data.user) {
+        const userData = {
+          ...res.data.user,
+          matchHistory: res.data.gameHistory || [],
+          friends: res.data.user.friends || []
+        };
+        dashboardTab.appendChild(createDashboardSection(userData));
+      } else {
+        dashboardTab.textContent = "Failed to load dashboard.";
+      }
+      hideLoading();
+    }).catch(() => {
       dashboardTab.textContent = "Failed to load dashboard.";
-    }
-    hideLoading();
-  }).catch(() => {
-    dashboardTab.textContent = "Failed to load dashboard.";
-    hideLoading();
+      hideLoading();
+    });
+  }
+  loadDashboard();
+
+  // Listen for custom event to reload dashboard after match submission
+  window.addEventListener('reloadDashboardStats', () => {
+    loadDashboard();
   });
   
   // Profile Settings Tab
@@ -1560,6 +1568,11 @@ function renderProfilePage(): HTMLElement {
 
 // Comprehensive Dashboard Section
 function createDashboardSection(userData: any): HTMLElement {
+  // Debug: log dashboard data received from backend
+  console.log('[Dashboard] Received userData:', userData);
+  if (userData.stats) {
+    console.log('[Dashboard] Received stats:', userData.stats);
+  }
   const t = languageManager.getTranslations();
   const dashboardContainer = document.createElement("div");
   dashboardContainer.className = "dashboard-section";
@@ -1590,35 +1603,36 @@ function createDashboardSection(userData: any): HTMLElement {
   const kpiGrid = document.createElement("div");
   kpiGrid.className = "kpi-grid";
   
+  const stats = userData.stats || userData;
   const kpis = [
     { 
       label: t.profile.dashboard.rank, 
-      value: `#${userData.ranking}`, 
-      subtitle: `${t.profile.dashboard.of} ${userData.totalPlayers} ${t.profile.dashboard.players}`,
+      value: `#${stats.ranking || '-'}`,
+      subtitle: `${t.profile.dashboard.of} ${stats.totalPlayers || '-'} ${t.profile.dashboard.players}`,
       icon: "fa-crown", 
       color: "gold",
       trend: "up"
     },
     { 
       label: t.profile.dashboard.winRate, 
-      value: `${userData.winRate}%`, 
-      subtitle: `${userData.wins}W / ${userData.losses}L`,
+      value: `${stats.winRate || 0}%`, 
+      subtitle: `${stats.wins || 0}W / ${stats.losses || 0}L`,
       icon: "fa-trophy", 
       color: "success",
       trend: "up"
     },
     { 
       label: t.profile.dashboard.streak, 
-      value: userData.currentStreak, 
-      subtitle: `${t.profile.dashboard.best}: ${userData.longestStreak}`,
+      value: stats.currentStreak || 0, 
+      subtitle: `${t.profile.dashboard.best}: ${stats.longestStreak || 0}`,
       icon: "fa-fire", 
       color: "warning",
       trend: "up"
     },
     { 
       label: t.profile.dashboard.playTime, 
-      value: `${Math.floor(userData.totalPlayTime / 60)}h ${userData.totalPlayTime % 60}m`, 
-      subtitle: `${t.profile.dashboard.avg}: ${userData.averageMatchDuration}min/game`,
+      value: `${Math.floor((stats.totalPlayTime || 0) / 60)}h ${(stats.totalPlayTime || 0) % 60}m`, 
+      subtitle: `${t.profile.dashboard.avg}: ${stats.averageScore || 0} pts/game`,
       icon: "fa-clock", 
       color: "info",
       trend: "up"
@@ -1645,46 +1659,35 @@ function createDashboardSection(userData: any): HTMLElement {
   // Charts and Analytics Section
   const analyticsSection = document.createElement("div");
   analyticsSection.className = "dashboard-analytics";
-  
   const analyticsTitle = document.createElement("h3");
   analyticsTitle.textContent = t.profile.dashboard.analytics;
   analyticsTitle.className = "dashboard-section-title";
   analyticsSection.appendChild(analyticsTitle);
-  
   const chartsContainer = document.createElement("div");
   chartsContainer.className = "charts-container";
-  
   // Weekly Performance Chart
-  const weeklyChart = createWeeklyPerformanceChart(userData.weeklyStats);
+  const weeklyChart = createWeeklyPerformanceChart(userData.stats?.weeklyStats || userData.weeklyStats || []);
   chartsContainer.appendChild(weeklyChart);
-  
   // Skill Progression Chart
-  const skillChart = createSkillProgressionChart(userData.skillProgression);
+  const skillChart = createSkillProgressionChart(userData.stats?.skillProgression || userData.skillProgression || []);
   chartsContainer.appendChild(skillChart);
-  
   analyticsSection.appendChild(chartsContainer);
   dashboardContainer.appendChild(analyticsSection);
-  
   // Recent Activity and Quick Stats
   const activitySection = document.createElement("div");
   activitySection.className = "dashboard-activity";
-  
   const activityRow = document.createElement("div");
   activityRow.className = "activity-row";
-  
   // Recent Matches Summary
-  const recentMatches = createRecentMatchesSummary(userData.matchHistory.slice(0, 5));
+  const recentMatches = createRecentMatchesSummary((userData.matchHistory || userData.stats?.matchHistory || []).slice(0, 5));
   activityRow.appendChild(recentMatches);
-  
   // Advanced Statistics
-  const advancedStats = createAdvancedStatsPanel(userData);
+  const advancedStats = createAdvancedStatsPanel(userData.stats || userData);
   activityRow.appendChild(advancedStats);
-  
   activitySection.appendChild(activityRow);
   dashboardContainer.appendChild(activitySection);
-  
   // Achievement and Goals Section
-  const achievementsSection = createAchievementsSection(userData);
+  const achievementsSection = createAchievementsSection(userData.stats || userData);
   dashboardContainer.appendChild(achievementsSection);
   
   return dashboardContainer;
@@ -1854,7 +1857,7 @@ function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
       </div>
       <div class="match-info">
         <div class="opponent-name">${match.opponent}</div>
-        <div class="match-details">${match.score} • ${match.duration}min</div>
+  <div class="match-details">${match.score} • ${typeof match.duration === 'number' && match.duration ? match.duration : 5}min</div>
       </div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
     `;
@@ -1886,11 +1889,12 @@ function createAdvancedStatsPanel(userData: any): HTMLElement {
   const statsGrid = document.createElement("div");
   statsGrid.className = "advanced-stats-grid";
   
+  const stats = userData.stats || userData;
   const advancedStats = [
-    { label: t.profile.dashboard.avgScore, value: userData.averageScore, unit: "pts" },
-    { label: t.profile.dashboard.perfectGames, value: userData.perfectGames, unit: "" },
-    { label: t.profile.dashboard.comebacks, value: userData.comebacks, unit: "" },
-    { label: t.profile.dashboard.preferredMode, value: userData.preferredGameMode, unit: "" }
+    { label: t.profile.dashboard.avgScore, value: stats.averageScore || 0, unit: "pts" },
+    { label: t.profile.dashboard.perfectGames, value: stats.perfectGames || 0, unit: "" },
+    { label: t.profile.dashboard.comebacks, value: stats.comebacks || 0, unit: "" },
+    { label: t.profile.dashboard.preferredMode, value: stats.preferredMode || stats.preferredGameMode || "-", unit: "" }
   ];
   
   advancedStats.forEach(stat => {
@@ -1922,38 +1926,39 @@ function createAchievementsSection(userData: any): HTMLElement {
   const achievementsGrid = document.createElement("div");
   achievementsGrid.className = "achievements-grid";
   
+  const stats = userData.stats || userData;
   const achievements = [
     {
       title: t.profile.dashboard.winStreakMaster,
       description: t.profile.dashboard.winStreakDesc,
-      progress: userData.currentStreak,
+      progress: stats.currentStreak || 0,
       target: 10,
       icon: "fa-fire",
-      unlocked: userData.longestStreak >= 10
+      unlocked: (stats.longestStreak || 0) >= 10
     },
     {
       title: t.profile.dashboard.centuryClub,
       description: t.profile.dashboard.centuryDesc,
-      progress: userData.gamesPlayed,
+      progress: stats.gamesPlayed || 0,
       target: 100,
       icon: "fa-medal",
-      unlocked: userData.gamesPlayed >= 100
+      unlocked: (stats.gamesPlayed || 0) >= 100
     },
     {
       title: t.profile.dashboard.perfectPlayer,
       description: t.profile.dashboard.perfectDesc,
-      progress: userData.perfectGames,
+      progress: stats.perfectGames || 0,
       target: 1,
       icon: "fa-star",
-      unlocked: userData.perfectGames >= 1
+      unlocked: (stats.perfectGames || 0) >= 1
     },
     {
       title: t.profile.dashboard.socialButterfly,
       description: t.profile.dashboard.socialDesc,
-      progress: userData.friends.length,
+      progress: (stats.friends ? stats.friends.length : 0),
       target: 10,
       icon: "fa-users",
-      unlocked: userData.friends.length >= 10
+      unlocked: (stats.friends ? stats.friends.length : 0) >= 10
     }
   ];
   
@@ -2084,7 +2089,7 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
       <div class="match-details">
         <div class="match-score">${match.score}</div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
-        <div class="match-duration">${match.duration} ${t.profile.history.min}</div>
+  <div class="match-duration">${typeof match.duration === 'number' && match.duration ? match.duration : 5} ${t.profile.history.min}</div>
       </div>
     `;
     historyList.appendChild(matchCard);

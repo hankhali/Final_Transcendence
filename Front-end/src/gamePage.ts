@@ -424,6 +424,7 @@ export class GamePage {
                 console.error('[hanieh added] Error sending 1v1 match result:', error);
               } else {
                 console.log('[hanieh added] 1v1 match result sent to backend:', data);
+                window.dispatchEvent(new Event('reloadDashboardStats'));
               }
             })
             .catch((err: unknown) => {
@@ -438,6 +439,7 @@ export class GamePage {
                 console.error('[ADDED] Error sending tournament match result:', error);
               } else {
                 console.log('[ADDED] Tournament match result sent to backend:', data);
+                window.dispatchEvent(new Event('reloadDashboardStats'));
               }
             })
             .catch((err: unknown) => {
