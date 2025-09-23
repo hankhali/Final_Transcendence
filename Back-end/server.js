@@ -21,6 +21,7 @@ const db = require('./queries/database');
 fastify.register(require('./routes/users'));
 fastify.register(require('./routes/tournaments'));
 fastify.register(require('./routes/onevone')); // hanieh added
+fastify.register(require('./routes/ai')); // hanieh added: AI match route
 require('dotenv').config();
 fastify.register(require('@fastify/jwt'), {
     secret: process.env.JWT_SECRET
