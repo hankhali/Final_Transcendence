@@ -87,12 +87,14 @@ async function userLogIn(username, password){
     //search for user in database
     const stmt = db.prepare(`SELECT id, username, password FROM users WHERE username = ?`);
     const user = stmt.get(username); //for a single row
+    console.log('[hanieh debug] userLogIn fetched user:', user);
     if(!user){
         throw new Error('Invalid username or password');
     }
 
     //compare hashed password with the entered password
     const isMatched = await bcrypt.compare(password, user.password);
+    console.log('[hanieh debug] bcrypt.compare result:', isMatched);
     if(!isMatched){
         throw new Error('invalid username or password');
     }
@@ -252,10 +254,12 @@ async function updateUserProfile(userId, updates){
 
     // 3. Password
     if(updates.password){
-        if(!updates.oldPassword){
+        // Accept oldPassword from updates or from a separate argument (for PATCH /me compatibility)
+        const oldPassword = updates.oldPassword || updates._oldPassword;
+        if(!oldPassword){
             throw new Error('old password is required');
         }
-        const validPassword = await bcrypt.compare(updates.oldPassword, user.password);
+        const validPassword = await bcrypt.compare(oldPassword, user.password);
         if(!validPassword){
             throw new Error('old password is incorrect!');
         }

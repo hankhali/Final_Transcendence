@@ -284,7 +284,7 @@ function updateNavbar(): void {
 }
 
 // Function to handle login
-async function handleLogin(username: string, token?: string, userId?: number): Promise<void> {
+function handleLogin(username: string, token?: string, userId?: number): void {
   isLoggedIn = true;
   currentUser = { id: userId || Date.now(), username: username };
   // Update global variables
@@ -295,20 +295,9 @@ async function handleLogin(username: string, token?: string, userId?: number): P
   if (token) {
     localStorage.setItem('token', token);
   }
-    updateNavbar();  
-    const setWelcomeMessage = (name: string) => {
-      showMessage(`Welcome back, ${name}!`, "success");
-      navigateTo("/profile");
-    };
-    apiService.users.getMyProfile().then(res => {
-      let displayName = username;
-      if (res && res.data && res.data.displayName) {
-        displayName = res.data.displayName;
-      }
-      setWelcomeMessage(displayName);
-    }).catch(() => {
-      setWelcomeMessage(username);
-    });
+  updateNavbar();
+  showMessage(`WELCOME BACK, ${username.toUpperCase()}!`, "success");
+  navigateTo("/profile");
 }
 
 // Function to handle logout
@@ -1455,33 +1444,22 @@ function renderProfilePage(): HTMLElement {
   const dashboardTab = document.createElement("div");
   dashboardTab.className = "tab-pane active";
   dashboardTab.id = "dashboard";
-  function loadDashboard() {
-    dashboardTab.innerHTML = '';
-    apiService.users.getMyProfile().then((res) => {
-      if (res.data && res.data.user) {
-        const userData = {
-          ...res.data.user,
-          stats: res.data.stats || {},
-          matchHistory: res.data.stats?.matchHistory || res.data.gameHistory || [],
-          friends: res.data.user.friends || []
-        };
-        console.log('[Dashboard] [FORCE REFRESH] userData for dashboard:', userData);
-        dashboardTab.appendChild(createDashboardSection(userData));
-      } else {
-        dashboardTab.textContent = "Failed to load dashboard.";
-      }
-      hideLoading();
-    }).catch((err) => {
-      console.error('[Dashboard] [FORCE REFRESH] Failed to load dashboard:', err);
+  // Fetch real user profile and render dashboard
+  apiService.users.getMyProfile().then((res) => {
+    if (res.data && res.data.user) {
+      const userData = {
+        ...res.data.user,
+        matchHistory: res.data.gameHistory || [],
+        friends: res.data.user.friends || []
+      };
+      dashboardTab.appendChild(createDashboardSection(userData));
+    } else {
       dashboardTab.textContent = "Failed to load dashboard.";
-      hideLoading();
-    });
-  }
-  loadDashboard();
-
-  // Listen for custom event to reload dashboard after match submission
-  window.addEventListener('reloadDashboardStats', () => {
-    loadDashboard();
+    }
+    hideLoading();
+  }).catch(() => {
+    dashboardTab.textContent = "Failed to load dashboard.";
+    hideLoading();
   });
   
   // Profile Settings Tab
@@ -1513,10 +1491,13 @@ function renderProfilePage(): HTMLElement {
   statsTab.className = "tab-pane";
   statsTab.id = "stats";
   apiService.users.getMyProfile().then((res) => {
-    if (res.data && res.data.stats) {
-      statsTab.appendChild(createStatsSection(res.data.stats));
-    } else if (res.data && res.data.user) {
-      statsTab.appendChild(createStatsSection(res.data.user));
+    if (res.data && res.data.user) {
+      const userData = {
+        ...res.data.user,
+        matchHistory: res.data.gameHistory || [],
+        friends: res.data.user.friends || []
+      };
+      statsTab.appendChild(createStatsSection(userData));
     } else {
       statsTab.textContent = "Failed to load stats.";
     }
@@ -1568,11 +1549,6 @@ function renderProfilePage(): HTMLElement {
 
 // Comprehensive Dashboard Section
 function createDashboardSection(userData: any): HTMLElement {
-  // Debug: log dashboard data received from backend
-  console.log('[Dashboard] Received userData:', userData);
-  if (userData.stats) {
-    console.log('[Dashboard] Received stats:', userData.stats);
-  }
   const t = languageManager.getTranslations();
   const dashboardContainer = document.createElement("div");
   dashboardContainer.className = "dashboard-section";
@@ -1580,11 +1556,9 @@ function createDashboardSection(userData: any): HTMLElement {
   // Dashboard Header with Welcome Message
   const dashboardHeader = document.createElement("div");
   dashboardHeader.className = "dashboard-header";
-  // Use displayName from userData if available
-  let displayName = userData && userData.alias ? userData.alias : "Pro Player";
   dashboardHeader.innerHTML = `
     <div class="welcome-banner">
-      <h2>WELCOME BACK, ${displayName}!</h2>
+      <h2>WELCOME BACK, ${(userData && userData.username ? userData.username.toUpperCase() : 'PLAYER')}!</h2>
       <p>${t.profile.dashboard.overview}</p>
     </div>
   `;
@@ -1603,36 +1577,35 @@ function createDashboardSection(userData: any): HTMLElement {
   const kpiGrid = document.createElement("div");
   kpiGrid.className = "kpi-grid";
   
-  const stats = userData.stats || userData;
   const kpis = [
     { 
       label: t.profile.dashboard.rank, 
-      value: `#${stats.ranking || '-'}`,
-      subtitle: `${t.profile.dashboard.of} ${stats.totalPlayers || '-'} ${t.profile.dashboard.players}`,
+      value: `#${userData.ranking}`, 
+      subtitle: `${t.profile.dashboard.of} ${userData.totalPlayers} ${t.profile.dashboard.players}`,
       icon: "fa-crown", 
       color: "gold",
       trend: "up"
     },
     { 
       label: t.profile.dashboard.winRate, 
-      value: `${stats.winRate || 0}%`, 
-      subtitle: `${stats.wins || 0}W / ${stats.losses || 0}L`,
+      value: `${userData.winRate}%`, 
+      subtitle: `${userData.wins}W / ${userData.losses}L`,
       icon: "fa-trophy", 
       color: "success",
       trend: "up"
     },
     { 
       label: t.profile.dashboard.streak, 
-      value: stats.currentStreak || 0, 
-      subtitle: `${t.profile.dashboard.best}: ${stats.longestStreak || 0}`,
+      value: userData.currentStreak, 
+      subtitle: `${t.profile.dashboard.best}: ${userData.longestStreak}`,
       icon: "fa-fire", 
       color: "warning",
       trend: "up"
     },
     { 
       label: t.profile.dashboard.playTime, 
-      value: `${Math.floor((stats.totalPlayTime || 0) / 60)}h ${(stats.totalPlayTime || 0) % 60}m`, 
-      subtitle: `${t.profile.dashboard.avg}: ${stats.averageScore || 0} pts/game`,
+      value: `${Math.floor(userData.totalPlayTime / 60)}h ${userData.totalPlayTime % 60}m`, 
+      subtitle: `${t.profile.dashboard.avg}: ${userData.averageMatchDuration}min/game`,
       icon: "fa-clock", 
       color: "info",
       trend: "up"
@@ -1659,35 +1632,46 @@ function createDashboardSection(userData: any): HTMLElement {
   // Charts and Analytics Section
   const analyticsSection = document.createElement("div");
   analyticsSection.className = "dashboard-analytics";
+  
   const analyticsTitle = document.createElement("h3");
   analyticsTitle.textContent = t.profile.dashboard.analytics;
   analyticsTitle.className = "dashboard-section-title";
   analyticsSection.appendChild(analyticsTitle);
+  
   const chartsContainer = document.createElement("div");
   chartsContainer.className = "charts-container";
+  
   // Weekly Performance Chart
-  const weeklyChart = createWeeklyPerformanceChart(userData.stats?.weeklyStats || userData.weeklyStats || []);
+  const weeklyChart = createWeeklyPerformanceChart(userData.weeklyStats);
   chartsContainer.appendChild(weeklyChart);
+  
   // Skill Progression Chart
-  const skillChart = createSkillProgressionChart(userData.stats?.skillProgression || userData.skillProgression || []);
+  const skillChart = createSkillProgressionChart(userData.skillProgression);
   chartsContainer.appendChild(skillChart);
+  
   analyticsSection.appendChild(chartsContainer);
   dashboardContainer.appendChild(analyticsSection);
+  
   // Recent Activity and Quick Stats
   const activitySection = document.createElement("div");
   activitySection.className = "dashboard-activity";
+  
   const activityRow = document.createElement("div");
   activityRow.className = "activity-row";
+  
   // Recent Matches Summary
-  const recentMatches = createRecentMatchesSummary((userData.matchHistory || userData.stats?.matchHistory || []).slice(0, 5));
+  const recentMatches = createRecentMatchesSummary(userData.matchHistory.slice(0, 5));
   activityRow.appendChild(recentMatches);
+  
   // Advanced Statistics
-  const advancedStats = createAdvancedStatsPanel(userData.stats || userData);
+  const advancedStats = createAdvancedStatsPanel(userData);
   activityRow.appendChild(advancedStats);
+  
   activitySection.appendChild(activityRow);
   dashboardContainer.appendChild(activitySection);
+  
   // Achievement and Goals Section
-  const achievementsSection = createAchievementsSection(userData.stats || userData);
+  const achievementsSection = createAchievementsSection(userData);
   dashboardContainer.appendChild(achievementsSection);
   
   return dashboardContainer;
@@ -1772,8 +1756,7 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
   const chartWrapper = document.createElement("div");
   chartWrapper.className = "line-chart-wrapper";
   
-  // Defensive: filter out invalid entries and handle empty arrays
-  if (!Array.isArray(skillProgression) || skillProgression.length === 0 || skillProgression.some(point => typeof point.skill !== 'number' || isNaN(point.skill))) {
+  if (!skillProgression || skillProgression.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'chart-empty';
     empty.textContent = 'No skill progression data';
@@ -1858,7 +1841,7 @@ function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
       </div>
       <div class="match-info">
         <div class="opponent-name">${match.opponent}</div>
-  <div class="match-details">${match.score} • ${typeof match.duration === 'number' && match.duration ? match.duration : 5}min</div>
+        <div class="match-details">${match.score} • ${match.duration}min</div>
       </div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
     `;
@@ -1890,12 +1873,11 @@ function createAdvancedStatsPanel(userData: any): HTMLElement {
   const statsGrid = document.createElement("div");
   statsGrid.className = "advanced-stats-grid";
   
-  const stats = userData.stats || userData;
   const advancedStats = [
-    { label: t.profile.dashboard.avgScore, value: stats.averageScore || 0, unit: "pts" },
-    { label: t.profile.dashboard.perfectGames, value: stats.perfectGames || 0, unit: "" },
-    { label: t.profile.dashboard.comebacks, value: stats.comebacks || 0, unit: "" },
-    { label: t.profile.dashboard.preferredMode, value: stats.preferredMode || stats.preferredGameMode || "-", unit: "" }
+    { label: t.profile.dashboard.avgScore, value: userData.averageScore, unit: "pts" },
+    { label: t.profile.dashboard.perfectGames, value: userData.perfectGames, unit: "" },
+    { label: t.profile.dashboard.comebacks, value: userData.comebacks, unit: "" },
+    { label: t.profile.dashboard.preferredMode, value: userData.preferredGameMode, unit: "" }
   ];
   
   advancedStats.forEach(stat => {
@@ -1927,39 +1909,38 @@ function createAchievementsSection(userData: any): HTMLElement {
   const achievementsGrid = document.createElement("div");
   achievementsGrid.className = "achievements-grid";
   
-  const stats = userData.stats || userData;
   const achievements = [
     {
       title: t.profile.dashboard.winStreakMaster,
       description: t.profile.dashboard.winStreakDesc,
-      progress: stats.currentStreak || 0,
+      progress: userData.currentStreak,
       target: 10,
       icon: "fa-fire",
-      unlocked: (stats.longestStreak || 0) >= 10
+      unlocked: userData.longestStreak >= 10
     },
     {
       title: t.profile.dashboard.centuryClub,
       description: t.profile.dashboard.centuryDesc,
-      progress: stats.gamesPlayed || 0,
+      progress: userData.gamesPlayed,
       target: 100,
       icon: "fa-medal",
-      unlocked: (stats.gamesPlayed || 0) >= 100
+      unlocked: userData.gamesPlayed >= 100
     },
     {
       title: t.profile.dashboard.perfectPlayer,
       description: t.profile.dashboard.perfectDesc,
-      progress: stats.perfectGames || 0,
+      progress: userData.perfectGames,
       target: 1,
       icon: "fa-star",
-      unlocked: (stats.perfectGames || 0) >= 1
+      unlocked: userData.perfectGames >= 1
     },
     {
       title: t.profile.dashboard.socialButterfly,
       description: t.profile.dashboard.socialDesc,
-      progress: (stats.friends ? stats.friends.length : 0),
+      progress: userData.friends.length,
       target: 10,
       icon: "fa-users",
-      unlocked: (stats.friends ? stats.friends.length : 0) >= 10
+      unlocked: userData.friends.length >= 10
     }
   ];
   
@@ -2009,17 +1990,6 @@ function switchTab(tabId: string) {
 }
 
 function createStatsSection(userData: any): HTMLElement {
-  // Debug: log received userData and stats used for rendering
-  console.log('[StatsSection] Received userData:', userData);
-  const statsObj = userData.stats || userData;
-  console.log('[StatsSection] Stats used for rendering:', statsObj);
-  console.log('[StatsSection] gamesPlayed:', statsObj.gamesPlayed, 'wins:', statsObj.wins, 'losses:', statsObj.losses, 'winRate:', statsObj.winRate);
-  if (!statsObj) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'stats-error';
-    errorDiv.textContent = 'No stats available.';
-    return errorDiv;
-  }
   const t = languageManager.getTranslations();
   const statsContainer = document.createElement("div");
   statsContainer.className = "stats-section";
@@ -2031,18 +2001,11 @@ function createStatsSection(userData: any): HTMLElement {
   const statsGrid = document.createElement("div");
   statsGrid.className = "stats-grid";
   
-  // Use stats from userData.stats if available, fallback to 0 for missing values
-  // (removed duplicate declaration)
-  function parseStat(val, fallback = 0) {
-    if (typeof val === 'number') return val;
-    if (typeof val === 'string' && !isNaN(Number(val))) return Number(val);
-    return fallback;
-  }
   const stats = [
-    { label: t.profile.statistics.gamesPlayed, value: parseStat(statsObj.gamesPlayed), icon: "fa-gamepad" },
-    { label: t.profile.statistics.wins, value: parseStat(statsObj.wins), icon: "fa-trophy", color: "success" },
-    { label: t.profile.statistics.losses, value: parseStat(statsObj.losses), icon: "fa-times-circle", color: "danger" },
-    { label: t.profile.statistics.winRate, value: typeof statsObj.winRate === 'number' ? `${statsObj.winRate}%` : (typeof statsObj.winRate === 'string' && !isNaN(Number(statsObj.winRate)) ? `${Number(statsObj.winRate)}%` : '0%'), icon: "fa-percentage", color: "info" }
+    { label: t.profile.statistics.gamesPlayed, value: userData.gamesPlayed, icon: "fa-gamepad" },
+    { label: t.profile.statistics.wins, value: userData.wins, icon: "fa-trophy", color: "success" },
+    { label: t.profile.statistics.losses, value: userData.losses, icon: "fa-times-circle", color: "danger" },
+    { label: t.profile.statistics.winRate, value: `${userData.winRate}%`, icon: "fa-percentage", color: "info" }
   ];
   
   stats.forEach(stat => {
@@ -2108,7 +2071,7 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
       <div class="match-details">
         <div class="match-score">${match.score}</div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
-  <div class="match-duration">${typeof match.duration === 'number' && match.duration ? match.duration : 5} ${t.profile.history.min}</div>
+        <div class="match-duration">${match.duration} ${t.profile.history.min}</div>
       </div>
     `;
     historyList.appendChild(matchCard);
