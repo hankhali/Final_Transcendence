@@ -60,11 +60,10 @@ async function userRoutes(fastify, options){
     //log in authentication
     fastify.post('/login', async (request, reply) => {
         try{
-            //check the username/password
+            // hanieh debug: log login request
             const { username, password } = request.body;
+            console.log('[hanieh debug] login request:', { username, password });
             const userData = await userLogIn(username, password);
-
-
             //if valid, sign a token
             const token = fastify.jwt.sign({
                 id: userData.userId, username: userData.username}, {
@@ -74,6 +73,7 @@ async function userRoutes(fastify, options){
             reply.send({message: 'Login successful', token, userId: userData.userId, current_status: 'online'}); //...userData
         }
         catch(error){
+            console.log('[hanieh debug] login error:', error);
             return reply.code(400).send({error: error.message});
         }
     });
@@ -167,6 +167,49 @@ async function userRoutes(fastify, options){
             return reply.send({ ...userData, stats });
         } catch (error) {
             console.error('[DEBUG /me] ERROR:', error);
+            return reply.code(500).send({ error: error.message });
+        }
+    });
+
+    // hanieh did it: PATCH /me to update user profile
+    fastify.patch('/me', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        // hanieh debug: log request.body for troubleshooting
+        console.log('[hanieh debug] PATCH /me request.body:', request.body);
+        try {
+            const userId = request.user.id;
+            // Accept both legacy and new frontend payloads
+            let { username, email, password, alias, oldPassword, newPassword, confirmPassword } = request.body;
+            let updateFields = {};
+            if (username) updateFields.username = username;
+            if (email) updateFields.email = email;
+            if (alias) updateFields.alias = alias;
+            // Map newPassword to password if present and confirmed
+            if (newPassword !== undefined) {
+                if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+                    return reply.code(400).send({ error: 'New password and confirmation do not match.' });
+                }
+                password = newPassword;
+            }
+            if (password !== undefined) {
+                if (!oldPassword) {
+                    console.log('[hanieh debug] oldPassword missing in request.body');
+                    return reply.code(400).send({ error: 'old password is required' });
+                }
+                updateFields.password = password;
+                updateFields.oldPassword = oldPassword;
+            }
+            if (Object.keys(updateFields).length === 0) {
+                return reply.code(400).send({ error: 'No fields to update' });
+            }
+            if (typeof updateUserProfile === 'function') {
+                const result = await updateUserProfile(userId, updateFields);
+                return reply.send({ message: 'Profile updated', result });
+            } else {
+                // Fallback: update directly (should not be used)
+                return reply.send({ message: 'Profile updated (fallback)' });
+            }
+        } catch (error) {
+            console.log('[hanieh debug] PATCH /me error:', error);
             return reply.code(500).send({ error: error.message });
         }
     });

@@ -392,6 +392,12 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
 
     // Password update logic
     if (profileData.oldPassword && profileData.newPassword && profileData.confirmPassword) {
+        // hanieh debug: log password fields before sending
+        console.log('[hanieh debug] PATCH /me payload:', {
+          oldPassword: profileData.oldPassword,
+          newPassword: profileData.newPassword,
+          confirmPassword: profileData.confirmPassword
+        });
       if (profileData.newPassword !== profileData.confirmPassword) {
         showMessage('New password and confirmation do not match.', 'error');
         return;
