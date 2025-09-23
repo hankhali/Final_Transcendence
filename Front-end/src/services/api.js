@@ -1,3 +1,12 @@
+// hanieh added: AI match endpoints
+const ai = {
+  submitResult: async (playerScore, aiScore) => {
+    return fetchApi('/ai/finish', {
+      method: 'POST',
+      body: JSON.stringify({ playerScore, aiScore })
+    });
+  }
+};
 // hanieh added: Standalone 1v1 match endpoints
 const onevone = {
   start: async (player2Username) => {
@@ -247,4 +256,4 @@ const apiService = {
 };
 
 
-export { fetchApi, apiService, onevone }; // hanieh added
+export { fetchApi, apiService, onevone, ai }; // hanieh added

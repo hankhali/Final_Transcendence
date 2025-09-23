@@ -1449,6 +1449,7 @@ function renderProfilePage(): HTMLElement {
     if (res.data && res.data.user) {
       const userData = {
         ...res.data.user,
+        ...(res.data.stats || {}),
         matchHistory: res.data.gameHistory || [],
         friends: res.data.user.friends || []
       };
@@ -1494,6 +1495,7 @@ function renderProfilePage(): HTMLElement {
     if (res.data && res.data.user) {
       const userData = {
         ...res.data.user,
+        ...(res.data.stats || {}),
         matchHistory: res.data.gameHistory || [],
         friends: res.data.user.friends || []
       };

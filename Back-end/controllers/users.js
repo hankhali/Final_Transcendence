@@ -130,13 +130,16 @@ async function getUserdata(userId){
     // Map fields for frontend
     const mappedHistory = getGameHistory.map(row => ({
         id: row.id,
-        opponent: row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown'),
-        opponentAvatar: row.opponentAvatar || '',
+        // hanieh added: Show AI Opponent for AI matches
+        opponent: row.opponent_id === null ? 'AI Opponent' : (row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown')),
+        // hanieh added: Use a default AI avatar for AI matches
+        opponentAvatar: row.opponent_id === null ? '/uploads/vite.svg' : (row.opponentAvatar || ''),
         score: `${row.user_score}-${row.opponent_score}`,
-    // duration removed, not needed
+        // hanieh added: Show 'ai' for AI matches, otherwise 1v1/tournament
+        gameType: row.round === 'ai' ? 'ai' : (row.round === '1v1' ? '1v1' : 'tournament'),
+        // duration removed, not needed
         result: row.result === 'finished' ? (row.user_score > row.opponent_score ? 'win' : 'loss') : 'pending',
-        date: row.played_at,
-        gameType: row.round === '1v1' ? '1v1' : 'tournament'
+        date: row.played_at
     }));
     // Fetch accepted friends (bidirectional)
     const friends = db.prepare(`

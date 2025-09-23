@@ -431,6 +431,22 @@ export class GamePage {
               console.error('[hanieh added] Error sending 1v1 match result:', err);
             });
         });
+      } else if (this.gameMode === 'ai') {
+        // hanieh added: Save AI match result to backend
+        import('./services/api.js').then(({ ai }) => {
+          ai.submitResult(player1Score, player2Score)
+            .then(({ data, error }) => {
+              if (error) {
+                console.error('[hanieh added] Error sending AI match result:', error);
+              } else {
+                console.log('[hanieh added] AI match result sent to backend:', data);
+                window.dispatchEvent(new Event('reloadDashboardStats'));
+              }
+            })
+            .catch((err: unknown) => {
+              console.error('[hanieh added] Error sending AI match result:', err);
+            });
+        });
       } else if (this.gameMode === 'tournament' && typeof tournamentId === 'number') {
         import('./services/api.js').then(({ apiService }) => {
           apiService.tournaments.submitMatchResult(tournamentId, matchId, player1Score, player2Score)
