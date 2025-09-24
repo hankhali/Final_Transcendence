@@ -3,8 +3,6 @@ import { languageManager } from '../translations.js';
 import { apiService } from '../services/api.js';
 
 export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLElement {
-  // Debug: log the profile object received from backend
-  console.log('[DEBUG PROFILE] Profile object received:', profile);
   const container = document.createElement('div');
   container.className = 'profile-settings';
 
@@ -25,12 +23,6 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     matchHistory: [],
     ...profile
   };
-
-  // Helper to update display name field after save
-  function updateDisplayNameField(newDisplayName: string) {
-    const displayNameInput = form.querySelector('input[name="displayName"]') as HTMLInputElement;
-    if (displayNameInput) displayNameInput.value = newDisplayName;
-  }
 
   // Create form
   const form = document.createElement('form');
@@ -131,60 +123,6 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     placeholder: 'Enter your display name'
   });
 
-  // Skill Level Field
-  const skillLevelField = document.createElement('div');
-  skillLevelField.className = 'form-group';
-  
-  const skillLabel = document.createElement('label');
-  skillLabel.className = 'form-label';
-  skillLabel.textContent = t.profile.settings.skillLevel;
-  skillLabel.htmlFor = 'skillLevel';
-  
-  const skillOptions = [
-    { id: 'beginner', label: t.profile.settings.beginner, emoji: '👶' },
-    { id: 'intermediate', label: t.profile.settings.intermediate, emoji: '💪' },
-    { id: 'expert', label: t.profile.settings.expert, emoji: '🏆' }
-  ] as const;
-  
-  const skillContainer = document.createElement('div');
-  skillContainer.className = 'skill-level-options';
-  
-  skillOptions.forEach(({ id, label, emoji }) => {
-    const optionId = `skill-${id}`;
-    const optionContainer = document.createElement('div');
-    optionContainer.className = 'radio-option';
-    optionContainer.dataset.level = id;
-    
-    const radioInput = document.createElement('input');
-    radioInput.type = 'radio';
-    radioInput.id = optionId;
-    radioInput.name = 'skillLevel';
-    radioInput.value = id;
-    radioInput.checked = defaultProfile.skillLevel === id;
-    
-    const radioLabel = document.createElement('label');
-    radioLabel.htmlFor = optionId;
-    radioLabel.dataset.level = id;
-    
-    const emojiSpan = document.createElement('span');
-    emojiSpan.className = 'level-emoji';
-    emojiSpan.textContent = emoji;
-    
-    const textSpan = document.createElement('span');
-    textSpan.className = 'level-text';
-    textSpan.textContent = label;
-    
-    radioLabel.appendChild(emojiSpan);
-    radioLabel.appendChild(document.createElement('br'));
-    radioLabel.appendChild(textSpan);
-    
-    optionContainer.appendChild(radioInput);
-    optionContainer.appendChild(radioLabel);
-    skillContainer.appendChild(optionContainer);
-  });
-  
-  skillLevelField.appendChild(skillLabel);
-  skillLevelField.appendChild(skillContainer);
 
     // Bio Field
   const bioField = createFormField({
@@ -270,7 +208,6 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   form.appendChild(avatarOuterContainer);
   form.appendChild(usernameField);
   form.appendChild(displayNameField);
-  form.appendChild(skillLevelField);
   form.appendChild(bioField);
   form.appendChild(advancedToggle);
   form.appendChild(advancedContent);
@@ -387,25 +324,12 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     const formData = new FormData(form);
     const profileData: Record<string, any> = {};
 
-    // Get all form data except username (handle username separately)
+    // Get all form data
     formData.forEach((value, key) => {
-      if (key !== 'username' && value) profileData[key] = value;
+      if (value) profileData[key] = value;
     });
 
-    // Only send username if it was changed
-    const usernameInput = form.querySelector('input[name="username"]') as HTMLInputElement;
-    if (usernameInput && usernameInput.value !== defaultProfile.username) {
-      profileData.username = usernameInput.value;
-    }
-
-    // Always send the current skill level
-    const selectedSkill = form.querySelector('input[name="skillLevel"]:checked') as HTMLInputElement;
-    if (selectedSkill) {
-      profileData.skillLevel = selectedSkill.value;
-    } else {
-      // If nothing is checked, use the defaultProfile value
-      profileData.skillLevel = defaultProfile.skillLevel;
-    }
+    // Skill level removed
 
     // Password update logic
     if (profileData.oldPassword && profileData.newPassword && profileData.confirmPassword) {
@@ -442,16 +366,12 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
       return;
     }
 
-    // Other profile updates (username, bio, displayName, etc.)
+    // Other profile updates (username, bio, etc.)
     try {
       const res = await apiService.users.updateProfile(profileData);
       if (res.error) {
         showMessage(`Failed to update profile: ${res.error}`, 'error');
         return;
-      }
-      // If displayName was updated, update the field to reflect backend value
-      if (profileData.displayName) {
-        updateDisplayNameField(profileData.displayName);
       }
       showMessage(res.data?.message || 'Profile updated successfully!', 'success');
       const saveBtn = form.querySelector('.save-changes-button') as HTMLButtonElement;

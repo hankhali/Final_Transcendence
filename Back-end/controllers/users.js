@@ -111,13 +111,10 @@ async function userLogIn(username, password){
 //The userId should not come from the client. You should take it from the JWT/session of the logged-in user (so they can only see their own data).
 //userId = authenticatedUserId, ID from auth (their own profile). / ID from session/JWT (your own profile).
 async function getUserdata(userId){
-    const fetchData = db.prepare('SELECT id, alias, username, email, avatar, player_matches, player_wins, created_at, displayName, bio, skillLevel FROM users WHERE id = ?').get(userId);
+    const fetchData = db.prepare('SELECT id, alias, username, email, avatar, player_matches, player_wins, created_at FROM users WHERE id = ?').get(userId);
     if(!fetchData){
         throw new Error(`User with ID ${userId} not found`);
     }
-
-    // Debug: print all profile fields
-    console.log('[DEBUG PROFILE] Full user object:', fetchData);
 
     // Join opponent info and map fields for frontend compatibility
     const getGameHistory = db.prepare(`
@@ -247,12 +244,6 @@ async function updateUserProfile(userId, updates){
             throw new Error(`Username cannot exceed ${MAX_USERNAME_LENGTH} characters`);
         }
         db.prepare('UPDATE users SET username = ? WHERE id = ?').run(updates.username, userId);
-    }
-
-    // 1.5. Display Name (displayName)
-    if (updates.displayName) {
-        // You can add validation here if needed (e.g., length)
-        db.prepare('UPDATE users SET displayName = ? WHERE id = ?').run(updates.displayName, userId);
     }
 
     // 2. Alias
