@@ -132,11 +132,6 @@ const apiService = {
       return result;
     },
 
-    deleteMyAccount: async () => {
-      return fetchApi("/me", {
-        method: "DELETE"
-      });
-    },
 
     searchForFriends: async () => {
       return fetchApi("/search-friends", {
