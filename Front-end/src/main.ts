@@ -1473,6 +1473,8 @@ function renderProfilePage(): HTMLElement {
     if (res.data && res.data.user) {
       const userData = {
         ...res.data.user,
+        displayName: res.data.user.alias || '',
+        bio: typeof res.data.user.bio === 'string' ? res.data.user.bio : '',
         matchHistory: res.data.gameHistory || [],
         friends: res.data.user.friends || []
       };

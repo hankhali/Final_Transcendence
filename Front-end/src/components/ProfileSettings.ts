@@ -324,12 +324,24 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     const formData = new FormData(form);
     const profileData: Record<string, any> = {};
 
-    // Get all form data
-    formData.forEach((value, key) => {
-      if (value) profileData[key] = value;
-    });
-
-    // ...existing code...
+    // Only send display_name if changed, always send bio
+    const displayName = formData.get('displayName');
+    if (displayName && displayName !== defaultProfile.displayName) {
+      profileData.display_name = displayName;
+    }
+    const bio = formData.get('bio');
+    if (typeof bio === 'string') {
+      profileData.bio = bio;
+    }
+    // Password fields (if present)
+    const oldPassword = formData.get('oldPassword');
+    const newPassword = formData.get('newPassword');
+    const confirmPassword = formData.get('confirmPassword');
+    if (oldPassword && newPassword && confirmPassword) {
+      profileData.oldPassword = oldPassword;
+      profileData.newPassword = newPassword;
+      profileData.confirmPassword = confirmPassword;
+    }
 
     // Password update logic
     if (profileData.oldPassword && profileData.newPassword && profileData.confirmPassword) {
