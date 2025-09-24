@@ -329,7 +329,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
       if (value) profileData[key] = value;
     });
 
-    // Skill level removed
+    // ...existing code...
 
     // Password update logic
     if (profileData.oldPassword && profileData.newPassword && profileData.confirmPassword) {
