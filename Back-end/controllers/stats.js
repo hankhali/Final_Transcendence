@@ -96,10 +96,6 @@ async function getUserStats(userId) {
         totalPlayTime = gamesPlayed * 5;
         console.log('[STATS] totalPlayTime fallback:', totalPlayTime);
     }
-    // Preferred mode (most played round)
-    const modeRow = db.prepare('SELECT round, COUNT(*) as count FROM game_history WHERE user_id = ? GROUP BY round ORDER BY count DESC LIMIT 1').get(userId);
-    const preferredMode = modeRow ? modeRow.round : '1v1';
-    console.log('[STATS] preferredMode:', preferredMode);
     // Achievements (example logic)
     // Perfect Player: win a game 5-0 (update for your game rules)
     const perfectPlayerCount = db.prepare('SELECT COUNT(*) as count FROM game_history WHERE user_id = ? AND user_score = 5 AND opponent_score = 0').get(userId).count;
@@ -153,7 +149,6 @@ async function getUserStats(userId) {
         longestStreak,
         averageScore,
         totalPlayTime,
-        preferredMode,
         achievements,
         weeklyStats,
         skillProgression

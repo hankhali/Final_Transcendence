@@ -118,7 +118,6 @@ export interface Translations {
       avgScore: string;
       perfectGames: string;
       comebacks: string;
-      preferredMode: string;
       achievements: string;
       winStreakMaster: string;
       winStreakDesc: string;
@@ -323,7 +322,6 @@ export const translations: Record<string, Translations> = {
         avgScore: "AVERAGE SCORE",
         perfectGames: "PERFECT GAMES",
         comebacks: "COMEBACKS",
-        preferredMode: "PREFERRED MODE",
         achievements: "ACHIEVEMENTS & GOALS",
         winStreakMaster: "Win Streak Master",
         winStreakDesc: "Win 10 games in a row",
@@ -522,7 +520,6 @@ export const translations: Record<string, Translations> = {
         avgScore: "SCORE MOYEN",
         perfectGames: "JEUX PARFAITS",
         comebacks: "RETOURS",
-        preferredMode: "MODE PRÉFÉRÉ",
         achievements: "SUCCÈS ET OBJECTIFS",
         winStreakMaster: "Maître des Séries",
         winStreakDesc: "Gagner 10 jeux d'affilée",
@@ -721,7 +718,6 @@ export const translations: Record<string, Translations> = {
         avgScore: "PUNTUACIÓN PROMEDIO",
         perfectGames: "JUEGOS PERFECTOS",
         comebacks: "REMONTAS",
-        preferredMode: "MODO PREFERIDO",
         achievements: "LOGROS Y OBJETIVOS",
         winStreakMaster: "Maestro de Rachas",
         winStreakDesc: "Ganar 10 juegos seguidos",
