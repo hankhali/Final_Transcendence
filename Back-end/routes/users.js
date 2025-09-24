@@ -161,10 +161,20 @@ async function userRoutes(fastify, options){
             stats.averageScore = stats.averageScore || 0;
             stats.comebacks = stats.comebacks || 0;
             stats.preferredMode = stats.preferredMode || '1v1';
+            // --- Ensure bio is included in user object ---
+            if (userData && userData.user && typeof userData.user.bio === 'undefined') {
+                userData.user.bio = '';
+            }
+            // --- END bio patch ---
             console.log('[DEBUG /me] stats after ranking, totalPlayers, perfectGames, comebacks, friends:', stats);
             console.log('[DEBUG /me] stats after remapping:', stats);
-            console.log('[DEBUG /me] Final response:', { ...userData, stats });
-            return reply.send({ ...userData, stats });
+            // Patch: ensure bio is present in user object in response
+            const response = { ...userData, stats };
+            if (userData && userData.user && typeof userData.user.bio !== 'undefined') {
+                response.user = { ...userData.user, bio: userData.user.bio };
+            }
+            console.log('[DEBUG /me] Final response:', response);
+            return reply.send(response);
         } catch (error) {
             console.error('[DEBUG /me] ERROR:', error);
             return reply.code(500).send({ error: error.message });
@@ -178,11 +188,14 @@ async function userRoutes(fastify, options){
         try {
             const userId = request.user.id;
             // Accept both legacy and new frontend payloads
-            let { username, email, password, alias, oldPassword, newPassword, confirmPassword } = request.body;
+            let { username, email, password, alias, oldPassword, newPassword, confirmPassword, display_name, bio } = request.body;
             let updateFields = {};
             if (username) updateFields.username = username;
             if (email) updateFields.email = email;
+            // Accept display_name from frontend and map to alias
             if (alias) updateFields.alias = alias;
+            if (display_name) updateFields.alias = display_name;
+            if (bio) updateFields.bio = bio;
             // Map newPassword to password if present and confirmed
             if (newPassword !== undefined) {
                 if (confirmPassword !== undefined && newPassword !== confirmPassword) {

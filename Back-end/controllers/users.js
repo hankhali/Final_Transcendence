@@ -111,7 +111,7 @@ async function userLogIn(username, password){
 //The userId should not come from the client. You should take it from the JWT/session of the logged-in user (so they can only see their own data).
 //userId = authenticatedUserId, ID from auth (their own profile). / ID from session/JWT (your own profile).
 async function getUserdata(userId){
-    const fetchData = db.prepare('SELECT id, alias, username, email, avatar, player_matches, player_wins, created_at FROM users WHERE id = ?').get(userId);
+    const fetchData = db.prepare('SELECT id, alias, username, email, avatar, player_matches, player_wins, created_at, bio FROM users WHERE id = ?').get(userId);
     if(!fetchData){
         throw new Error(`User with ID ${userId} not found`);
     }
