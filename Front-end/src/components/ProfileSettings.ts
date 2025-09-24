@@ -1,9 +1,10 @@
-
 import type { UserProfile } from '../types/index.js';
 import { languageManager } from '../translations.js';
 import { apiService } from '../services/api.js';
 
 export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLElement {
+  // Debug: log the profile object received from backend
+  console.log('[DEBUG PROFILE] Profile object received:', profile);
   const container = document.createElement('div');
   container.className = 'profile-settings';
 
@@ -24,6 +25,12 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     matchHistory: [],
     ...profile
   };
+
+  // Helper to update display name field after save
+  function updateDisplayNameField(newDisplayName: string) {
+    const displayNameInput = form.querySelector('input[name="displayName"]') as HTMLInputElement;
+    if (displayNameInput) displayNameInput.value = newDisplayName;
+  }
 
   // Create form
   const form = document.createElement('form');
@@ -54,10 +61,11 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
 
   const avatarPreview = document.createElement('div');
   avatarPreview.className = 'avatar-preview';
-  if (defaultProfile.avatar) {
-    avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${defaultProfile.avatar}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+  // Show if missing or set to 'default.jpg'
+  if (!defaultProfile.avatar || defaultProfile.avatar === 'default.jpg') {
+    avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/default.jpg" alt="Default Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
   } else {
-    avatarPreview.innerHTML = `<i class="fas fa-user-circle"></i>`;
+    avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${defaultProfile.avatar}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
   }
 
   const avatarInput = document.createElement('input');
@@ -379,15 +387,24 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     const formData = new FormData(form);
     const profileData: Record<string, any> = {};
 
-    // Get all form data
+    // Get all form data except username (handle username separately)
     formData.forEach((value, key) => {
-      if (value) profileData[key] = value;
+      if (key !== 'username' && value) profileData[key] = value;
     });
 
-    // Get skill level
+    // Only send username if it was changed
+    const usernameInput = form.querySelector('input[name="username"]') as HTMLInputElement;
+    if (usernameInput && usernameInput.value !== defaultProfile.username) {
+      profileData.username = usernameInput.value;
+    }
+
+    // Always send the current skill level
     const selectedSkill = form.querySelector('input[name="skillLevel"]:checked') as HTMLInputElement;
     if (selectedSkill) {
       profileData.skillLevel = selectedSkill.value;
+    } else {
+      // If nothing is checked, use the defaultProfile value
+      profileData.skillLevel = defaultProfile.skillLevel;
     }
 
     // Password update logic
@@ -425,12 +442,16 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
       return;
     }
 
-    // Other profile updates (username, bio, etc.)
+    // Other profile updates (username, bio, displayName, etc.)
     try {
       const res = await apiService.users.updateProfile(profileData);
       if (res.error) {
         showMessage(`Failed to update profile: ${res.error}`, 'error');
         return;
+      }
+      // If displayName was updated, update the field to reflect backend value
+      if (profileData.displayName) {
+        updateDisplayNameField(profileData.displayName);
       }
       showMessage(res.data?.message || 'Profile updated successfully!', 'success');
       const saveBtn = form.querySelector('.save-changes-button') as HTMLButtonElement;
