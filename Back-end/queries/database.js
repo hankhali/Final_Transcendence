@@ -11,7 +11,7 @@ async function createTables() {
         username TEXT NOT NULL UNIQUE,
         password TEXT,
         email TEXT UNIQUE,
-        avatar TEXT,
+        avatar TEXT DEFAULT 'default.jpg',
         current_status TEXT DEFAULT 'offline',
         player_matches INTEGER DEFAULT 0,
         player_wins INTEGER DEFAULT 0,

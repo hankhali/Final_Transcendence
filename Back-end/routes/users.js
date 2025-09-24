@@ -16,7 +16,7 @@ const { addFriends } = require('../controllers/users');
 const { requestResponse } = require('../controllers/users');
 const { viewPendingRequests } = require('../controllers/users');
 const { viewSentRequests } = require('../controllers/users'); // hanieh changed: import for sent requests endpoint
-
+const { listFriends } = require('../controllers/users');
 
 
 const db = require('../queries/database');
@@ -316,16 +316,30 @@ async function userRoutes(fastify, options){
         }
     });
 
-        // hanieh changed: Added sent requests endpoint so sender can see their outgoing requests
-        fastify.get('/friend/requests/sent', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-            try {
-                const userId = request.user.id;
-                const sentRequests = await viewSentRequests(userId);
-                reply.send({ sentRequests });
-            } catch (error) {
-                return reply.code(400).send({ error: error.message });
-            }
-        });
+
+    //list added friends
+    fastify.get('/list-friends', {preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const authUserId = request.user.id;
+            const myFriends = await listFriends(authUserId);
+            return reply.send(myFriends);
+        }
+        catch(error){
+            return reply.code(500).send({error: error.message});
+        }
+    });
+    
+
+    // hanieh changed: Added sent requests endpoint so sender can see their outgoing requests
+    fastify.get('/friend/requests/sent', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try {
+            const userId = request.user.id;
+            const sentRequests = await viewSentRequests(userId);
+            reply.send({ sentRequests });
+        } catch (error) {
+            return reply.code(400).send({ error: error.message });
+        }
+    });
     
 
 
