@@ -4,6 +4,18 @@
   box-shadow: 0 0 16px 4px #00ff99, 0 0 32px 8px #00e6ff;
   border: 1px solid #00ff99;
   transition: background 0.3s, box-shadow 0.3s, border 0.3s;
+  width: 100%;
+  min-width: 320px;
+  max-width: 100%;
+  padding: 1.25rem 2.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 40px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 /* Premium Profile Settings */
 .profile-settings {
@@ -14,101 +26,13 @@
   padding: 2.5rem;
   max-width: 600px;
   margin: 0 auto;
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.4),
-    inset 0 1px 2px rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(0, 230, 255, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.profile-settings::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0, 230, 255, 0.5), transparent);
-}
-
-.profile-form {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-/* Premium Form Sections */
-.form-section {
-  position: relative;
-}
-
-.form-section h3 {
-  background: linear-gradient(135deg, #00e6ff, #ff00ff);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   letter-spacing: 0.5px;
-}
-
-/* Premium Avatar Section */
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, rgba(0, 230, 255, 0.05), rgba(255, 0, 255, 0.05));
-  border-radius: 16px;
-  border: 1px solid rgba(0, 230, 255, 0.1);
-  margin-bottom: 2rem;
-}
-
-.avatar-preview-container {
-  position: relative;
-  margin-bottom: 1.5rem;
-}
-
-.avatar-preview {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(0, 230, 255, 0.15), rgba(255, 0, 255, 0.1));
-  border: 3px solid rgba(0, 230, 255, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-  box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.3),
-    inset 0 1px 2px rgba(255, 255, 255, 0.1);
-}
-
-.avatar-preview:hover {
-  transform: translateY(-2px);
-}
-
-.settings-button {
-  width: 100%;
-  padding: 1.2rem 2rem;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  text-transform: none;
+  display: block;
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   z-index: 1;
 }
 
@@ -142,7 +66,11 @@
 
 .button-text {
   flex-grow: 1;
-  text-align: left;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  width: 100%;
   transition: all 0.3s ease;
 }
 
@@ -157,6 +85,18 @@
   background: linear-gradient(135deg, #6e45e2 0%, #89d4cf 100%);
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  min-width: 320px;
+  max-width: 100%;
+  padding: 1.25rem 2.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 40px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .advanced-toggle-button:hover {
@@ -173,31 +113,25 @@
 }
 
 /* Game History Button */
-.game-history-button {
-  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.game-history-button:hover {
-  box-shadow: 0 8px 25px rgba(0, 198, 255, 0.4);
-}
-
-.game-history-button .button-arrow {
-  transform: translateX(0) rotate(-45deg);
-  transition: all 0.3s ease;
-}
-
-.game-history-button:hover .button-arrow {
-  transform: translateX(4px) rotate(0);
-}
 
 /* Save Changes Button */
 .save-changes-button {
   background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  margin-top: 0.75rem;  /* Reduced from 1rem */
+  width: 100%;
+  min-width: 320px;
+  max-width: 100%;
+  padding: 1.25rem 2.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 40px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-top: 0.75rem;
 }
 
 .save-changes-button:hover {

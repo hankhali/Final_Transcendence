@@ -229,18 +229,6 @@ async function userRoutes(fastify, options){
 
 
 
-    //delete user's own profile
-    fastify.delete('/me', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        try{
-            const authUserId  = request.user.id; //get from auth
-            const deletion = await deleteMyAccount(authUserId );
-            return reply.code(200).send(deletion);
-        }
-        catch(error){
-            return reply.code(500).send({ error: error.message});
-        }
-    });
-
 
 
     //let user upload files using multi-part
