@@ -177,11 +177,6 @@ async function getPublicProfile(targetUserId){ //or username
     //return an object that contains user data and their game history
     return {user: fetchData, gameHistory: getGameHistory};
 }
-
-
-
-
-
 /*
 Validate file types.
 Limit file sizes.
@@ -189,7 +184,6 @@ Sanitize filenames.
 Store the image path in DB, not the image itself (unless small).
 Handle uploads securely.
 */
-
 
 
 
@@ -412,7 +406,6 @@ async function viewSentRequests(userId) {
 module.exports = {
     createUser,
     userLogIn,
-    deleteMyAccount,
     getUserdata,
     getPublicProfile,
     setAlias,

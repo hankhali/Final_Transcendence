@@ -160,7 +160,6 @@ async function userRoutes(fastify, options){
             stats.gamesPlayed = stats.gamesPlayed || 0;
             stats.averageScore = stats.averageScore || 0;
             stats.comebacks = stats.comebacks || 0;
-            stats.preferredMode = stats.preferredMode || '1v1';
             // --- Ensure bio is included in user object ---
             if (userData && userData.user && typeof userData.user.bio === 'undefined') {
                 userData.user.bio = '';

@@ -1,6 +1,7 @@
 import "./styles/style.css"; // Ensure your CSS is imported
 import "./styles/game-page.css"; // Game page styles
 import { createProfileSettings } from "./components/ProfileSettings";
+import { showTournamentBracketModal } from './components/TournamentModal';
 import { createFriendsSection } from "./components/FriendsSection";
 import { languageManager } from "./translations";
 import { create1v1GamePage, createAIGamePage } from "./gamePage.js";
@@ -1050,45 +1051,8 @@ function renderTournamentPage(): HTMLElement {
 
     // Add tournament start logic: fetch matches and start first match
     createTournamentBtn?.addEventListener('click', async () => {
-      // For demo: prompt for tournament ID, or use a fixed one
-      const tournamentId = prompt('Enter tournament ID to start:');
-      if (!tournamentId) return;
-      showMessage('Starting tournament...', 'info');
-      const res = await apiService.tournaments.start(Number(tournamentId));
-      if (res.error || !res.data || !res.data.matches || res.data.matches.length === 0) {
-        showMessage(res.error || 'No matches found for this tournament.', 'error');
-        return;
-      }
-      // Always start the first match for demo
-      const match = res.data.matches[0];
-      if (!match) {
-        showMessage('No match found.', 'error');
-        return;
-      }
-      const app = document.getElementById("app");
-      if (app) {
-        let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
-        if (!gameContainer) {
-          gameContainer = document.createElement("div");
-          gameContainer.id = "game-container-wrapper";
-          gameContainer.className = "game-container-wrapper";
-          app.innerHTML = '';
-          app.appendChild(gameContainer);
-        } else {
-          gameContainer.innerHTML = '';
-        }
-        // Navigation back function
-        const navigateBack = () => {
-          navigateTo('/tournament');
-        };
-        // Create and render the game, passing matchId and tournamentId
-        const gamePage = create1v1GamePage(gameContainer, navigateBack);
-        if (gamePage && gamePage.game) {
-          gamePage.game.matchId = match.matchId;
-          gamePage.game.tournamentId = Number(tournamentId);
-        }
-        showMessage('🎮 Starting tournament match...', 'info');
-      }
+      // Show modal to enter 4 player names and display bracket
+      showTournamentBracketModal();
     });
     
   } else {
@@ -1403,7 +1367,6 @@ function renderProfilePage(): HTMLElement {
     currentStreak: 5,
     longestStreak: 12,
     averageMatchDuration: 22,
-    preferredGameMode: '1v1',
     totalPlayTime: 1456, // minutes
     ranking: 42,
     totalPlayers: 1337,
@@ -1882,7 +1845,7 @@ function createAdvancedStatsPanel(userData: any): HTMLElement {
     { label: t.profile.dashboard.avgScore, value: userData.averageScore, unit: "pts" },
     { label: t.profile.dashboard.perfectGames, value: userData.perfectGames, unit: "" },
     { label: t.profile.dashboard.comebacks, value: userData.comebacks, unit: "" },
-    { label: t.profile.dashboard.preferredMode, value: userData.preferredGameMode, unit: "" }
+    { label: t.profile.dashboard.winRate, value: userData.winRate ? userData.winRate + '%' : '0%', unit: "" }
   ];
   
   advancedStats.forEach(stat => {
