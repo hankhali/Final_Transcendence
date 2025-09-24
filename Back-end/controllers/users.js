@@ -40,7 +40,10 @@ async function createUser(username, password, email){
     // hanieh debug: log registration attempt
     console.log('[hanieh debug] createUser called with:', { username, email });
     const hashedPassword = await bcrypt.hash(password, 10);
-    const stmt = db.prepare(`INSERT INTO users (username, password, email, alias) VALUES (?, ?, ?, ?)`);
+    const stmt = db.prepare(`
+        INSERT INTO users (username, password, avatar, email, alias)
+        VALUES (?, ?, 'default.jpg', ?, ?)
+    `);
     try{
         // Use username as default alias
         const sql = stmt.run(username, hashedPassword, email, username);
@@ -399,6 +402,43 @@ async function viewPendingRequests(userId){
     return {pendingRequests: Array.isArray(viewRequests) ? viewRequests : []};
 }
 
+
+async function listFriends(userId){
+    //list all added users
+    //get status info from friends tables
+    //get profile status from users
+
+    //check who is checking to show the list accordinglly
+    const users = db.prepare(`SELECT u.username , u.alias, u.avatar, f.friend_request FROM friends f
+        JOIN users u ON (u.id = CASE WHEN f.user_id = ? THEN f.friend_id ELSE f.user_id END)
+        WHERE (f.user_id = ? OR f.friend_id = ?) AND f.friend_request = 'accepted'`).all(userId, userId, userId);
+    // if(!users || users.length === 0){
+    //     throw new Error('Friends List is empty');
+    // }
+    return users;
+}
+
+// hanieh changed: Added viewSentRequests for sender to see outgoing requests
+// hanieh changed: Now returns receiver username for each sent request
+async function viewSentRequests(userId) {
+    // Returns requests sent by the logged-in user that are still pending, with receiver username
+    const sentRequests = db.prepare(`
+        SELECT f.id, f.friend_id AS receiver_id, u.username AS receiver_username
+        FROM friends f
+        JOIN users u ON u.id = f.friend_id
+        WHERE f.user_id = ? AND f.friend_request = 'pending'
+        `).all(userId);
+        console.log('[hanieh debug] viewSentRequests for userId:', userId);
+        console.log('[hanieh debug] sent requests:', sentRequests);
+    return Array.isArray(sentRequests) ? sentRequests : [];
+}
+
+
+
+
+
+
+
 module.exports = {
     createUser,
     userLogIn,
@@ -412,25 +452,6 @@ module.exports = {
     viewPendingRequests,
     // hanieh changed: Added viewSentRequests for sender to see outgoing requests
     viewSentRequests,
+    listFriends,
     updateUserProfile
 };
-// hanieh changed: Added viewSentRequests for sender to see outgoing requests
-// hanieh changed: Now returns receiver username for each sent request
-async function viewSentRequests(userId) {
-    // Returns requests sent by the logged-in user that are still pending, with receiver username
-    const sentRequests = db.prepare(`
-        SELECT f.id, f.friend_id AS receiver_id, u.username AS receiver_username
-        FROM friends f
-        JOIN users u ON u.id = f.friend_id
-        WHERE f.user_id = ? AND f.friend_request = 'pending'
-    `).all(userId);
-    console.log('[hanieh debug] viewSentRequests for userId:', userId);
-    console.log('[hanieh debug] sent requests:', sentRequests);
-    return Array.isArray(sentRequests) ? sentRequests : [];
-}
-
-
-
-
-
-
