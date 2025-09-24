@@ -178,14 +178,11 @@ async function userRoutes(fastify, options){
         try {
             const userId = request.user.id;
             // Accept both legacy and new frontend payloads
-            let { username, email, password, alias, oldPassword, newPassword, confirmPassword, displayName, bio, skillLevel } = request.body;
+            let { username, email, password, alias, oldPassword, newPassword, confirmPassword } = request.body;
             let updateFields = {};
             if (username) updateFields.username = username;
             if (email) updateFields.email = email;
             if (alias) updateFields.alias = alias;
-            if (displayName) updateFields.displayName = displayName;
-            if (bio) updateFields.bio = bio;
-            if (skillLevel) updateFields.skillLevel = skillLevel;
             // Map newPassword to password if present and confirmed
             if (newPassword !== undefined) {
                 if (confirmPassword !== undefined && newPassword !== confirmPassword) {
