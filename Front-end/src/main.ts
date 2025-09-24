@@ -1839,13 +1839,14 @@ function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
     
     const resultIcon = match.result === 'win' ? 'fa-check-circle' : 'fa-times-circle';
     
+    const durationText = (typeof match.duration === 'number' && !isNaN(match.duration)) ? ` • ${match.duration}min` : '';
     matchItem.innerHTML = `
       <div class="match-result-icon">
         <i class="fas ${resultIcon}"></i>
       </div>
       <div class="match-info">
         <div class="opponent-name">${match.opponent}</div>
-        <div class="match-details">${match.score} • ${match.duration}min</div>
+        <div class="match-details">${match.score}${durationText}</div>
       </div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
     `;
