@@ -1,3 +1,4 @@
+import './ProfileSettings.css';
 import type { UserProfile } from '../types/index.js';
 import { languageManager } from '../translations.js';
 import { apiService } from '../services/api.js';
@@ -55,9 +56,9 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   avatarPreview.className = 'avatar-preview';
   // Show if missing or set to 'default.jpg'
   if (!defaultProfile.avatar || defaultProfile.avatar === 'default.jpg') {
-    avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/default.jpg" alt="Default Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/default.jpg" alt="Default Avatar" class="avatar-img" />`;
   } else {
-    avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${defaultProfile.avatar}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${defaultProfile.avatar}" alt="Avatar" class="avatar-img" />`;
   }
 
   const avatarInput = document.createElement('input');
@@ -75,7 +76,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
       if (res.error) {
         showMessage(`Failed to upload avatar: ${res.error}`, 'error');
       } else {
-        avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${res.file}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+        avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${res.file}" alt="Avatar" class="avatar-img" />`;
         showMessage('Avatar uploaded successfully!', 'success');
       }
     } catch (err) {
