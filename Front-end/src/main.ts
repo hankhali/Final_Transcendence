@@ -58,7 +58,8 @@ function updateAllTranslations(): void {
 }
 
 // Utility function to navigate between pages
-function navigateTo(path: string) {
+// Expose navigateTo globally for use in other modules
+export function navigateTo(path: string) {
   showLoading();
   // Simulate network delay for a smoother loading experience
   setTimeout(() => {
@@ -329,8 +330,6 @@ function checkLoginState(): void {
     (window as any).isLoggedIn = isLoggedIn;
     (window as any).currentUser = currentUser;
     updateNavbar();
-      // hanieh added: Always redirect to profile settings after login
-      navigateTo("/profile");
   } else if (storedLoginState === 'true' && (!storedUser || !storedToken)) {
     // Clear invalid login state
     isLoggedIn = false;
@@ -1081,6 +1080,8 @@ function renderTournamentPage(): HTMLElement {
   gamesPage.appendChild(heroSection);
   gamesPage.appendChild(gameModesSection);
   gamesPage.appendChild(createFooter());
+  // Always hide loading overlay after rendering
+  hideLoading();
   return gamesPage;
 }
 
@@ -1333,8 +1334,8 @@ function renderProfilePage(): HTMLElement {
     { id: "match-history", label: t.profile.tabs.history, icon: "fa-history" }
   ];
   
-  // Determine last active tab from localStorage or default to dashboard
-  const lastActiveTab = localStorage.getItem('profileActiveTab') || 'dashboard';
+  // Always default to dashboard tab on load
+  const lastActiveTab = 'dashboard';
   tabs.forEach((tab) => {
     const tabButton = document.createElement("button");
     tabButton.className = `tab-button${tab.id === lastActiveTab ? ' active' : ''}`;
@@ -1342,7 +1343,6 @@ function renderProfilePage(): HTMLElement {
     tabButton.innerHTML = `<i class="fas ${tab.icon}"></i> ${tab.label}`;
     tabButton.addEventListener("click", () => {
       switchTab(tab.id);
-      localStorage.setItem('profileActiveTab', tab.id);
     });
     tabButtons.appendChild(tabButton);
   });
@@ -1503,9 +1503,9 @@ function renderProfilePage(): HTMLElement {
   tabContent.appendChild(friendsTab);
   tabContent.appendChild(historyTab);
 
-  // Show last active tab on load
+  // Show dashboard tab on load
   setTimeout(() => {
-    switchTab(lastActiveTab);
+    switchTab('dashboard');
   }, 0);
   
   tabContainer.appendChild(tabContent);
@@ -2581,17 +2581,20 @@ function setupRoutes(app: HTMLElement): void {
     "/logout": () => {
       handleLogout();
       return renderHomePage();
-    }
-    // Add other routes as they are implemented
+    },
+    "/game": renderGameRoute
   };
-  const renderFunction = routes[path];
+  // For /game, ignore query params
+  let routePath = path;
+  if (routePath.startsWith('/game')) routePath = '/game';
+  const renderFunction = routes[routePath];
   // The main content container within the page that will hold dynamic content
   const pageContentContainer = document.createElement("div");
   pageContentContainer.className = "page-content-wrapper"; // A new wrapper for dynamic content
   app.appendChild(pageContentContainer);
   if (renderFunction) {
     pageContentContainer.appendChild(renderFunction());
-    document.title = getPageTitle(path);
+    document.title = getPageTitle(routePath);
   } else {
     const notFound = document.createElement("div");
     notFound.className = "page content-section";
@@ -2608,6 +2611,30 @@ function setupRoutes(app: HTMLElement): void {
     pageContentContainer.appendChild(notFound);
     document.title = "404 - Page Not Found - Neon Pong";
   }
+// Render function for /game route
+function renderGameRoute(): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'game-container-wrapper';
+  // Get match info from sessionStorage
+  let matchInfo = null;
+  try {
+    matchInfo = JSON.parse(sessionStorage.getItem('tournamentMatch') || 'null');
+  } catch {}
+  // Default player names if not found
+  const playerA = matchInfo?.playerA || 'Player 1';
+  const playerB = matchInfo?.playerB || 'Player 2';
+  // Navigation back to tournament bracket
+  const navigateBack = () => {
+    navigateTo('/tournament');
+  };
+  // Create and render the 1v1 game with player names
+  const gamePage = create1v1GamePage(container, navigateBack);
+  if (gamePage.setPlayerNames) {
+    gamePage.setPlayerNames(playerA, playerB);
+  }
+  // Optionally, set match number or tournament info if needed
+  return container;
+}
   // The navbar is appended to the body or a specific fixed container, not necessarily #app.
   // We need to ensure it's outside the dynamic content area if it's fixed.
   // For simplicity here, I'll still attach it to app, but if it needs to be fixed at top,
@@ -2661,14 +2688,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Check login state after navbar is created
   console.log('[App] Checking login state...');
   checkLoginState();
-  
+
   // Add loading overlay if it doesn't exist
   if (!document.getElementById("loading-overlay")) {
     const loadingOverlay = createLoadingOverlay();
     document.body.appendChild(loadingOverlay);
   }
 
-  // Set up routes
+  // Always render the current route after login state is checked
   console.log('[App] Setting up routes...');
   setupRoutes(app);
   
