@@ -6149,9 +6149,31 @@ footer p {
 
 .game-modes-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 3rem;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto auto;
+  gap: 2.5rem 3rem;
   justify-items: center;
+  align-items: start;
+}
+
+/* 2+1 grid for game mode cards */
+.game-mode-card {
+  grid-column: span 1;
+}
+.game-mode-card.onevsone {
+  grid-row: 1;
+  grid-column: 1;
+}
+.game-mode-card.ai {
+  grid-row: 1;
+  grid-column: 2;
+}
+.game-mode-card.tournament {
+  grid-row: 2;
+  grid-column: 1 / span 2;
+  justify-self: center;
+  margin-top: 0.5rem;
+/* removed stray closing brace */
 }
 
 /* Game Mode Cards */
