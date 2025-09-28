@@ -54,35 +54,227 @@ export function showTournamentBracketModal() {
     style.id = 'tournament-modal-styles';
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-      .tournament-container { font-family: 'JetBrains Mono', monospace; background: rgba(16, 16, 24, 0.97); border: 2px solid rgba(255, 215, 0, 0.2); border-radius: 20px; padding: 40px; max-width: 600px; width: 100%; position: relative; backdrop-filter: blur(10px); box-shadow: 0 0 40px rgba(255, 215, 0, 0.1), inset 0 1px 0 rgba(255,255,255,0.1); animation: slideIn 0.6s cubic-bezier(0.25,0.46,0.45,0.94); }
-      .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: rgba(255,255,255,0.5); font-size: 28px; cursor: pointer; transition: all 0.2s; font-family: 'JetBrains Mono', monospace; }
-      .close-btn:hover { color: #ff6b6b; transform: rotate(90deg); }
-      .title { color: #ffd700; font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 10px; text-shadow: 0 0 20px rgba(255,215,0,0.3); letter-spacing: 2px; }
-      .subtitle { color: rgba(255,255,255,0.6); text-align: center; margin-bottom: 40px; font-size: 14px; letter-spacing: 1px; }
-      .players-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px; }
-      .player-slot { position: relative; background: linear-gradient(145deg, rgba(30,30,45,0.8), rgba(20,20,35,0.9)); border: 2px solid rgba(100,100,150,0.3); border-radius: 16px; padding: 25px 20px; transition: all 0.3s; min-height: 120px; display: flex; flex-direction: column; justify-content: center; opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s ease-out forwards; }
+      .tournament-container {
+        font-family: 'JetBrains Mono', monospace;
+        background: rgba(20, 20, 30, 0.95);
+        border: 2px solid #00fff7;
+        border-radius: 32px;
+        padding: 48px 32px;
+        max-width: 600px;
+        width: 100%;
+        position: relative;
+        backdrop-filter: blur(18px) saturate(180%);
+        box-shadow: 0 0 60px 0 #00fff7, 0 0 0 4px #222 inset;
+        animation: slideIn 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
+        border-image: linear-gradient(135deg, #00fff7 0%, #ff00ea 100%) 1;
+        overflow: hidden;
+      }
+      .close-btn {
+        position: absolute;
+        top: 18px;
+        right: 28px;
+        background: none;
+        border: none;
+        color: #00fff7;
+        font-size: 32px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'JetBrains Mono', monospace;
+        text-shadow: 0 0 12px #00fff7, 0 0 2px #fff;
+      }
+      .close-btn:hover {
+        color: #ff00ea;
+        transform: rotate(90deg) scale(1.2);
+        text-shadow: 0 0 24px #ff00ea;
+      }
+      .title {
+        color: #00fff7;
+        font-size: 38px;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 18px;
+        text-shadow: 0 0 32px #00fff7, 0 0 8px #ff00ea;
+        letter-spacing: 3px;
+        background: linear-gradient(90deg, #00fff7 0%, #ff00ea 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .subtitle {
+        color: #fff;
+        text-align: center;
+        margin-bottom: 36px;
+        font-size: 16px;
+        letter-spacing: 2px;
+        opacity: 0.7;
+      }
+      .players-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-bottom: 48px;
+      }
+      .player-slot {
+        position: relative;
+        background: linear-gradient(135deg, rgba(0,255,247,0.08), rgba(255,0,234,0.08));
+        border: 2px solid #222;
+        border-radius: 18px;
+        padding: 32px 20px;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: 0 0 24px 0 #00fff7 inset;
+        transition: box-shadow 0.3s, border-color 0.3s;
+        opacity: 0;
+        transform: translateY(24px);
+        animation: fadeInUp 0.5s ease-out forwards;
+      }
       .player-slot:nth-child(1) { animation-delay: 0.1s; }
       .player-slot:nth-child(2) { animation-delay: 0.2s; }
       .player-slot:nth-child(3) { animation-delay: 0.3s; }
       .player-slot:nth-child(4) { animation-delay: 0.4s; }
-      .player-slot.filled { border-color: rgba(34,197,94,0.6); background: linear-gradient(145deg, rgba(34,197,94,0.1), rgba(20,30,25,0.9)); }
-      .player-number { position: absolute; top: -12px; left: 20px; background: linear-gradient(135deg, #ffd700, #ffed4e); color: #1a1a2e; font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 20px; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(255,215,0,0.3); }
-      .player-input { background: transparent; border: none; color: #fff; font-size: 18px; font-weight: 600; font-family: 'JetBrains Mono', monospace; outline: none; width: 100%; text-align: center; letter-spacing: 1px; }
-      .player-input::placeholder { color: rgba(255,255,255,0.3); font-weight: 400; }
-      .vs-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(255,215,0,0.1); color: #ffd700; font-size: 16px; font-weight: 700; padding: 8px 16px; border-radius: 25px; border: 2px solid rgba(255,215,0,0.3); pointer-events: none; z-index: 10; backdrop-filter: blur(5px); }
-      .start-button { width: 100%; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%); border: none; border-radius: 16px; padding: 20px; color: #1a1a2e; font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 2px; position: relative; overflow: hidden; box-shadow: 0 8px 25px rgba(255,215,0,0.3); }
-      .start-button::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transition: left 0.5s; }
-      .start-button:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(255,215,0,0.4); }
-      .start-button:hover::before { left: 100%; }
-      .start-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background: linear-gradient(135deg, #666 0%, #888 50%, #666 100%); }
-      .start-button:disabled:hover { transform: none; box-shadow: 0 8px 25px rgba(255,215,0,0.3); }
-      .bracket-preview { position: absolute; top: -10px; right: -10px; width: 80px; height: 80px; opacity: 0.1; pointer-events: none; }
-      .bracket-preview svg { width: 100%; height: 100%; stroke: #ffd700; fill: none; stroke-width: 2; }
-      @media (max-width: 640px) { .tournament-container { padding: 24px; margin: 16px; } .players-grid { gap: 20px; } .player-slot { padding: 20px 15px; min-height: 100px; } .title { font-size: 26px; } .player-input { font-size: 16px; } }
-      @media (max-width: 480px) { .players-grid { grid-template-columns: 1fr; gap: 15px; } .vs-indicator { display: none; } }
-      @keyframes slideIn { from { opacity: 0; transform: translateY(30px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
-      @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-      @keyframes slideOut { to { opacity: 0; transform: translateY(-30px) scale(0.9); } }
+      .player-slot.filled {
+        border-color: #00fff7;
+        box-shadow: 0 0 32px 0 #ff00ea inset;
+        background: linear-gradient(135deg, rgba(0,255,247,0.18), rgba(255,0,234,0.18));
+      }
+      .player-number {
+        position: absolute;
+        top: -16px;
+        left: 24px;
+        background: linear-gradient(135deg, #00fff7, #ff00ea);
+        color: #222;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 8px 18px;
+        border-radius: 24px;
+        letter-spacing: 2px;
+        box-shadow: 0 4px 16px #00fff7;
+      }
+      .player-input {
+        background: rgba(255,255,255,0.08);
+        border: none;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        outline: none;
+        width: 100%;
+        text-align: center;
+        letter-spacing: 2px;
+        border-radius: 8px;
+        padding: 10px 0;
+        box-shadow: 0 0 8px #00fff7 inset;
+        transition: box-shadow 0.2s;
+      }
+      .player-input:focus {
+        box-shadow: 0 0 16px #ff00ea inset;
+      }
+      .player-input::placeholder {
+        color: #00fff7;
+        font-weight: 400;
+        opacity: 0.5;
+      }
+      .vs-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%);
+        background: linear-gradient(90deg, #00fff7 0%, #ff00ea 100%);
+        color: #fff;
+        font-size: 18px;
+        font-weight: 800;
+        padding: 10px 22px;
+        border-radius: 32px;
+        border: 2px solid #00fff7;
+        pointer-events: none;
+        z-index: 10;
+        box-shadow: 0 0 24px #ff00ea;
+        backdrop-filter: blur(8px);
+      }
+      .start-button {
+        width: 100%;
+        background: linear-gradient(90deg, #00fff7 0%, #ff00ea 100%);
+        border: none;
+        border-radius: 18px;
+        padding: 22px;
+        color: #222;
+        font-size: 20px;
+        font-weight: 800;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px #00fff7, 0 0 0 2px #ff00ea inset;
+      }
+      .start-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.5s;
+      }
+      .start-button:hover {
+        transform: translateY(-3px) scale(1.04);
+        box-shadow: 0 15px 40px #ff00ea, 0 0 0 2px #00fff7 inset;
+      }
+      .start-button:hover::before {
+        left: 100%;
+      }
+      .start-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        background: linear-gradient(90deg, #666 0%, #888 100%);
+      }
+      .start-button:disabled:hover {
+        transform: none;
+        box-shadow: 0 8px 25px #ff00ea;
+      }
+      .bracket-preview {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 80px;
+        height: 80px;
+        opacity: 0.12;
+        pointer-events: none;
+      }
+      .bracket-preview svg {
+        width: 100%;
+        height: 100%;
+        stroke: #00fff7;
+        fill: none;
+        stroke-width: 2;
+      }
+      @media (max-width: 640px) {
+        .tournament-container { padding: 18px; margin: 10px; }
+        .players-grid { gap: 14px; }
+        .player-slot { padding: 14px 8px; min-height: 80px; }
+        .title { font-size: 24px; }
+        .player-input { font-size: 14px; }
+      }
+      @media (max-width: 480px) {
+        .players-grid { grid-template-columns: 1fr; gap: 8px; }
+        .vs-indicator { display: none; }
+      }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(30px) scale(0.9); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @keyframes fadeInUp {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes slideOut {
+        to { opacity: 0; transform: translateY(-30px) scale(0.9); }
+      }
     `;
     document.head.appendChild(style);
   }
