@@ -5,4 +5,5 @@ Dockerfile
 .gitignore
 .env
 /dist
-/docs 
+/docs src/*.backup.ts
+src/*.backup.ts

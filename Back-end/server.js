@@ -18,10 +18,14 @@ fastify.register(require('@fastify/multipart'));
 
 const db = require('./queries/database');
 
+// Make database available to routes
+fastify.decorate('db', db);
+
 fastify.register(require('./routes/users'));
 fastify.register(require('./routes/tournaments'));
 fastify.register(require('./routes/onevone')); // hanieh added
 fastify.register(require('./routes/ai')); // hanieh added: AI match route
+fastify.register(require('./routes/auth')); // Google OAuth routes
 require('dotenv').config();
 fastify.register(require('@fastify/jwt'), {
     secret: process.env.JWT_SECRET

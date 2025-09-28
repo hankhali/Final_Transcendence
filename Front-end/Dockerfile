@@ -1,22 +1,29 @@
-FROM node:20-alpine AS builder
+FROM node:18-alpine
 
 WORKDIR /app
 
+# Copy package files first for better caching
 COPY package*.json ./
-RUN npm ci || npm install
 
+# Install dependencies
+RUN npm install --no-audit --no-fund
+
+# Copy source code
 COPY . .
-RUN npm run dev
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
+# Build the application
+RUN npm run build
 
-COPY --from=builder /app/package*.json ./
-RUN npm ci --omit=dev || npm install --omit=dev
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-COPY --from=builder /app/dist ./dist
+# Change ownership
+RUN chown -R nodejs:nodejs /app
+USER nodejs
 
 EXPOSE 5173
 
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
+ENV NODE_ENV=production
+
+CMD ["npm", "run", "preview", "--", "--port", "5173"]

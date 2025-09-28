@@ -3,6 +3,7 @@ export interface ApiService {
     start: (tournamentId: number) => Promise<{ data: any; error: any }>;
     finish: (matchId: number, result: any) => Promise<{ data: any; error: any }>;
     submitMatchResult: (tournamentId: number, matchId: number, player1Score: number, player2Score: number) => Promise<{ data: any; error: any }>;
+    getMatchHistory: (tournamentId: any) => Promise<{ data: any; error: any }>;
   };
   users: {
     register: (username: string, password: string, email: string) => Promise<{ data: any; error: any }>;
@@ -13,6 +14,15 @@ export interface ApiService {
     deleteMyAccount: () => Promise<{ data: any; error: any }>;
     searchForFriends: () => Promise<{ data: any; error: any }>;
     addFriends: (friendId: number) => Promise<{ data: any; error: any }>;
+    listRequests: () => Promise<{ data: any; error: any }>;
+    listSentRequests: () => Promise<{ data: any; error: any }>;
+    sendRequestResponse: (requestId: number, response: string) => Promise<{ data: any; error: any }>;
+    uploadAvatar: (file: File) => Promise<{ data: any; error: any }>;
+  };
+  ai: {
+    submitResult: (player1Score: number, player2Score: number) => Promise<{ data: any; error: any; }>;
+    start: (difficulty: string) => Promise<{ data: any; error: any }>;
+    finish: (matchId: number, result: any) => Promise<{ data: any; error: any }>;
   };
 }
 
