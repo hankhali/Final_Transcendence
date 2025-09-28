@@ -2457,37 +2457,52 @@ function showTournamentBracket(tournament: any) {
 
 // Match handling functions
 (window as any).startMatch = function(matchIndex: number, player1: string, player2: string) {
+  console.log('[DEBUG] startMatch called for tournament. matchIndex:', matchIndex, 'player1:', player1, 'player2:', player2);
   showMessage(`Starting match: ${player1} vs ${player2}`, "info");
-  // Find the app container and replace content with the game
+  (window as any).currentTournamentMatch = true;
+  (window as any).gamePageSuppressModal = true;
+  (window as any).gamePageMode = 'tournament';
   const app = document.getElementById("app");
   if (app) {
+    console.log('[DEBUG] Found app container, clearing and creating game container.');
     app.innerHTML = '';
     const gameContainer = document.createElement("div");
     gameContainer.className = "game-container-wrapper";
     app.appendChild(gameContainer);
-    // Navigation back to bracket after match
     const navigateBack = () => {
+      console.log('[DEBUG] Navigating back to tournament bracket.');
       showTournamentBracket((window as any).currentTournament);
     };
-    // Create and render the 1v1 game with player names
+    console.log('[DEBUG] Creating 1v1 game page for tournament match. Flags:', {
+      currentTournamentMatch: (window as any).currentTournamentMatch,
+      gamePageSuppressModal: (window as any).gamePageSuppressModal,
+      gamePageMode: (window as any).gamePageMode
+    });
     const gamePage = create1v1GamePage(gameContainer, navigateBack);
     gamePage.setPlayerNames(player1, player2);
-    // When the game ends, update the bracket and return
-  gamePage.game?.onGameEndCallback((winner, _gameTime) => {
-      // Update tournament data
+    console.log('[DEBUG] Set player names:', player1, player2);
+    // Clear flags only after game is initialized
+    setTimeout(() => {
+      delete (window as any).currentTournamentMatch;
+      delete (window as any).gamePageSuppressModal;
+      delete (window as any).gamePageMode;
+    }, 1000);
+    gamePage.game?.onGameEndCallback((winner, _gameTime) => {
+      console.log('[DEBUG] Game ended. Winner:', winner.name, 'MatchIndex:', matchIndex);
       const tournament = (window as any).currentTournament;
       tournament.bracket.semifinals[matchIndex].winner = winner.name;
-      // Update localStorage
       const tournaments = JSON.parse(localStorage.getItem('tournaments') || '[]');
       const tournamentIndex = tournaments.findIndex((t: any) => t.id === tournament.id);
       if (tournamentIndex !== -1) {
         tournaments[tournamentIndex] = tournament;
         localStorage.setItem('tournaments', JSON.stringify(tournaments));
       }
-      // Show bracket again
+      console.log('[DEBUG] Showing bracket again after match.');
       showTournamentBracket(tournament);
       showMessage(`🏆 ${winner.name} wins Match ${matchIndex + 1}!`, "success");
     });
+  } else {
+    console.error('[DEBUG] App container not found!');
   }
 };
 

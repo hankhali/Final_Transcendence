@@ -417,9 +417,41 @@ function showBracket(players: string[]) {
 
   // Real game integration stub
   function startGame(playerA: string, playerB: string, matchNum: string | null) {
-    // Replace this with your actual game start logic (e.g., navigation, socket emit, etc.)
-    alert(`Starting real game for Match ${matchNum}: ${playerA} vs ${playerB}`);
-    // Example: window.location.href = `/game?playerA=${encodeURIComponent(playerA)}&playerB=${encodeURIComponent(playerB)}`;
+    // Launch the real pong game in the current view
+    const app = document.getElementById("app");
+    if (app) {
+      let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
+      if (!gameContainer) {
+        gameContainer = document.createElement("div");
+        gameContainer.id = "game-container-wrapper";
+        gameContainer.className = "game-container-wrapper";
+        app.innerHTML = '';
+        app.appendChild(gameContainer);
+      } else {
+        gameContainer.innerHTML = '';
+      }
+      // Create navigation back function
+      const navigateBack = () => {
+        window.location.reload(); // Or navigate to tournament page if you want
+      };
+      // Create and render the 1v1 game using dynamic import
+      import('../gamePage').then(({ create1v1GamePage }) => {
+        // Set tournament flags to block modal
+        (window as any).currentTournamentMatch = true;
+        (window as any).gamePageSuppressModal = true;
+        (window as any).gamePageMode = 'tournament';
+        const gamePage = create1v1GamePage(gameContainer, navigateBack);
+        if (gamePage.setPlayerNames) {
+          gamePage.setPlayerNames(playerA, playerB);
+        }
+        // Clear flags after game is initialized
+        setTimeout(() => {
+          delete (window as any).currentTournamentMatch;
+          delete (window as any).gamePageSuppressModal;
+          delete (window as any).gamePageMode;
+        }, 1000);
+      });
+    }
   }
 
   // Add styles (only once)

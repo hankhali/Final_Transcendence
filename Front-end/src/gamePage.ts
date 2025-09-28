@@ -1,5 +1,6 @@
 // @ts-ignore
 import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
+import { showOpponentUsernameModal } from './components/OpponentUsernameModal';
 /// <reference path="./services/api.d.ts" />
 // Game Page Component - Handles the actual game interface
 import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
@@ -25,9 +26,10 @@ export class GamePage {
     }
   }
   private gameCanvas: HTMLCanvasElement | null = null;
-  private gameMode: '1v1' | 'ai' | 'tournament' = '1v1';
+  public gameMode: '1v1' | 'ai' | 'tournament' = '1v1';
   private isFullscreen = false;
   private onNavigateBack?: () => void;
+  public suppressModal: boolean = false;
 
   constructor(container: HTMLElement, onNavigateBack?: () => void) {
     this.container = container;
@@ -62,9 +64,78 @@ export class GamePage {
 
 
   public render1v1Game(): void {
+    console.log('[DEBUG] render1v1Game called. gameMode:', this.gameMode, 'currentTournamentMatch:', (window as any).currentTournamentMatch, 'suppressModal:', this.suppressModal);
+    // Strong guard: Never show modal if tournament or suppressModal is true
+    if (this.gameMode === 'tournament' || this.suppressModal || (window as any).currentTournamentMatch) {
+      console.log('[DEBUG] Tournament match detected or suppressModal true, skipping modal and starting game directly');
+      this.gameMode = 'tournament';
+      this.renderGameInterface();
+      window.requestAnimationFrame(() => {
+        this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+        if (!this.gameCanvas) {
+          console.error('[DEBUG] Tournament: Game canvas not found!');
+          return;
+        }
+        this.game = create1v1Game(this.gameCanvas);
+        this.game.matchId = 0;
+        this.game.tournamentId = this.getTournamentIdFromContext();
+        this.setupGameCallbacks();
+        console.log('[DEBUG] Tournament: Game started with matchId 0 and tournamentId', this.game.tournamentId);
+      });
+      return;
+    }
+    // Only show modal for direct 1v1
     this.gameMode = '1v1';
     this.renderGameInterface();
-  window.requestAnimationFrame(() => this.initializeGame()); // hanieh added: ensure canvas exists
+    console.log('[DEBUG] Showing opponent username modal for direct 1v1');
+    window.requestAnimationFrame(() => {
+      showOpponentUsernameModal((opponentUsername: string) => {
+        console.log('[DEBUG] Opponent username submitted:', opponentUsername);
+        this.initializeGameWithOpponent(opponentUsername);
+      });
+    });
+  }
+
+  public initializeGameWithOpponent(opponentUsername: string): void {
+    this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+    if (!this.gameCanvas) return;
+    import('./services/api.js').then(({ onevone }) => {
+      onevone.start(opponentUsername).then((response: { data?: { matchId?: number }, error?: any }) => {
+        const { data, error } = response;
+        let modal = document.getElementById('username-modal');
+        let errorDiv = modal ? modal.querySelector('#username-error') as HTMLElement : null;
+        if (error || !data?.matchId) {
+          // If modal is missing, re-show it so error is visible
+          if (!modal || !errorDiv) {
+            import('./components/OpponentUsernameModal').then(({ showOpponentUsernameModal }) => {
+              showOpponentUsernameModal((username: string) => {
+                this.initializeGameWithOpponent(username);
+              });
+              // After modal is re-added, show error
+              setTimeout(() => {
+                let modal2 = document.getElementById('username-modal');
+                let errorDiv2 = modal2 ? modal2.querySelector('#username-error') as HTMLElement : null;
+                if (errorDiv2) {
+                  errorDiv2.textContent = 'Could not start 1v1 match: ' + (error || 'No matchId');
+                  errorDiv2.style.display = 'block';
+                }
+              }, 100);
+            });
+          } else {
+            errorDiv.textContent = 'Could not start 1v1 match: ' + (error || 'No matchId');
+            errorDiv.style.display = 'block';
+          }
+          return;
+        }
+        // Only remove modal on success
+        if (modal) document.body.removeChild(modal);
+        if (errorDiv) errorDiv.style.display = 'none';
+        this.game = create1v1Game(this.gameCanvas);
+        this.game.matchId = data.matchId;
+        this.game.tournamentId = undefined;
+        this.setupGameCallbacks();
+      });
+    });
   }
 
   public renderAIGame(difficulty: 'easy' | 'medium' | 'hard' = 'medium'): void {
@@ -73,7 +144,7 @@ export class GamePage {
   window.requestAnimationFrame(() => this.initializeAIGame(difficulty)); // hanieh added: ensure canvas exists
   }
 
-  private renderGameInterface(): void {
+  public renderGameInterface(): void {
     this.container.innerHTML = `
       <div class="game-page">
         <!-- Game Header -->
@@ -97,16 +168,7 @@ export class GamePage {
           </div>
         </div>
 
-        <!-- Custom modal for opponent username input (1v1) -->
-        <div id="username-modal" class="modal" style="display:none;">
-          <div class="modal-content">
-            <span class="close" id="close-username-modal">&times;</span>
-            <h2>Enter opponent username for 1v1 match</h2>
-            <input type="text" id="opponent-username-input" placeholder="Opponent username" />
-            <button id="submit-username-btn" class="game-btn primary">Start Match</button>
-            <div id="username-error" class="error-message" style="display:none;"></div>
-          </div>
-        </div>
+        ''
 
         <!-- Tournament alias modal -->
         <div id="tournament-alias-modal" class="modal" style="display:none;">
@@ -159,21 +221,21 @@ export class GamePage {
                   <i class="fas fa-redo"></i>
                 </button>
               </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">${this.gameMode === '1v1' ? 'Player 2' : 'AI'}</div>
-              <div class="stat-value" id="player2-score">0</div>
-              <div class="stat-name" id="player2-name">${this.gameMode === '1v1' ? 'Player 2' : 'AI Opponent'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
+                    <!-- Tournament alias modal -->
+                    <div id="tournament-alias-modal" class="modal" style="display:none;">
+                      <div class="modal-content">
+                        <h2>Enter your alias for this tournament</h2>
+                        <input type="text" id="tournament-alias-input" placeholder="Your alias" />
+                        <button id="submit-tournament-alias-btn" class="game-btn primary">Save Alias</button>
+                        <div id="tournament-alias-error" class="error-message" style="display:none;"></div>
+                      </div>
+                    </div>
     `;
 
     this.setupEventListeners();
   }
 
-  private initializeGame(): void {
+  public initializeGame(): void {
     console.log('Initializing game...');
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     console.log('Canvas found:', this.gameCanvas);
@@ -190,6 +252,9 @@ export class GamePage {
       this.game.tournamentId = tournamentId;
       this.setupGameCallbacks();
       console.log('[hanieh added] Tournament game created with tournamentId:', tournamentId);
+      // Ensure opponent username modal is NOT shown in tournament mode
+      const modal = document.getElementById('username-modal') as HTMLElement;
+      if (modal) modal.style.display = 'none';
     } else if (this.gameMode === '1v1') {
       // hanieh added: Show custom modal for opponent username
       const modal = document.getElementById('username-modal') as HTMLElement;
@@ -546,6 +611,29 @@ export class GamePage {
 // Export factory functions for easy integration
 export function create1v1GamePage(container: HTMLElement, onNavigateBack?: () => void): GamePage {
   const gamePage = new GamePage(container, onNavigateBack);
+  console.log('[DEBUG] create1v1GamePage called. Flags:', {
+    currentTournamentMatch: (window as any).currentTournamentMatch,
+    suppressModal: gamePage.suppressModal,
+    gameMode: gamePage.gameMode,
+    globalSuppressModal: (window as any).gamePageSuppressModal,
+    globalGameMode: (window as any).gamePageMode
+  });
+  // Strong guard: Never show modal if tournament or suppressModal is true
+  if ((window as any).currentTournamentMatch) {
+    gamePage.gameMode = 'tournament';
+    gamePage.suppressModal = true;
+    gamePage.renderGameInterface();
+    window.requestAnimationFrame(() => gamePage.initializeGame());
+    return gamePage;
+  }
+  if (gamePage.gameMode === 'tournament' || gamePage.suppressModal) {
+    gamePage.gameMode = 'tournament';
+    gamePage.suppressModal = true;
+    gamePage.renderGameInterface();
+    window.requestAnimationFrame(() => gamePage.initializeGame());
+    return gamePage;
+  }
+  gamePage.suppressModal = false;
   gamePage.render1v1Game();
   return gamePage;
 }
