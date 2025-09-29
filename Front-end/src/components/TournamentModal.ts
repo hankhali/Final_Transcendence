@@ -315,52 +315,14 @@ export function showTournamentBracketModal() {
       }
     });
   });
-  let currentTournamentId: number | undefined;
-  async function startTournament() {
+  function startTournament() {
     if (startBtn.disabled) return;
     const players = Array.from(inputs).map(input => input.value.trim());
-    console.log('[DEBUG] Players before starting tournament:', players);
-    if (players.length < 2) {
-      console.warn('[DEBUG] Not enough players to start tournament. Need at least 2, got', players.length);
-      alert('You need at least 2 players to start a tournament.');
-      return;
-    }
     startBtn.innerHTML = '🔥 CREATING BRACKET... 🔥';
     startBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)';
-    // Create tournament in backend and get its id
-    const { apiService } = await import('../services/api');
-    try {
-      const response = await apiService.tournaments.create('Knockout', 4, players);
-      if (response.data && response.data.tournamentId) {
-        currentTournamentId = response.data.tournamentId;
-        console.log('[DEBUG] Tournament created with id:', currentTournamentId!);
-        // Join all players before starting
-        for (const alias of players) {
-          const joinResp = await apiService.tournaments.join(currentTournamentId!, alias);
-          console.log('[DEBUG] Joined player:', alias, joinResp);
-        }
-        // Start the tournament to generate matches
-        const startResp = await apiService.tournaments.start(currentTournamentId!);
-        if (startResp.error) {
-          console.error('[DEBUG] Tournament start failed:', startResp.error);
-          alert('Failed to start tournament.');
-          return;
-        } else {
-          console.log('[DEBUG] Tournament started, matches:', startResp.data?.matches);
-        }
-      } else {
-        console.error('[DEBUG] Tournament creation failed:', response.error);
-        alert('Failed to create tournament.');
-        return;
-      }
-    } catch (err) {
-      console.error('[DEBUG] Error creating tournament:', err);
-      alert('Error creating tournament.');
-      return;
-    }
     setTimeout(() => {
       overlay.remove();
-      showBracket(players, currentTournamentId!);
+      showBracket(players);
       startBtn.innerHTML = '🏆 START TOURNAMENT 🏆';
       startBtn.style.background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%)';
     }, 1200);
@@ -375,9 +337,8 @@ export function showTournamentBracketModal() {
   });
 }
 
-function showBracket(players: string[], tournamentId?: number) {
+function showBracket(players: string[]) {
   // Helper to fetch matches for a tournament
-  // @ts-ignore
   async function fetchTournamentMatches(tournamentId) {
   const { apiService } = await import('../services/api');
   // hanieh added: use tournaments.getById
@@ -386,78 +347,42 @@ function showBracket(players: string[], tournamentId?: number) {
   return response.data && response.data.matches ? response.data.matches : [];
   }
   // Helper to show 'Back to Bracket' button after match ends
-  function showBackToBracketButton() {
-    // Create modal overlay
-    let modal = document.getElementById('finished-game-modal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'finished-game-modal';
-      modal.style.position = 'fixed';
-      modal.style.top = '0';
-      modal.style.left = '0';
-      modal.style.width = '100vw';
-      modal.style.height = '100vh';
-      modal.style.background = 'rgba(0,0,0,0.7)';
-      modal.style.display = 'flex';
-      modal.style.alignItems = 'center';
-      modal.style.justifyContent = 'center';
-      modal.style.zIndex = '9999';
-      modal.innerHTML = `
-        <div style="background:#1e293b;padding:2rem 2.5rem;border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,0.3);text-align:center;max-width:350px;">
-          <h2 style="color:#fff;margin-bottom:1rem;">Game Finished!</h2>
-          <p style="color:#cbd5e1;margin-bottom:2rem;">Match 1 is complete.<br>Click below to return to the bracket and start the next match.</p>
-          <button id="back-to-bracket-btn" class="btn btn-primary" style="width:100%;font-size:1.1em;">Back to Bracket</button>
-        </div>
-      `;
-      document.body.appendChild(modal);
-      // Button event
-      const btn = modal.querySelector('#back-to-bracket-btn');
-      if (btn) {
-        btn.addEventListener('click', () => {
-          modal?.remove();
-          const app = document.getElementById('app');
-          if (app) app.innerHTML = '';
-          showBracketWithProgress(players, matchWinners);
-        });
-      }
-    }
-  }
-
-  // Helper to restore bracket with progress
-  function showBracketWithProgress(players: string[], winners: { [key: string]: string }) {
-    // Remove any existing bracket
-    let oldBracket = document.getElementById('tournament-bracket-ui');
-    if (oldBracket) oldBracket.remove();
-    // Recreate bracket and restore winners
-    showBracket(players);
-    // Restore winners visually
-    Object.keys(winners).forEach(key => {
-      if (key === '1' || key === '2') {
-        const matchPlayers = document.querySelectorAll(`.match[data-match="${key}"] .player`);
-        matchPlayers.forEach(p => {
-          if (p.getAttribute('data-player') === winners[key]) {
-            p.classList.add('winner');
-          }
-        });
-      }
+  function showGameOverModal() {
+    // Remove any existing modal
+    let oldModal = document.getElementById('game-over-modal');
+    if (oldModal) oldModal.remove();
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'game-over-modal';
+    overlay.className = 'modal-overlay';
+    // Modal content
+    const modal = document.createElement('div');
+    modal.className = 'game-over-modal-content';
+    modal.innerHTML = `
+      <h2 style="text-align:center;margin-bottom:1.5rem;">Game is over</h2>
+      <p style="text-align:center;margin-bottom:2rem;">Click below to return to the bracket and play the next match.</p>
+      <button id="back-to-bracket-btn" class="btn btn-primary" style="width:100%;font-size:1.1em;">Back to Bracket</button>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    // Button logic
+    modal.querySelector('#back-to-bracket-btn')?.addEventListener('click', () => {
+      overlay.remove();
+      const app = document.getElementById('app');
+      if (app) app.innerHTML = '';
+      showBracket(players);
     });
-    // Restore finalists
-    const finalPlayers = document.querySelectorAll('.final-match .player');
-    if (winners['1']) {
-      finalPlayers[0].textContent = winners['1'];
-      finalPlayers[0].classList.remove('placeholder');
-      finalPlayers[0].setAttribute('data-player', winners['1']);
-    }
-    if (winners['2']) {
-      finalPlayers[1].textContent = winners['2'];
-      finalPlayers[1].classList.remove('placeholder');
-      finalPlayers[1].setAttribute('data-player', winners['2']);
-    }
-    // Restore champion if exists
-    if (winners['final']) {
-      setTimeout(() => {
-        alert(`🏆🎉 TOURNAMENT CHAMPION 🎉🏆\n\n${winners['final'].toUpperCase()}\n\nCongratulations on your victory!\n\n🥇 You are the ultimate champion! 🥇`);
-      }, 600);
+    // Add styles (only once)
+    if (!document.getElementById('game-over-modal-styles')) {
+      const style = document.createElement('style');
+      style.id = 'game-over-modal-styles';
+      style.textContent = `
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(20,20,30,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .game-over-modal-content { background: #222; border-radius: 24px; padding: 48px 32px; max-width: 400px; width: 100%; box-shadow: 0 0 40px #00fff7; color: #fff; text-align: center; }
+        .game-over-modal-content h2 { font-size: 2rem; color: #00fff7; margin-bottom: 1rem; }
+        .game-over-modal-content .btn { margin-top: 2rem; }
+      `;
+      document.head.appendChild(style);
     }
   }
   // Remove any existing bracket
@@ -532,9 +457,9 @@ function showBracket(players: string[], tournamentId?: number) {
       const matchNum = (btn as HTMLButtonElement).getAttribute('data-match');
       // Prevent Match 2 if Match 1 not finished
       if (matchNum === '2' && !matchWinners[1]) {
-        (btn as HTMLButtonElement).disabled = true;
-        (btn as HTMLButtonElement).style.opacity = '0.5';
-        (btn as HTMLButtonElement).title = 'Finish Match 1 first';
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.title = 'Finish Match 1 first';
         alert('You must finish Match 1 before starting Match 2!');
         return;
       }
@@ -548,7 +473,7 @@ function showBracket(players: string[], tournamentId?: number) {
         playerB = players[3];
       }
       // Call your real game logic here
-      startGame(playerA, playerB, matchNum);
+      startGame(playerA, playerB, matchNum, btn);
     });
   });
   // Enable Match 2 button when Match 1 is finished
@@ -585,43 +510,27 @@ function showBracket(players: string[], tournamentId?: number) {
       const navigateBack = () => {
         window.location.reload(); // Or navigate to tournament page if you want
       };
-      // Use tournamentId from context
-      const effectiveTournamentId = tournamentId || currentTournamentId;
-      if (!effectiveTournamentId) {
-        console.error('[DEBUG] No tournamentId available for match start.');
-        alert('Tournament ID missing. Cannot start match.');
-        return;
-      }
+      // hanieh added: get tournamentId from context or pass as argument if needed
+      const tournamentId = 1; // TODO: Replace with actual tournamentId from context
       // Fetch matches using apiService.tournaments.getById
       import('../services/api').then(({ apiService }) => {
-  apiService.tournaments.getById(effectiveTournamentId).then(response => {
+        apiService.tournaments.getById(tournamentId).then(response => {
           const matches = response.data && response.data.matches ? response.data.matches : [];
-          console.log('[DEBUG] Matches from backend:', matches);
           // hanieh added: filter by tournament_id
-          const filteredMatches = matches.filter(m => m.tournament_id === effectiveTournamentId);
-          console.log('[DEBUG] Filtered matches:', filteredMatches);
-          const match = filteredMatches.find(m => {
-            const found = ((m.player1 === playerA && m.player2 === playerB) || (m.player1 === playerB && m.player2 === playerA)) && m.round === matchNum;
-            if (found) {
-              console.log('[DEBUG] Found match:', m);
-            }
-            return found;
-          });
-          if (!match) {
-            console.warn('[DEBUG] No match found for', { playerA, playerB, matchNum });
-          }
-          const matchId = match ? (match.matchId || match.id) : undefined;
-          if (!matchId) {
-            console.warn('[DEBUG] No valid matchId found, will not start game or submit result.', { match, playerA, playerB, matchNum });
-            return;
-          }
-          console.log('[DEBUG] Using matchId:', matchId);
+          const filteredMatches = matches.filter(m => m.tournament_id === tournamentId);
+          const match = filteredMatches.find(m =>
+            ((m.player1 === playerA && m.player2 === playerB) || (m.player1 === playerB && m.player2 === playerA)) && m.round === matchNum
+          );
+          const matchId = match ? (match.matchId || match.id) : 0;
           import('../gamePage').then(({ create1v1GamePage }) => {
             // Set tournament flags to block modal
             (window as any).currentTournamentMatch = true;
             (window as any).gamePageSuppressModal = true;
             (window as any).gamePageMode = 'tournament';
-            const gamePage = create1v1GamePage(gameContainer, navigateBack);
+            const gamePage = create1v1GamePage(gameContainer, () => {
+              // After game ends, show the modal and update bracket
+              showGameOverModal();
+            });
             if (gamePage.setPlayerNames) {
               gamePage.setPlayerNames(playerA, playerB);
             }
@@ -629,65 +538,22 @@ function showBracket(players: string[], tournamentId?: number) {
             if (gamePage.game) {
               gamePage.game.matchId = matchId;
             }
-            // Listen for game end event and show modal only after game is finished
-            if (gamePage && gamePage.game && typeof gamePage.game.onGameEndCallback === 'function') {
-              gamePage.game.onGameEndCallback(() => {
-                // After match ends, disable button and show back button/modal
-                delete (window as any).currentTournamentMatch;
-                delete (window as any).gamePageSuppressModal;
-                delete (window as any).gamePageMode;
-                // Get scores and matchId for result submission
-                const tournamentId = effectiveTournamentId;
-                let matchId: number | undefined;
-                let player1Score: number | undefined;
-                let player2Score: number | undefined;
-                if (gamePage && gamePage.game) {
-                  matchId = typeof gamePage.game.matchId === 'number' ? gamePage.game.matchId : undefined;
-                  const players = gamePage.game.getPlayers?.();
-                  if (players && players.player1 && players.player2) {
-                    player1Score = typeof players.player1.score === 'number' ? players.player1.score : undefined;
-                    player2Score = typeof players.player2.score === 'number' ? players.player2.score : undefined;
-                  }
+            // Clear flags after game is initialized
+            setTimeout(() => {
+              delete (window as any).currentTournamentMatch;
+              delete (window as any).gamePageSuppressModal;
+              delete (window as any).gamePageMode;
+              // After match ends, disable button
+              if (matchNum === '1') {
+                const match1Btn = document.querySelector('.start-match-btn[data-match="1"]') as HTMLButtonElement;
+                if (match1Btn) {
+                  match1Btn.disabled = true;
+                  match1Btn.style.opacity = '0.5';
+                  match1Btn.title = 'Match 1 is finished';
                 }
-                console.log('[DEBUG] Submitting tournament match result:', { matchId, tournamentId, player1Score, player2Score });
-                if (
-                  typeof matchId === 'number' &&
-                  typeof player1Score === 'number' &&
-                  typeof player2Score === 'number'
-                ) {
-                  import('../services/api').then(({ apiService }) => {
-                    apiService.tournaments.submitMatchResult(tournamentId, matchId, player1Score, player2Score)
-                      .then(({ data, error }) => {
-                        if (error) {
-                          console.error('[DEBUG] Error sending tournament match result:', error);
-                        } else {
-                          console.log('[DEBUG] Tournament match result sent successfully:', data);
-                          window.dispatchEvent(new Event('reloadDashboardStats'));
-                        }
-                      })
-                      .catch((err) => {
-                        console.error('[DEBUG] Error sending tournament match result (catch):', err);
-                      });
-                  });
-                } else {
-                  console.warn('[DEBUG] Missing matchId or scores, cannot send tournament match result to backend', {
-                    matchId,
-                    tournamentId,
-                    player1Score,
-                    player2Score
-                  });
-                }
-                if (matchNum === '1') {
-                  const match1Btn = document.querySelector('.start-match-btn[data-match="1"]') as HTMLButtonElement;
-                  if (match1Btn) {
-                    match1Btn.disabled = true;
-                    match1Btn.style.opacity = '0.5';
-                    match1Btn.title = 'Match 1 is finished';
-                  }
-                }
-                showBackToBracketButton();
-              });
-            }
+              }
+              // Do not show modal here; it will be shown by the gamePage callback
+            }, 1000);
           });
         });
       });
@@ -823,7 +689,6 @@ function showBracket(players: string[], tournamentId?: number) {
       line.classList.remove('active');
     });
   }
-  // @ts-ignore
   function newTournament() {
     if (confirm('🔄 Start a completely new tournament?\n\nThis will reset all progress.')) {
       resetTournament();
@@ -839,7 +704,6 @@ function showBracket(players: string[], tournamentId?: number) {
   // controls removed
 }
 
-// @ts-ignore
 function createMatchBox(playerA: string, playerB: string, label: string, isFinal: boolean = false) {
   const box = document.createElement('div');
   box.className = isFinal ? 'match finals-match' : 'match';

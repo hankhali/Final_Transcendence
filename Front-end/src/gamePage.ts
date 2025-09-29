@@ -346,6 +346,10 @@ export class GamePage {
     // Game end callback
     this.game.onGameEndCallback((winner, gameTime) => {
       this.showGameEndModal(winner, gameTime);
+      // If tournament mode, call onNavigateBack to show bracket modal
+      if (this.gameMode === 'tournament' && typeof this.onNavigateBack === 'function') {
+        this.onNavigateBack();
+      }
     });
   }
 

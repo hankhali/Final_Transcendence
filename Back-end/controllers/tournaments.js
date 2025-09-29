@@ -72,16 +72,6 @@ async function joinTournament(tournamentId, playerId, alias){
         throw new Error('This nickname is already taken in this tournament');
     }
 
-    const validateUser = db.prepare(`SELECT id FROM users WHERE id = ?`).get(playerId);
-    if (validateUser){
-        //it means it is a registered user
-        playerId = validateUser.id;
-    }
-    else{
-        //it means that is a guest player and ID should be NULL
-        playerId = null;
-    }
-    
     //make sure this player isnt joining the tournament for the second time, why not? players could rejoin if they accdietnly left the tournament
     const checkPlayer = db.prepare('SELECT * FROM tournament_players WHERE tournament_id = ? AND player_id = ?').get(tournamentId, playerId);
     if(checkPlayer){
