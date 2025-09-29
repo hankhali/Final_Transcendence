@@ -37,7 +37,6 @@ async function tournamentRoutes(fastify, options){
     fastify.post('/tournaments/:id/join', { preHandler: [fastify.authenticate] }, async (request, reply) => {
         try{
             const tournament_id = Number(request.params.id);
-            //take the player_id from the auth user
             const player_id = request.user.id;
             const { tournament_alias } = request.body;
             const join = await joinTournament(tournament_id, player_id, tournament_alias);
@@ -45,6 +44,19 @@ async function tournamentRoutes(fastify, options){
         }
         catch(error){
             return reply.code(400).send({error: error.message}); //debug
+        }
+    });
+
+    //join tournament for guest players
+    fastify.post('/tournaments/:id/join-guest', async (request, reply) => {
+        try{
+            const tournament_id = Number(request.params.id);
+            const { tournament_alias } = request.body;
+            const joinGuest = await joinTournament(tournament_id, null, tournament_alias);
+            return reply.code(200).send(joinGuest);
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
         }
     });
 

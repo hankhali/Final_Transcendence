@@ -11,6 +11,7 @@ async function createTables() {
         username TEXT NOT NULL UNIQUE,
         password TEXT,
         email TEXT UNIQUE,
+        bio TEXT,
         avatar TEXT DEFAULT 'default.jpg',
         current_status TEXT DEFAULT 'offline',
         player_matches INTEGER DEFAULT 0,
@@ -52,7 +53,7 @@ async function createTables() {
       CREATE TABLE IF NOT EXISTS tournament_players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tournament_id INTEGER NOT NULL,
-        player_id INTEGER NOT NULL,
+        player_id INTEGER,
         tournament_alias TEXT NOT NULL,
         status TEXT DEFAULT 'joined',
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

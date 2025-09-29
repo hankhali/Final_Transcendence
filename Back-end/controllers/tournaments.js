@@ -72,6 +72,16 @@ async function joinTournament(tournamentId, playerId, alias){
         throw new Error('This nickname is already taken in this tournament');
     }
 
+    const validateUser = db.prepare(`SELECT id FROM users WHERE id = ?`).get(playerId);
+    if (validateUser){
+        //it means it is a registered user
+        playerId = validateUser.id;
+    }
+    else{
+        //it means that is a guest player and ID should be NULL
+        playerId = null;
+    }
+    
     //make sure this player isnt joining the tournament for the second time, why not? players could rejoin if they accdietnly left the tournament
     const checkPlayer = db.prepare('SELECT * FROM tournament_players WHERE tournament_id = ? AND player_id = ?').get(tournamentId, playerId);
     if(checkPlayer){
@@ -223,14 +233,7 @@ async function startTournament(tournamentId){
     if(!tournament){
         throw new Error('Tournament not found');
     }
-    // Count joined players
-    const joinedPlayers = db.prepare("SELECT COUNT(*) as total FROM tournament_players WHERE tournament_id = ? AND status = 'joined'").get(tournamentId).total;
-    console.log(`[DEBUG] Joined players for tournament ${tournamentId}:`, joinedPlayers);
-    if (joinedPlayers < 2) {
-        console.error(`[ERROR] Not enough players to start tournament ${tournamentId}. Need at least 2, got ${joinedPlayers}`);
-        return { message: `Not enough players to start tournament.`, matches: [] };
-    }
-    db.prepare(`UPDATE tournaments SET status = 'started', finished_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
+    db.prepare(`UPDATE tournaments SET status = 'started', played_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
 
     // Log all matchIds in game_history for this tournament
     const allMatches = db.prepare('SELECT id, user_id, opponent_id, round, tournament_id FROM game_history WHERE tournament_id = ?').all(tournamentId);
@@ -283,7 +286,7 @@ async function updateMatchResults(matchId, userScore, opponentScore){
 
     //update game history with match results
     const updateMatch = db.prepare(`UPDATE game_history
-        SET user_score = ?, opponent_score = ?, winner_id = ?, loser_id = ?, finished_at = CURRENT_TIMESTAMP
+        SET user_score = ?, opponent_score = ?, winner_id = ?, loser_id = ?, played_at = CURRENT_TIMESTAMP
         WHERE id = ?`).run(userScore, opponentScore, winner, loser, matchId);
 
     console.log('[DEBUG] updateMatchResults DB update:', updateMatch);
