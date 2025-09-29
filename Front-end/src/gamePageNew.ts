@@ -3,6 +3,8 @@ import { PongGame, create1v1Game, createAIGame } from './pongGame.js';
 
 export class GamePage {
   private container: HTMLElement;
+  // Bracket match state: 0 = not started, 1 = in progress, 2 = finished
+  private matches = [0, 0]; // [match1, match2]
   private game: PongGame | null = null;
   private gameCanvas: HTMLCanvasElement | null = null;
   private gameMode: '1v1' | 'ai' = '1v1';
@@ -17,10 +19,10 @@ export class GamePage {
   // Customization removed: always basic Pong
 
   public render1v1Game(): void {
-  this.gameMode = '1v1';
-  this.renderGameInterface();
-  this.hideGameEndModal(); // Ensure modal is hidden on new game
-  this.initializeGame();
+    this.gameMode = '1v1';
+    this.renderBracketInterface();
+    this.hideGameEndModal(); // Ensure modal is hidden on new game
+    this.initializeGame();
   }
 
   public renderAIGame(difficulty: 'easy' | 'medium' | 'hard' = 'medium'): void {
@@ -31,91 +33,82 @@ export class GamePage {
   }
 
   private renderGameInterface(): void {
-    this.container.innerHTML = `
-      <div class="game-page">
-        <!-- Game Header -->
-        <div class="game-header">
-          <div class="game-controls">
-            <button id="back-btn" class="game-btn secondary">
-              <i class="fas fa-arrow-left"></i>
-              Back
-            </button>
-            <div class="game-info">
-              <h2 class="game-title">
-                ${this.gameMode === '1v1' ? '1v1 Battle' : 'AI Challenge'}
-              </h2>
-              <div class="game-status" id="game-status">Ready to Play</div>
-            </div>
-            <div style="display:flex; gap:.5rem;">
-              <button id="fullscreen-btn" class="game-btn secondary">
-                <i class="fas fa-expand"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Game Container -->
-        <div class="game-container" id="game-container">
-          <div class="game-canvas-wrapper">
-            <canvas id="game-canvas" class="game-canvas" tabindex="0"></canvas>
-            
-            <!-- Game Overlay -->
-            <div class="game-overlay" id="game-overlay">
-              <div class="game-overlay-content">
-                <div class="game-logo">
-                  <i class="fas fa-gamepad"></i>
-                </div>
-                <h3>Ready to Play!</h3>
-                  <p class="controls-info">
-                    <strong>Player 1:</strong> W/S or Arrow Keys<br>
-                    ${this.gameMode === '1v1' ? '<strong>Player 2:</strong> I/K or Mouse<br><span style="font-weight:normal;">Player 1 vs Player 2</span>' : '<strong>AI:</strong> Automated<br><span style="font-weight:normal;">Player 1 vs AI</span>'}
-                  </p>
-                <button id="start-game-btn" class="game-btn primary">
-                  <i class="fas fa-play"></i>
-                  Start Game
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Game Stats -->
-          <div class="game-stats" id="game-stats">
-            <div class="stat-card">
-              <div class="stat-label">Player 1</div>
-              <div class="stat-value" id="player1-score">0</div>
-              <div class="stat-name" id="player1-name">Player 1</div>
-            </div>
-            
-            <div class="stat-card center">
-              <div class="stat-label">Time</div>
-              <div class="stat-value" id="game-time">00:00</div>
-              <div class="game-actions">
-                <button id="pause-btn" class="game-btn small" title="Pause (Space)">
-                  <i class="fas fa-pause"></i>
-                </button>
-                <button id="reset-btn" class="game-btn small" title="Reset (R)">
-                  <i class="fas fa-redo"></i>
-                </button>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-label">${this.gameMode === '1v1' ? 'Player 2' : 'AI'}</div>
-              <div class="stat-value" id="player2-score">0</div>
-              <div class="stat-name" id="player2-name">${this.gameMode === '1v1' ? 'Player 2' : 'AI'}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Game End Modal REMOVED -->
-      </div>
-    `;
-
+    this.container.innerHTML = '';
+    // ...existing code...
+    this.renderBracketInterface();
     this.setupEventListeners();
-    // Explicitly hide the Game Over modal by setting its display to 'none'
     const modal = document.getElementById('game-end-modal');
     if (modal) modal.style.display = 'none';
-    this.hideGameEndModal(); // Hide modal when rendering interface
+    this.hideGameEndModal();
+  // Render a simple bracket UI with two matches and lock logic
+  private renderBracketInterface(): void {
+    this.container.innerHTML = `
+      <div class="bracket-section" style="margin-bottom:2rem;">
+        <h2>Tournament Bracket</h2>
+        <div style="display:flex; gap:2rem;">
+          <div>
+            <h3>Match 1</h3>
+            <button id="start-match1-btn" class="game-btn primary" ${this.matches[0] === 1 ? 'disabled' : ''}>
+              ${this.matches[0] === 0 ? 'Start Match 1' : this.matches[0] === 1 ? 'Match 1 In Progress' : 'Match 1 Finished'}
+            </button>
+          </div>
+          <div>
+            <h3>Match 2</h3>
+            <button id="start-match2-btn" class="game-btn primary" ${this.matches[0] !== 2 ? 'disabled' : ''}>
+              ${this.matches[1] === 0 ? 'Start Match 2' : this.matches[1] === 1 ? 'Match 2 In Progress' : 'Match 2 Finished'}
+            </button>
+            <div style="color:#888; font-size:0.9em; margin-top:.5em;">
+              ${this.matches[0] !== 2 ? 'Locked until Match 1 is finished' : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="game-interface"></div>
+    `;
+    this.setupBracketEventListeners();
+  }
+
+  // Setup event listeners for bracket buttons
+  private setupBracketEventListeners(): void {
+    const match1Btn = document.getElementById('start-match1-btn');
+    const match2Btn = document.getElementById('start-match2-btn');
+    if (match1Btn) {
+      match1Btn.addEventListener('click', () => {
+        this.matches[0] = 1; // Match 1 in progress
+        this.renderBracketInterface();
+        // Optionally render the game for match 1
+        this.renderGameInterfaceInBracket(1);
+      });
+    }
+    if (match2Btn) {
+      match2Btn.addEventListener('click', () => {
+        this.matches[1] = 1; // Match 2 in progress
+        this.renderBracketInterface();
+        this.renderGameInterfaceInBracket(2);
+      });
+    }
+  }
+
+  // Render the game interface inside the bracket section
+  private renderGameInterfaceInBracket(matchNum: number): void {
+    const gameDiv = document.getElementById('game-interface');
+    if (!gameDiv) return;
+    gameDiv.innerHTML = `
+      <div class="game-header">
+        <h3>Playing Match ${matchNum}</h3>
+        <button id="end-match-btn" class="game-btn secondary">End Match</button>
+      </div>
+      <div style="margin-top:1rem;">Game UI would go here.</div>
+    `;
+    const endBtn = document.getElementById('end-match-btn');
+    if (endBtn) {
+      endBtn.addEventListener('click', () => {
+        this.matches[matchNum-1] = 2; // Mark match as finished
+        gameDiv.innerHTML = '';
+        this.renderBracketInterface();
+      });
+    }
+  }
   }
 
   private initializeGame(): void {

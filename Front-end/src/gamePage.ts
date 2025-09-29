@@ -514,17 +514,23 @@ export class GamePage {
         });
       } else if (this.gameMode === 'tournament' && typeof tournamentId === 'number') {
         import('./services/api.js').then(({ apiService }) => {
+          console.log('[DEBUG] Sending tournament match result:', {
+            tournamentId,
+            matchId,
+            player1Score,
+            player2Score
+          });
           apiService.tournaments.submitMatchResult(tournamentId, matchId, player1Score, player2Score)
             .then(({ data, error }) => {
               if (error) {
-                console.error('[ADDED] Error sending tournament match result:', error);
+                console.error('[DEBUG] Error sending tournament match result:', error);
               } else {
-                console.log('[ADDED] Tournament match result sent to backend:', data);
+                console.log('[DEBUG] Tournament match result sent successfully:', data);
                 window.dispatchEvent(new Event('reloadDashboardStats'));
               }
             })
             .catch((err: unknown) => {
-              console.error('[ADDED] Error sending tournament match result:', err);
+              console.error('[DEBUG] Error sending tournament match result (catch):', err);
             });
         });
       } else {

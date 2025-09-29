@@ -190,6 +190,21 @@ const apiService = {
 
   // Tournament related endpoints
   tournaments: {
+    // Submit match result (update scores and winner)
+    submitMatchResult: async (tournamentId, matchId, player1Score, player2Score) => {
+      console.log('[DEBUG] submitMatchResult called:', { tournamentId, matchId, player1Score, player2Score });
+      try {
+        const response = await fetchApi(`/tournaments/${tournamentId}/finish`, {
+          method: 'POST',
+          body: JSON.stringify({ matchId, userScore: player1Score, opponentScore: player2Score })
+        });
+        console.log('[DEBUG] submitMatchResult response:', response);
+        return response;
+      } catch (error) {
+        console.error('[DEBUG] submitMatchResult error:', error);
+        return { data: null, error, loading: false };
+      }
+    },
     //Create tournament (local, with 4 player names)
     create: async (name, maxPlayers, playerNames) => {
       return fetchApi("/tournaments", {
@@ -211,7 +226,7 @@ const apiService = {
 
     // Get specific tournament details
     getById: async (tournamentId) => {
-      return fetchApi("/tournaments/${tournamentId}", {
+      return fetchApi(`/tournaments/${tournamentId}` , {
         method: "GET"
       });
     },

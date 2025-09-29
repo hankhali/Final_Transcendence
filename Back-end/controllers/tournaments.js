@@ -223,7 +223,14 @@ async function startTournament(tournamentId){
     if(!tournament){
         throw new Error('Tournament not found');
     }
-    db.prepare(`UPDATE tournaments SET status = 'started', played_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
+    // Count joined players
+    const joinedPlayers = db.prepare("SELECT COUNT(*) as total FROM tournament_players WHERE tournament_id = ? AND status = 'joined'").get(tournamentId).total;
+    console.log(`[DEBUG] Joined players for tournament ${tournamentId}:`, joinedPlayers);
+    if (joinedPlayers < 2) {
+        console.error(`[ERROR] Not enough players to start tournament ${tournamentId}. Need at least 2, got ${joinedPlayers}`);
+        return { message: `Not enough players to start tournament.`, matches: [] };
+    }
+    db.prepare(`UPDATE tournaments SET status = 'started', finished_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
 
     // Log all matchIds in game_history for this tournament
     const allMatches = db.prepare('SELECT id, user_id, opponent_id, round, tournament_id FROM game_history WHERE tournament_id = ?').all(tournamentId);
@@ -276,7 +283,7 @@ async function updateMatchResults(matchId, userScore, opponentScore){
 
     //update game history with match results
     const updateMatch = db.prepare(`UPDATE game_history
-        SET user_score = ?, opponent_score = ?, winner_id = ?, loser_id = ?, played_at = CURRENT_TIMESTAMP
+        SET user_score = ?, opponent_score = ?, winner_id = ?, loser_id = ?, finished_at = CURRENT_TIMESTAMP
         WHERE id = ?`).run(userScore, opponentScore, winner, loser, matchId);
 
     console.log('[DEBUG] updateMatchResults DB update:', updateMatch);
