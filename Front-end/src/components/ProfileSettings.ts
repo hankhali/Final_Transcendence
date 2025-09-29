@@ -76,7 +76,7 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
       if (res.error) {
         showMessage(`Failed to upload avatar: ${res.error}`, 'error');
       } else {
-        avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${res.file}" alt="Avatar" class="avatar-img" />`;
+        avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${res.data.file}" alt="Avatar" class="avatar-img" />`;
         showMessage('Avatar uploaded successfully!', 'success');
       }
     } catch (err) {
@@ -359,124 +359,8 @@ function createFormField({
   return group;
 }
 
-// Function to show delete profile confirmation modal
-function showDeleteProfileModal() {
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay delete-profile-modal";
-  modal.innerHTML = `
-    <div class="modal-content">
-      <div class="modal-header danger-header">
-        <div class="modal-title">
-          <i class="fas fa-exclamation-triangle"></i>
-          Delete Profile
-        </div>
-        <button class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="delete-confirmation-content">
-          <div class="warning-icon">
-            <i class="fas fa-trash-alt"></i>
-          </div>
-          <h3>Are you absolutely sure?</h3>
-          <p class="warning-text">
-            This action <strong>cannot be undone</strong>. This will permanently delete your profile, 
-            including all your game history, statistics, friends, and achievements.
-          </p>
-          <div class="confirmation-input-group">
-            <label for="delete-confirmation">
-              Type <strong>DELETE</strong> to confirm:
-            </label>
-            <input 
-              type="text" 
-              id="delete-confirmation" 
-              placeholder="Type DELETE here"
-              class="confirmation-input"
-            />
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer danger-footer">
-        <button class="secondary-button modal-close">Cancel</button>
-        <button class="danger-button" id="confirm-delete-btn" disabled>
-          <i class="fas fa-trash-alt"></i>
-          Delete Profile Forever
-        </button>
-      </div>
-    </div>
-  `;
-
-  // Add confirmation input validation
-  const confirmInput = modal.querySelector('#delete-confirmation') as HTMLInputElement;
-  const confirmButton = modal.querySelector('#confirm-delete-btn') as HTMLButtonElement;
-  
-  confirmInput.addEventListener('input', () => {
-    if (confirmInput.value.trim().toUpperCase() === 'DELETE') {
-      confirmButton.disabled = false;
-      confirmButton.classList.add('enabled');
-    } else {
-      confirmButton.disabled = true;
-      confirmButton.classList.remove('enabled');
-    }
-  });
-
-  // Handle delete confirmation
-  confirmButton.addEventListener('click', async () => {
-    if (confirmInput.value.trim().toUpperCase() === 'DELETE') {
-      try {
-        // Show loading state
-        confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
-        confirmButton.disabled = true;
-        
-        // Add timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-          showMessage('Request timed out. Please try again.', 'error');
-          confirmButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Profile Forever';
-          confirmButton.disabled = false;
-        }, 10000);
-        
-        // Check for token before sending delete request
-        const token = localStorage.getItem('token');
-        if (!token) {
-          clearTimeout(timeoutId);
-          showMessage('You are not authenticated. Please log in before deleting your account.', 'error');
-          confirmButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Profile Forever';
-          confirmButton.disabled = false;
-          return;
-        }
-        // Call the actual API to delete the account
-        const res = await apiService.users.deleteMyAccount();
-
-        // Clear timeout since request completed
-        clearTimeout(timeoutId);
-        if (res.error) throw new Error(res.error);
-        showMessage('Account deleted successfully! Redirecting...', 'success');
-        localStorage.clear();
-        window.location.href = '/';
-        // modal.remove(); // Not needed, redirect happens instantly
-      } catch (error) {
-  console.error('Error deleting profile:', error);
-  const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-  showMessage(`Failed to delete profile: ${errorMsg}. Please try again.`, 'error');
-  confirmButton.innerHTML = '<i class="fas fa-trash-alt"></i> Delete Profile Forever';
-  confirmButton.disabled = false;
-      }
-    }
-  });
-
-  // Handle modal close
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal || (e.target as HTMLElement).classList.contains('modal-close')) {
-      modal.remove();
-    }
-  });
-
-  document.body.appendChild(modal);
-  
-  // Focus on the confirmation input
-  setTimeout(() => {
-    confirmInput.focus();
-  }, 100);
-}
+// Function to show delete profile confirmation modal - REMOVED (unused)
+// // function showDeleteProfileModal() { // REMOVED ... }
 
 // Use the global showMessage function from main.ts
 const showMessage = (window as any).showMessage || ((text: string, type: string) => {

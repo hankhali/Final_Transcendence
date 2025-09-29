@@ -3,7 +3,6 @@ import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
 import { showOpponentUsernameModal } from './components/OpponentUsernameModal';
 /// <reference path="./services/api.d.ts" />
 // Game Page Component - Handles the actual game interface
-import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
 
 export class GamePage {
   // hanieh added: Store tournament aliases
@@ -76,9 +75,9 @@ export class GamePage {
           console.error('[DEBUG] Tournament: Game canvas not found!');
           return;
         }
-        this.game = create1v1Game(this.gameCanvas);
-        this.game.matchId = 0;
-        this.game.tournamentId = this.getTournamentIdFromContext();
+        if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+        if (this.game) this.game.matchId = 0;
+        if (this.game) this.game.tournamentId = this.getTournamentIdFromContext();
         this.setupGameCallbacks();
         console.log('[DEBUG] Tournament: Game started with matchId 0 and tournamentId', this.game.tournamentId);
       });
@@ -130,9 +129,9 @@ export class GamePage {
         // Only remove modal on success
         if (modal) document.body.removeChild(modal);
         if (errorDiv) errorDiv.style.display = 'none';
-        this.game = create1v1Game(this.gameCanvas);
-        this.game.matchId = data.matchId;
-        this.game.tournamentId = undefined;
+        if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+        if (this.game) this.game.matchId = data.matchId;
+        if (this.game) this.game.tournamentId = undefined;
         this.setupGameCallbacks();
       });
     });
@@ -247,9 +246,9 @@ export class GamePage {
     if (this.gameMode === 'tournament') {
       const tournamentId = this.getTournamentIdFromContext();
       // Tournament game logic (replace with actual API call if needed)
-      this.game = create1v1Game(this.gameCanvas);
-      this.game.matchId = 0; // Replace with actual matchId from backend if needed
-      this.game.tournamentId = tournamentId;
+      if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+      if (this.game) this.game.matchId = 0; // Replace with actual matchId from backend if needed
+      if (this.game) this.game.tournamentId = tournamentId;
       this.setupGameCallbacks();
       console.log('[hanieh added] Tournament game created with tournamentId:', tournamentId);
       // Ensure opponent username modal is NOT shown in tournament mode
@@ -291,9 +290,9 @@ export class GamePage {
                 return;
               }
               if (this.gameCanvas) {
-                this.game = create1v1Game(this.gameCanvas);
-                this.game.matchId = matchId;
-                this.game.tournamentId = undefined;
+                if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+                if (this.game) this.game.matchId = matchId;
+                if (this.game) this.game.tournamentId = undefined;
                 this.setupGameCallbacks();
                 console.log('[hanieh added] 1v1 game created with matchId:', this.game.matchId);
               } else {
@@ -310,9 +309,9 @@ export class GamePage {
       }
     } else {
       // Non-tournament game (demo/AI)
-      this.game = create1v1Game(this.gameCanvas);
-      this.game.matchId = 0;
-      this.game.tournamentId = 1;
+      if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+      if (this.game) this.game.matchId = 0;
+      if (this.game) this.game.tournamentId = 1;
       this.setupGameCallbacks();
       console.log('Game created:', this.game);
     }
@@ -325,7 +324,7 @@ export class GamePage {
     // For AI games, use demo IDs (or adapt for tournament if needed)
     this.game = createAIGame(this.gameCanvas, difficulty);
     this.game.matchId = Date.now();
-    this.game.tournamentId = 1;
+    if (this.game) this.game.tournamentId = 1;
     this.setupGameCallbacks();
     // ...existing code...
   }
@@ -351,6 +350,7 @@ export class GamePage {
   }
 
     // hanieh added: openSettingsModal is not used, but kept for future settings modal logic
+  // @ts-ignore
   private openSettingsModal(): void {
     // Settings modal removed
   }
@@ -466,7 +466,7 @@ export class GamePage {
   }
 
     // hanieh added: showGameEndModal is not used, but kept for future modal logic
-  private showGameEndModal(winner: Player, gameTime: number): void {
+  private showGameEndModal(_winner: Player, _gameTime: number): void {
     // hanieh added: Send match result to backend for game history
     const matchId = this.game?.matchId;
     const tournamentId = this.game?.tournamentId;
@@ -484,7 +484,7 @@ export class GamePage {
         // hanieh added: Use onevone.submitResult for standalone 1v1
         import('./services/api.js').then(({ onevone }) => {
           onevone.submitResult(matchId, player1Score, player2Score)
-            .then(({ data, error }) => {
+            .then(({ data, error }: { data: any; error: any }) => {
               if (error) {
                 console.error('[hanieh added] Error sending 1v1 match result:', error);
               } else {
@@ -500,7 +500,7 @@ export class GamePage {
         // hanieh added: Save AI match result to backend
         import('./services/api.js').then(({ ai }) => {
           ai.submitResult(player1Score, player2Score)
-            .then(({ data, error }) => {
+            .then(({ data, error }: { data: any; error: any }) => {
               if (error) {
                 console.error('[hanieh added] Error sending AI match result:', error);
               } else {
@@ -521,7 +521,7 @@ export class GamePage {
             player2Score
           });
           apiService.tournaments.submitMatchResult(tournamentId, matchId, player1Score, player2Score)
-            .then(({ data, error }) => {
+            .then(({ data, error }: { data: any; error: any }) => {
               if (error) {
                 console.error('[DEBUG] Error sending tournament match result:', error);
               } else {

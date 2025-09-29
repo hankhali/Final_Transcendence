@@ -169,41 +169,8 @@ export function createFriendsSection(): HTMLElement {
     });
   }
 
-  // Add Friend Modal
-  function showAddFriendModal() {
-    const modal = document.createElement("div");
-    modal.className = "modal-overlay";
-    modal.innerHTML = `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Add Friend</h3>
-          <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <input type="text" id="friend-id" placeholder="Enter friend ID..." />
-        </div>
-        <div class="modal-footer">
-          <button class="secondary-button modal-close">Cancel</button>
-          <button class="primary-button" id="send-friend-request">Send Request</button>
-        </div>
-      </div>
-    `;
-    modal.querySelectorAll(".modal-close").forEach(btn => btn.addEventListener("click", () => modal.remove()));
-    modal.querySelector("#send-friend-request")!.addEventListener("click", () => {
-      const friendId = (modal.querySelector("#friend-id") as HTMLInputElement).value.trim();
-      if (friendId) {
-        apiService.users.addFriends(parseInt(friendId)).then((res) => {
-          showMessage(res.data?.message || "Request sent!");
-          modal.remove();
-          loadPendingRequests();
-        });
-      }
-    });
-    document.body.appendChild(modal);
-  }
-
   // Remove friend
-  function removeFriend(friendId: number) {
+  function removeFriend(_friendId: number) {
     // TODO: Implement backend remove friend endpoint
     showMessage("Friend removed successfully.");
     loadFriends();

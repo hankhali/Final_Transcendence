@@ -1,6 +1,6 @@
 import { apiService } from "../services/api.js";
 
-export async function renderMatchHistory(tournamentId, containerId = "match-history") {
+export async function renderMatchHistory(tournamentId: any, containerId: string = "match-history") {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = "<h3>Loading match history...</h3>";
@@ -31,7 +31,7 @@ export async function renderMatchHistory(tournamentId, containerId = "match-hist
           </tr>
         </thead>
         <tbody>
-          ${matches.map(match => `
+          ${matches.map((match: any) => `
             <tr>
               <td>${match.id}</td>
               <td>${match.user_id}</td>
@@ -46,7 +46,8 @@ export async function renderMatchHistory(tournamentId, containerId = "match-hist
         </tbody>
       </table>
     `;
-  } catch (err) {
-    container.innerHTML = `<div class='error'>Error loading match history: ${err.message}</div>`;
+  } catch (err: unknown) {
+    const error = err as Error;
+    container.innerHTML = `<div class='error'>Error loading match history: ${error.message}</div>`;
   }
 }
