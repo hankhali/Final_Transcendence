@@ -81,21 +81,19 @@ export class GamePage {
         this.setupGameCallbacks();
         console.log('[DEBUG] Tournament: Game started with matchId 0 and tournamentId', this.game.tournamentId);
       });
-      return;
     }
     // Only show modal for direct 1v1
     this.gameMode = '1v1';
     this.renderGameInterface();
     console.log('[DEBUG] Showing opponent username modal for direct 1v1');
-    window.requestAnimationFrame(() => {
+    import('./components/OpponentUsernameModal').then(({ showOpponentUsernameModal }) => {
       showOpponentUsernameModal((opponentUsername: string) => {
-        console.log('[DEBUG] Opponent username submitted:', opponentUsername);
         this.initializeGameWithOpponent(opponentUsername);
       });
     });
   }
 
-  public initializeGameWithOpponent(opponentUsername: string): void {
+  private initializeGameWithOpponent(opponentUsername: string): void {
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     if (!this.gameCanvas) return;
     import('./services/api.js').then(({ onevone }) => {
@@ -505,6 +503,12 @@ export class GamePage {
         isLocalTournament,
         hasLocalTournamentId
       });
+      
+      // Call tournament result handler if available
+      if ((window as any).tournamentResultHandler && typeof matchId === 'number' && typeof player1Score === 'number' && typeof player2Score === 'number') {
+        console.log('[DEBUG] Calling tournament result handler');
+        (window as any).tournamentResultHandler(matchId, player1Score, player2Score);
+      }
       return;
     }
     

@@ -542,7 +542,32 @@ function showBracket(players: string[]) {
         
         import('../gamePage').then(({ create1v1GamePage }) => {
           const gamePage = create1v1GamePage(gameContainer, () => {
-            // Simple callback for navigation back
+            console.log('[DEBUG] TournamentModal onNavigateBack callback triggered');
+            
+            // DIRECT APPROACH: Check game result immediately when callback is triggered
+            setTimeout(() => {
+              if (gamePage.game) {
+                const player1Score = gamePage.game.getPlayers().player1.score;
+                const player2Score = gamePage.game.getPlayers().player2.score;
+                
+                console.log('[DEBUG] DIRECT: Game scores detected:', { player1Score, player2Score, playerA, playerB });
+                
+                if (player1Score >= 5 || player2Score >= 5) {
+                  const winner = player1Score > player2Score ? playerA : playerB;
+                  console.log('[DEBUG] DIRECT: Tournament winner determined:', winner);
+                  
+                  // Store result in global match results
+                  if (!(window as any).globalMatchResults) {
+                    (window as any).globalMatchResults = {};
+                  }
+                  
+                  (window as any).globalMatchResults[matchNum] = winner;
+                  console.log('[DEBUG] DIRECT: Updated globalMatchResults:', (window as any).globalMatchResults);
+                  console.log('[DEBUG] DIRECT: Winner will be displayed when bracket is shown');
+                }
+              }
+            }, 100);
+            
             showGameOverModal();
           });
           
@@ -698,6 +723,68 @@ function showBracket(players: string[]) {
     app.appendChild(bracket);
   } else {
     document.body.appendChild(bracket);
+  }
+
+  // Display winners from globalMatchResults
+  console.log('[DEBUG] Checking for stored winners:', (window as any).globalMatchResults);
+  if ((window as any).globalMatchResults) {
+    const results = (window as any).globalMatchResults;
+    
+    // Update Match 1 winner
+    if (results['1']) {
+      console.log('[DEBUG] Displaying Match 1 winner:', results['1']);
+      const match1Element = bracket.querySelector('[data-match="1"]');
+      if (match1Element) {
+        // Add winner display to match 1
+        const winnerDiv = document.createElement('div');
+        winnerDiv.className = 'match-winner';
+        winnerDiv.innerHTML = `<strong>🏆 Winner: ${results['1']}</strong>`;
+        winnerDiv.style.cssText = 'color: #4CAF50; font-weight: bold; text-align: center; margin-top: 10px; font-size: 1.1em;';
+        match1Element.appendChild(winnerDiv);
+        
+        // Update final match placeholder
+        const finalMatch = bracket.querySelector('[data-from="match1"]');
+        if (finalMatch) {
+          finalMatch.textContent = results['1'];
+          finalMatch.classList.remove('placeholder');
+          finalMatch.style.color = '#4CAF50';
+        }
+      }
+    }
+    
+    // Update Match 2 winner
+    if (results['2']) {
+      console.log('[DEBUG] Displaying Match 2 winner:', results['2']);
+      const match2Element = bracket.querySelector('[data-match="2"]');
+      if (match2Element) {
+        // Add winner display to match 2
+        const winnerDiv = document.createElement('div');
+        winnerDiv.className = 'match-winner';
+        winnerDiv.innerHTML = `<strong>🏆 Winner: ${results['2']}</strong>`;
+        winnerDiv.style.cssText = 'color: #4CAF50; font-weight: bold; text-align: center; margin-top: 10px; font-size: 1.1em;';
+        match2Element.appendChild(winnerDiv);
+        
+        // Update final match placeholder
+        const finalMatch = bracket.querySelector('[data-from="match2"]');
+        if (finalMatch) {
+          finalMatch.textContent = results['2'];
+          finalMatch.classList.remove('placeholder');
+          finalMatch.style.color = '#4CAF50';
+        }
+      }
+    }
+    
+    // Update Final winner
+    if (results['final']) {
+      console.log('[DEBUG] Displaying Final winner:', results['final']);
+      const finalElement = bracket.querySelector('[data-match="final"]');
+      if (finalElement) {
+        const winnerDiv = document.createElement('div');
+        winnerDiv.className = 'tournament-champion';
+        winnerDiv.innerHTML = `<h2 style="color: #FFD700; text-align: center; margin-top: 20px;">🏆 CHAMPION: ${results['final']} 🏆</h2>`;
+        finalElement.appendChild(winnerDiv);
+      }
+    }
   }
 
   // Interactive logic
