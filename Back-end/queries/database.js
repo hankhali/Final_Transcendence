@@ -22,7 +22,7 @@ async function createTables() {
       CREATE TABLE IF NOT EXISTS game_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        opponent_id INTEGER NOT NULL,
+        opponent_id INTEGER,
         user_score INTEGER NOT NULL,
         opponent_score INTEGER NOT NULL,
         result TEXT NOT NULL, /* 'WIN', 'LOSS', 'DRAW' */

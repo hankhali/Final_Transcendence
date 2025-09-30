@@ -455,6 +455,7 @@ function showBracket(players: string[]) {
   startBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const matchNum = (btn as HTMLButtonElement).getAttribute('data-match');
+      console.log('[DEBUG] Start Match button clicked:', { matchNum, btn });
       // Prevent Match 2 if Match 1 not finished
       if (matchNum === '2' && !matchWinners[1]) {
         btn.disabled = true;
@@ -472,8 +473,9 @@ function showBracket(players: string[]) {
         playerA = players[2];
         playerB = players[3];
       }
+      console.log('[DEBUG] About to call startGame with:', { playerA, playerB, matchNum });
       // Call your real game logic here
-      startGame(playerA, playerB, matchNum, btn);
+      startGame(playerA, playerB, matchNum);
     });
   });
   // Enable Match 2 button when Match 1 is finished
@@ -491,72 +493,153 @@ function showBracket(players: string[]) {
     enableMatch2IfReady();
   };
 
-  // Real game integration stub
-  function startGame(playerA: string, playerB: string, matchNum: string | null) {
-    // Launch the real pong game in the current view
-    const app = document.getElementById("app");
-    if (app) {
-      let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
-      if (!gameContainer) {
-        gameContainer = document.createElement("div");
-        gameContainer.id = "game-container-wrapper";
-        gameContainer.className = "game-container-wrapper";
-        app.innerHTML = '';
-        app.appendChild(gameContainer);
-      } else {
-        gameContainer.innerHTML = '';
+  // Real game integration using 1v1 system (from memory approach)
+  async function startGame(playerA: string, playerB: string, matchNum: string | null) {
+    console.log('[DEBUG] TournamentModal startGame called with:', { playerA, playerB, matchNum });
+    try {
+      // Use local tournament API for guest players, but set 1v1 mode for UI
+      const { localTournament } = await import('../services/api.js');
+      const matchResponse = await localTournament.startMatch(playerA, playerB, `match${matchNum}`);
+      
+      if (matchResponse.error) {
+        throw new Error(matchResponse.error);
       }
-      // Create navigation back function
-      const navigateBack = () => {
-        window.location.reload(); // Or navigate to tournament page if you want
-      };
-      // hanieh added: get tournamentId from context or pass as argument if needed
-      const tournamentId = 1; // TODO: Replace with actual tournamentId from context
-      // Fetch matches using apiService.tournaments.getById
-      import('../services/api').then(({ apiService }) => {
-        apiService.tournaments.getById(tournamentId).then(response => {
-          const matches = response.data && response.data.matches ? response.data.matches : [];
-          // hanieh added: filter by tournament_id
-          const filteredMatches = matches.filter(m => m.tournament_id === tournamentId);
-          const match = filteredMatches.find(m =>
-            ((m.player1 === playerA && m.player2 === playerB) || (m.player1 === playerB && m.player2 === playerA)) && m.round === matchNum
-          );
-          const matchId = match ? (match.matchId || match.id) : 0;
-          import('../gamePage').then(({ create1v1GamePage }) => {
-            // Set tournament flags to block modal
-            (window as any).currentTournamentMatch = true;
-            (window as any).gamePageSuppressModal = true;
-            (window as any).gamePageMode = 'tournament';
-            const gamePage = create1v1GamePage(gameContainer, () => {
-              // After game ends, show the modal and update bracket
-              showGameOverModal();
-            });
-            if (gamePage.setPlayerNames) {
-              gamePage.setPlayerNames(playerA, playerB);
-            }
-            // Set the real matchId for result submission
-            if (gamePage.game) {
-              gamePage.game.matchId = matchId;
-            }
-            // Clear flags after game is initialized
-            setTimeout(() => {
-              delete (window as any).currentTournamentMatch;
-              delete (window as any).gamePageSuppressModal;
-              delete (window as any).gamePageMode;
-              // After match ends, disable button
-              if (matchNum === '1') {
-                const match1Btn = document.querySelector('.start-match-btn[data-match="1"]') as HTMLButtonElement;
-                if (match1Btn) {
-                  match1Btn.disabled = true;
-                  match1Btn.style.opacity = '0.5';
-                  match1Btn.title = 'Match 1 is finished';
-                }
-              }
-              // Do not show modal here; it will be shown by the gamePage callback
-            }, 1000);
-          });
+      
+      const matchId = matchResponse.data?.matchId;
+      
+      if (!matchId) {
+        throw new Error('Failed to create match - no matchId returned');
+      }
+      
+      // Launch the real pong game in the current view
+      const app = document.getElementById("app");
+      if (app) {
+        let gameContainer = document.getElementById("game-container-wrapper") as HTMLElement;
+        if (!gameContainer) {
+          gameContainer = document.createElement("div");
+          gameContainer.id = "game-container-wrapper";
+          gameContainer.className = "game-container-wrapper";
+          app.innerHTML = '';
+          app.appendChild(gameContainer);
+        } else {
+          gameContainer.innerHTML = '';
+        }
+        
+        // Set tournament flags BEFORE creating the game (use localTournament mode)
+        (window as any).currentTournamentMatch = true;
+        (window as any).gamePageSuppressModal = true;
+        (window as any).gamePageMode = 'localTournament'; // Use localTournament mode
+        (window as any).localTournamentMatchId = matchId;
+        (window as any).localTournamentPlayers = { playerA, playerB };
+        (window as any).suppressGamePageResultSubmission = true; // Suppress gamePage submission
+        
+        console.log('[DEBUG] TournamentModal: Setting flags before game creation:', {
+          gamePageMode: (window as any).gamePageMode,
+          suppressGamePageResultSubmission: (window as any).suppressGamePageResultSubmission,
+          localTournamentMatchId: (window as any).localTournamentMatchId,
+          matchId
         });
-      });
+        
+        import('../gamePage').then(({ create1v1GamePage }) => {
+          const gamePage = create1v1GamePage(gameContainer, () => {
+            // Simple callback for navigation back
+            showGameOverModal();
+          });
+          
+          if (gamePage.setPlayerNames) {
+            gamePage.setPlayerNames(playerA, playerB);
+          }
+          
+          // Set the matchId for result submission with a delay to ensure game is initialized
+          setTimeout(() => {
+            if (gamePage.game) {
+              console.log('[DEBUG] Setting matchId on game:', matchId);
+              gamePage.game.matchId = matchId;
+              // Clear any tournamentId that might be set
+              gamePage.game.tournamentId = undefined;
+              console.log('[DEBUG] Game object after setting IDs:', {
+                matchId: gamePage.game.matchId,
+                tournamentId: gamePage.game.tournamentId
+              });
+            }
+          }, 100);
+          
+          // Set the onGameEndCallback for bracket winner logic and result submission
+          if (gamePage.game) {
+            // Use the game's onGameEndCallback for handling both result submission and bracket updates
+            gamePage.game.onGameEndCallback(async (winner: any, _gameTime: number) => {
+              // Handle both result submission and bracket update
+              try {
+                // Get winner name and scores
+                const winnerName = winner.name;
+                const players = gamePage.game?.getPlayers();
+                const player1Score = players?.player1.score || 0;
+                const player2Score = players?.player2.score || 0;
+                
+                console.log('[DEBUG] Local tournament match ended. Winner:', winnerName, 'Scores:', player1Score, player2Score);
+                
+                // Submit result to local tournament API
+                const { localTournament } = await import('../services/api.js');
+                await localTournament.finishMatch(matchId, player1Score, player2Score, winnerName);
+                console.log('[DEBUG] Match result submitted to backend');
+                
+                // Update bracket with winner using globalMatchResults approach from memory
+                if (!(window as any).globalMatchResults) {
+                  (window as any).globalMatchResults = {};
+                }
+                
+                // Store result in globalMatchResults (from memory approach)
+                (window as any).globalMatchResults[matchNum || 'unknown'] = winnerName;
+                
+                // Update bracket display
+                if (matchNum === '1') {
+                  matchWinners[1] = winnerName;
+                  const match1Btn = document.querySelector('.start-match-btn[data-match="1"]') as HTMLButtonElement;
+                  if (match1Btn) {
+                    match1Btn.disabled = true;
+                    match1Btn.style.opacity = '0.5';
+                    match1Btn.title = 'Match 1 is finished';
+                  }
+                  enableMatch2IfReady();
+                } else if (matchNum === '2') {
+                  matchWinners[2] = winnerName;
+                  const match2Btn = document.querySelector('.start-match-btn[data-match="2"]') as HTMLButtonElement;
+                  if (match2Btn) {
+                    match2Btn.disabled = true;
+                    match2Btn.style.opacity = '0.5';
+                    match2Btn.title = 'Match 2 is finished';
+                  }
+                }
+                
+                // Update final match display
+                updateFinalMatch();
+                
+                console.log('[DEBUG] Bracket updated. Match winners:', matchWinners);
+                
+                // Trigger dashboard stats reload
+                window.dispatchEvent(new Event('reloadDashboardStats'));
+                
+              } catch (error) {
+                console.error('Error handling local tournament match result:', error);
+                alert('Error saving match result. Please try again.');
+              }
+            });
+          }
+          
+          // Clear flags after game is initialized
+          setTimeout(() => {
+            delete (window as any).currentTournamentMatch;
+            delete (window as any).gamePageSuppressModal;
+            delete (window as any).gamePageMode;
+            delete (window as any).localTournamentMatchId;
+            delete (window as any).localTournamentPlayers;
+            delete (window as any).suppressGamePageResultSubmission;
+          }, 1000);
+        });
+      }
+    } catch (error) {
+      console.error('Error starting local tournament match:', error);
+      alert('Error starting match. Please make sure you are logged in and try again.');
     }
   }
 

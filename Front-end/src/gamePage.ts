@@ -476,13 +476,38 @@ export class GamePage {
     const tournamentId = this.game?.tournamentId;
     const player1Score = this.game?.getPlayers().player1.score;
     const player2Score = this.game?.getPlayers().player2.score;
-    console.log('[DEBUG] Preparing to submit match result:', {
+    console.log('[DEBUG] Preparing to submit match result [UPDATED 16:38]:', {
       matchId,
       tournamentId,
       player1Score,
       player2Score,
-      game: this.game
+      game: this.game,
+      gameMode: this.gameMode,
+      suppressSubmission: (window as any).suppressGamePageResultSubmission,
+      allWindowFlags: {
+        currentTournamentMatch: (window as any).currentTournamentMatch,
+        gamePageSuppressModal: (window as any).gamePageSuppressModal,
+        gamePageMode: (window as any).gamePageMode,
+        localTournamentMatchId: (window as any).localTournamentMatchId,
+        suppressGamePageResultSubmission: (window as any).suppressGamePageResultSubmission
+      }
     });
+    
+    // Check if result submission is suppressed (e.g., handled by TournamentModal)
+    const suppressFlag = (window as any).suppressGamePageResultSubmission;
+    const isLocalTournament = this.gameMode === 'localTournament';
+    const hasLocalTournamentId = (window as any).localTournamentMatchId;
+    
+    if (suppressFlag || isLocalTournament || hasLocalTournamentId) {
+      console.log('[DEBUG] Result submission suppressed - handled externally', {
+        suppressFlag,
+        gameMode: this.gameMode,
+        isLocalTournament,
+        hasLocalTournamentId
+      });
+      return;
+    }
+    
     if (typeof matchId === 'number' && typeof player1Score === 'number' && typeof player2Score === 'number') {
       if (this.gameMode === '1v1') {
         // hanieh added: Use onevone.submitResult for standalone 1v1
@@ -514,6 +539,31 @@ export class GamePage {
             })
             .catch((err: unknown) => {
               console.error('[hanieh added] Error sending AI match result:', err);
+            });
+        });
+      } else if (this.gameMode === 'localTournament') {
+        // hanieh added: Handle local tournament matches using localTournament API
+        const winner = this.game?.gameState.winner;
+        const winnerName = winner?.name || 'Unknown';
+        
+        import('./services/api.js').then(({ localTournament }) => {
+          console.log('[DEBUG] Sending local tournament match result:', {
+            matchId,
+            player1Score,
+            player2Score,
+            winnerName
+          });
+          localTournament.finishMatch(matchId, player1Score, player2Score, winnerName)
+            .then(({ data, error }: { data: any; error: any }) => {
+              if (error) {
+                console.error('[DEBUG] Error sending local tournament match result:', error);
+              } else {
+                console.log('[DEBUG] Local tournament match result sent successfully:', data);
+                window.dispatchEvent(new Event('reloadDashboardStats'));
+              }
+            })
+            .catch((err: unknown) => {
+              console.error('[DEBUG] Error sending local tournament match result (catch):', err);
             });
         });
       } else if (this.gameMode === 'tournament' && typeof tournamentId === 'number') {

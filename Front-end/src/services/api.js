@@ -7,6 +7,25 @@ const ai = {
     });
   }
 };
+
+// hanieh added: Local tournament endpoints
+const localTournament = {
+  // Start a local tournament match
+  startMatch: async (player1Name, player2Name, round) => {
+    return fetchApi('/tournaments/local-match', {
+      method: 'POST',
+      body: JSON.stringify({ player1Name, player2Name, round })
+    });
+  },
+  
+  // Finish a local tournament match
+  finishMatch: async (matchId, player1Score, player2Score, winnerName) => {
+    return fetchApi('/tournaments/local-match/finish', {
+      method: 'POST',
+      body: JSON.stringify({ matchId, player1Score, player2Score, winnerName })
+    });
+  }
+};
 // hanieh added: Standalone 1v1 match endpoints
 const onevone = {
   start: async (player2Username) => {
@@ -251,4 +270,4 @@ const apiService = {
 };
 
 
-export { fetchApi, apiService, onevone, ai }; // hanieh added
+export { fetchApi, apiService, onevone, ai, localTournament }; // hanieh added
