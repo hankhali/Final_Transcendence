@@ -113,6 +113,9 @@ export function showTournamentBracketModal() {
         grid-template-columns: 1fr 1fr;
         gap: 32px;
         margin-bottom: 48px;
+        width: 100%;
+        position: relative;
+        padding-top: 20px;
       }
       .player-slot {
         position: relative;
@@ -139,18 +142,28 @@ export function showTournamentBracketModal() {
         box-shadow: 0 0 32px 0 #ff00ea inset;
         background: linear-gradient(135deg, rgba(0,255,247,0.18), rgba(255,0,234,0.18));
       }
+      .player-slot.duplicate-error {
+        border-color: #ef4444;
+        box-shadow: 0 0 32px 0 #ef4444 inset;
+        background: linear-gradient(135deg, rgba(239,68,68,0.18), rgba(220,38,38,0.18));
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+      }
       .player-number {
         position: absolute;
-        top: -16px;
-        left: 24px;
+        top: -12px;
+        left: 20px;
         background: linear-gradient(135deg, #00fff7, #ff00ea);
         color: #222;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
-        padding: 8px 18px;
-        border-radius: 24px;
-        letter-spacing: 2px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        letter-spacing: 1px;
         box-shadow: 0 4px 16px #00fff7;
+        z-index: 10;
       }
       .player-input {
         background: rgba(255,255,255,0.08);
@@ -175,6 +188,34 @@ export function showTournamentBracketModal() {
         color: #00fff7;
         font-weight: 400;
         opacity: 0.5;
+      }
+      .player-input.duplicate-input {
+        box-shadow: 0 0 16px #ef4444 inset;
+        border: 1px solid #ef4444;
+      }
+      .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 2px solid #ef4444;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 20px 0;
+        animation: fadeInShake 0.5s ease-out;
+      }
+      .error-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+        font-weight: 600;
+      }
+      .error-icon {
+        font-size: 20px;
+        color: #ef4444;
+      }
+      .error-text {
+        flex: 1;
+        font-size: 14px;
+        line-height: 1.4;
       }
       .vs-indicator {
         position: absolute;
@@ -275,6 +316,16 @@ export function showTournamentBracketModal() {
       @keyframes slideOut {
         to { opacity: 0; transform: translateY(-30px) scale(0.9); }
       }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+      @keyframes fadeInShake {
+        0% { opacity: 0; transform: translateY(-10px) scale(0.9); }
+        50% { opacity: 1; transform: translateY(0) scale(1.02); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -290,13 +341,106 @@ export function showTournamentBracketModal() {
       slot.classList.remove('filled');
     }
   }
+  
+  function checkForDuplicates(): string[] {
+    const names = Array.from(inputs).map(input => input.value.trim().toLowerCase()).filter(name => name !== '');
+    const duplicates: string[] = [];
+    const seen = new Set<string>();
+    
+    for (const name of names) {
+      if (seen.has(name)) {
+        duplicates.push(name);
+      } else {
+        seen.add(name);
+      }
+    }
+    
+    return duplicates;
+  }
+  
+  function showErrorMessage(message: string) {
+    // Remove any existing error message
+    const existingError = modal.querySelector('.error-message');
+    if (existingError) existingError.remove();
+    
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <span class="error-text">${message}</span>
+      </div>
+    `;
+    
+    // Insert error message before the start button
+    const startButtonContainer = modal.querySelector('.start-button');
+    if (startButtonContainer) {
+      startButtonContainer.parentNode?.insertBefore(errorDiv, startButtonContainer);
+    }
+    
+    // Auto-remove error after 5 seconds
+    setTimeout(() => {
+      if (errorDiv.parentNode) {
+        errorDiv.remove();
+      }
+    }, 5000);
+  }
+  
+  function highlightDuplicateInputs(duplicateNames: string[]) {
+    console.log('[DEBUG] highlightDuplicateInputs called with:', duplicateNames);
+    console.log('[DEBUG] Total inputs found:', inputs.length);
+    console.log('[DEBUG] Total slots found:', slots.length);
+    
+    // Reset all input highlights
+    inputs.forEach((input, index) => {
+      const slot = slots[index];
+      slot.classList.remove('duplicate-error');
+      input.classList.remove('duplicate-input');
+      console.log(`[DEBUG] Reset slot ${index + 1}:`, slot);
+    });
+    
+    // Highlight inputs with duplicate names
+    if (duplicateNames.length > 0) {
+      inputs.forEach((input, index) => {
+        const inputValue = input.value.trim().toLowerCase();
+        console.log(`[DEBUG] Checking slot ${index + 1}, value: "${inputValue}"`);
+        if (duplicateNames.includes(inputValue)) {
+          const slot = slots[index];
+          slot.classList.add('duplicate-error');
+          input.classList.add('duplicate-input');
+          console.log(`[DEBUG] Applied duplicate styling to slot ${index + 1}`);
+        }
+      });
+    }
+  }
+  
   function checkAllInputs() {
     const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
-    startBtn.disabled = !allFilled;
-    if (allFilled) {
+    const duplicates = checkForDuplicates();
+    const hasDuplicates = duplicates.length > 0;
+    
+    // Highlight duplicate inputs
+    highlightDuplicateInputs(duplicates);
+    
+    // Remove any existing error message if no duplicates
+    if (!hasDuplicates) {
+      const existingError = modal.querySelector('.error-message');
+      if (existingError) existingError.remove();
+    }
+    
+    // Enable button only if all filled and no duplicates
+    startBtn.disabled = !allFilled || hasDuplicates;
+    
+    if (hasDuplicates) {
+      startBtn.innerHTML = '❌ DUPLICATE NAMES FOUND';
+      startBtn.style.background = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
+    } else if (allFilled) {
       startBtn.innerHTML = '🏆 START TOURNAMENT 🏆';
+      startBtn.style.background = 'linear-gradient(90deg, #00fff7 0%, #ff00ea 100%)';
     } else {
       startBtn.innerHTML = '⚡ GENERATE BRACKET ⚡';
+      startBtn.style.background = 'linear-gradient(90deg, #00fff7 0%, #ff00ea 100%)';
     }
   }
   inputs.forEach((input, index) => {
@@ -317,7 +461,23 @@ export function showTournamentBracketModal() {
   });
   async function startTournament() {
     if (startBtn.disabled) return;
+    
     const players = Array.from(inputs).map(input => input.value.trim());
+    
+    // Final validation check for duplicates
+    const duplicates = checkForDuplicates();
+    if (duplicates.length > 0) {
+      const duplicateList = duplicates.map(name => name.charAt(0).toUpperCase() + name.slice(1)).join(', ');
+      showErrorMessage(`Duplicate names found: ${duplicateList}. Each player must have a unique name.`);
+      return;
+    }
+    
+    // Check for empty names
+    if (players.some(name => name === '')) {
+      showErrorMessage('All player names must be filled in.');
+      return;
+    }
+    
     startBtn.innerHTML = '🔥 CREATING TOURNAMENT... 🔥';
     startBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)';
     

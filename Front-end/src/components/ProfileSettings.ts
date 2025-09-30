@@ -92,6 +92,9 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
           mainAvatar.src = `http://localhost:5001/uploads/${fileName}`;
           console.log('[DEBUG] Updated main avatar display');
         }
+        
+        // Show remove button since user now has a custom avatar
+        removeButton.style.display = 'block';
       }
     } catch (err) {
       console.error('[DEBUG] Avatar upload exception:', err);
@@ -110,10 +113,72 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   changeButton.style.marginRight = 'auto';
   changeButton.addEventListener('click', () => avatarInput.click());
 
+  // Remove Avatar Button
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'danger-button remove-avatar-btn';
+  removeButton.textContent = 'Remove Avatar';
+  removeButton.style.marginTop = '0.5rem';
+  removeButton.style.display = 'block';
+  removeButton.style.marginLeft = 'auto';
+  removeButton.style.marginRight = 'auto';
+  
+  // Show remove button only if user has a custom avatar (not default)
+  const hasCustomAvatar = defaultProfile.avatar && defaultProfile.avatar !== 'default.jpg';
+  removeButton.style.display = hasCustomAvatar ? 'block' : 'none';
+  
+  removeButton.addEventListener('click', () => {
+    // Show confirmation dialog
+    const confirmed = confirm('Are you sure you want to remove your avatar? This will reset it to the default avatar.');
+    if (confirmed) {
+      handleRemoveAvatar();
+    }
+  });
+
+  // Function to handle avatar removal (placeholder for backend integration)
+  function handleRemoveAvatar() {
+    try {
+      console.log('[DEBUG] Remove avatar requested - placeholder for backend integration');
+      
+      // Reset avatar to default immediately in UI
+      avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/default.jpg" alt="Default Avatar" class="avatar-img" />`;
+      
+      // Update the main avatar display as well
+      const mainAvatar = document.querySelector('.avatar-img') as HTMLImageElement;
+      if (mainAvatar) {
+        mainAvatar.src = `http://localhost:5001/uploads/default.jpg`;
+        console.log('[DEBUG] Reset main avatar display to default');
+      }
+      
+      // Hide remove button since we're back to default
+      removeButton.style.display = 'none';
+      
+      showMessage('Avatar removed successfully! Reset to default avatar.', 'success');
+      
+      // TODO: Your friend will implement the actual API call here
+      // Example: await apiService.users.removeAvatar();
+      
+    } catch (err) {
+      console.error('[DEBUG] Avatar removal error:', err);
+      showMessage('Error removing avatar. Please try again.', 'error');
+    }
+  }
+
   avatarPreviewContainer.appendChild(avatarPreview);
 
+  // Create button container for better layout
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = 'avatar-button-container';
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.flexDirection = 'column';
+  buttonContainer.style.gap = '0.5rem';
+  buttonContainer.style.alignItems = 'center';
+  
+  buttonContainer.appendChild(changeButton);
+  buttonContainer.appendChild(removeButton);
+
   avatarContainer.appendChild(avatarPreviewContainer);
-  avatarContainer.appendChild(changeButton);
+  avatarContainer.appendChild(buttonContainer);
   avatarContainer.appendChild(avatarInput);
 
   avatarSection.appendChild(avatarLabel);
