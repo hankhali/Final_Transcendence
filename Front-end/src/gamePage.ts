@@ -207,17 +207,12 @@ export class GamePage {
               <div class="stat-value" id="player1-score">0</div>
               <div class="stat-name" id="player1-name">Player 1</div>
             </div>
-            <div class="stat-card center">
-              <div class="stat-label">Time</div>
-              <div class="stat-value" id="game-time">00:00</div>
-              <div class="game-actions">
-                <button id="pause-btn" class="game-btn small" title="Pause (Space)">
-                  <i class="fas fa-pause"></i>
-                </button>
-                <button id="reset-btn" class="game-btn small" title="Reset (R)">
-                  <i class="fas fa-redo"></i>
-                </button>
-              </div>
+            <div class="stat-card">
+              <div class="stat-label">Player 2</div>
+              <div class="stat-value" id="player2-score">0</div>
+              <div class="stat-name" id="player2-name">Player 2</div>
+            </div>
+          </div>
                     <!-- Tournament alias modal -->
                     <div id="tournament-alias-modal" class="modal" style="display:none;">
                       <div class="modal-content">
@@ -428,7 +423,6 @@ export class GamePage {
       this.gameCanvas.height = 400;
     }
     this.game.startGame();
-    this.startGameTimer();
     this.updateGameStatus('Playing...');
     console.log('Game started successfully');
   }
@@ -441,31 +435,6 @@ export class GamePage {
     if (player2ScoreEl) player2ScoreEl.textContent = player2Score.toString();
   }
 
-  private startGameTimer(): void {
-    const gameTimeEl = document.getElementById('game-time');
-    let startTime = Date.now();
-    
-    const updateTimer = () => {
-      if (!this.game) return;
-      
-      const gameState = this.game.getGameState();
-      if (!gameState.isPlaying && !gameState.isPaused) return;
-      
-      const elapsed = Date.now() - startTime;
-      const minutes = Math.floor(elapsed / 60000);
-      const seconds = Math.floor((elapsed % 60000) / 1000);
-      
-      if (gameTimeEl) {
-        gameTimeEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
-      
-      if (gameState.isPlaying || gameState.isPaused) {
-        requestAnimationFrame(updateTimer);
-      }
-    };
-    
-    updateTimer();
-  }
 
     // hanieh added: showGameEndModal is not used, but kept for future modal logic
   private showGameEndModal(_winner: Player, _gameTime: number): void {
