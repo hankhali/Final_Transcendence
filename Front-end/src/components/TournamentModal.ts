@@ -23,6 +23,9 @@ export function showTournamentBracketModal() {
     </div>
     <h1 class="title">TOURNAMENT</h1>
     <p class="subtitle">4-PLAYER BRACKET SETUP</p>
+    <div class="tournament-title-container">
+      <input type="text" id="tournamentTitle" class="tournament-title-input" placeholder="Enter tournament title" maxlength="30" value="My Awesome Tournament">
+    </div>
     <div class="players-grid">
       <div class="player-slot">
         <span class="player-number">P1</span>
@@ -103,10 +106,40 @@ export function showTournamentBracketModal() {
       .subtitle {
         color: #fff;
         text-align: center;
-        margin-bottom: 36px;
+        margin-bottom: 24px;
         font-size: 16px;
         letter-spacing: 2px;
         opacity: 0.7;
+      }
+      .tournament-title-container {
+        width: 100%;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .tournament-title-input {
+        width: 80%;
+        max-width: 400px;
+        background: rgba(255,255,255,0.1);
+        border: 2px solid #00fff7;
+        border-radius: 12px;
+        color: #fff;
+        font-size: 18px;
+        font-weight: 600;
+        font-family: 'JetBrains Mono', monospace;
+        padding: 12px 20px;
+        text-align: center;
+        outline: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 15px rgba(0, 255, 247, 0.3);
+      }
+      .tournament-title-input:focus {
+        border-color: #ff00ea;
+        box-shadow: 0 0 25px rgba(255, 0, 234, 0.5);
+        transform: scale(1.02);
+      }
+      .tournament-title-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+        font-weight: 400;
       }
       .players-grid {
         display: grid;
