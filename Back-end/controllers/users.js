@@ -136,7 +136,7 @@ async function getUserdata(userId){
         // hanieh added: Use opponent_name for tournament matches, otherwise show AI Opponent for AI matches
         opponent: row.opponent_id === null ? (row.opponent_name || 'AI Opponent') : (row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown')),
         // hanieh added: Use tournament avatar for tournament matches, otherwise default AI avatar
-        opponentAvatar: row.opponent_id === null ? (row.opponent_name ? 'tournament-player.jpg' : '/uploads/vite.svg') : (row.opponentAvatar || ''),
+        opponentAvatar: row.opponent_id === null ? (row.opponent_name ? '/uploads/default.jpg' : '/uploads/vite.svg') : (row.opponentAvatar ? `/uploads/${row.opponentAvatar}` : ''),
         score: `${row.user_score}-${row.opponent_score}`,
         // hanieh added: Show 'ai' for AI matches, otherwise 1v1/tournament
         gameType: row.round === 'ai' ? 'ai' : (row.round === '1v1' ? '1v1' : 'tournament'),

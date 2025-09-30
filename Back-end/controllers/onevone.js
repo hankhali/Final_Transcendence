@@ -15,9 +15,17 @@ async function createOneVOneMatch(player1Id, player2Input) {
     if (player1Id === player2Id) {
         throw new Error('You cannot play against yourself in a 1v1 match.');
     }
-    // hanieh added: Insert a new 1v1 match into game_history, not tied to a tournament
-    const insertResult = db.prepare(`INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id) VALUES (?, ?, 0, 0, 'pending', '1v1', NULL)`).run(player1Id, player2Id);
-    return { matchId: insertResult.lastInsertRowid };
+    // hanieh added: Insert TWO records - one for each player's perspective
+    // Record 1: From player1's perspective
+    const insertResult1 = db.prepare(`INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id) VALUES (?, ?, 0, 0, 'pending', '1v1', NULL)`).run(player1Id, player2Id);
+    
+    // Record 2: From player2's perspective (mirror record)
+    const insertResult2 = db.prepare(`INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id) VALUES (?, ?, 0, 0, 'pending', '1v1', NULL)`).run(player2Id, player1Id);
+    
+    return { 
+        matchId: insertResult1.lastInsertRowid,
+        mirrorMatchId: insertResult2.lastInsertRowid
+    };
 }
 
 async function updateOneVOneMatchResult(matchId, player1Score, player2Score) {
@@ -25,6 +33,10 @@ async function updateOneVOneMatchResult(matchId, player1Score, player2Score) {
     if (!match) {
         throw new Error('No match found');
     }
+    
+    // Find the mirror match (the opponent's perspective)
+    const mirrorMatch = db.prepare('SELECT id FROM game_history WHERE user_id = ? AND opponent_id = ? AND round = ? AND result = ?').get(match.opponent_id, match.user_id, '1v1', 'pending');
+    
     let winner, loser;
     if (player1Score > player2Score) {
         winner = match.user_id;
@@ -33,7 +45,15 @@ async function updateOneVOneMatchResult(matchId, player1Score, player2Score) {
         winner = match.opponent_id;
         loser = match.user_id;
     }
+    
+    // Update the original match (player1's perspective)
     db.prepare(`UPDATE game_history SET user_score = ?, opponent_score = ?, winner_id = ?, loser_id = ?, played_at = CURRENT_TIMESTAMP, result = 'finished' WHERE id = ?`).run(player1Score, player2Score, winner, loser, matchId);
+    
+    // Update the mirror match (player2's perspective) - swap the scores
+    if (mirrorMatch) {
+        db.prepare(`UPDATE game_history SET user_score = ?, opponent_score = ?, winner_id = ?, loser_id = ?, played_at = CURRENT_TIMESTAMP, result = 'finished' WHERE id = ?`).run(player2Score, player1Score, winner, loser, mirrorMatch.id);
+    }
+    
     return { success: true };
 }
 

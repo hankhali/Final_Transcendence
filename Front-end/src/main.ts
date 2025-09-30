@@ -1530,9 +1530,10 @@ function renderProfilePage(): HTMLElement {
   tabContent.appendChild(friendsTab);
   tabContent.appendChild(historyTab);
 
-  // Show dashboard tab on load
+  // Show last active tab on load, or dashboard if none stored
   setTimeout(() => {
-    switchTab('dashboard');
+    const lastActiveTab = localStorage.getItem('activeProfileTab') || 'dashboard';
+    switchTab(lastActiveTab);
   }, 0);
   
   tabContainer.appendChild(tabContent);
@@ -1758,8 +1759,8 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
     return chartContainer;
   }
 
-  const maxRating = Math.max(...skillProgression.map(point => point.rating || 0));
-  const minRating = Math.min(...skillProgression.map(point => point.rating || 0));
+  const maxRating = Math.max(...skillProgression.map(point => point.skill || point.rating || 0));
+  const minRating = Math.min(...skillProgression.map(point => point.skill || point.rating || 0));
   const ratingRange = maxRating - minRating || 1; // avoid divide by zero
   
   const svgContainer = document.createElement("div");
@@ -1769,8 +1770,10 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
   const points: string[] = [];
   
   skillProgression.forEach((point, index) => {
-    const x = (index / (skillProgression.length - 1)) * 100;
-    const y = ((maxRating - point.rating) / ratingRange) * 100;
+    // Fix division by zero when only one data point
+    const x = skillProgression.length === 1 ? 50 : (index / (skillProgression.length - 1)) * 100;
+    const rating = point.skill || point.rating || 0;
+    const y = ((maxRating - rating) / ratingRange) * 100;
     
     if (index === 0) {
       pathData += `M ${x} ${y}`;
@@ -1780,8 +1783,8 @@ function createSkillProgressionChart(skillProgression: any[]): HTMLElement {
     
     points.push(`
       <div class="chart-point" style="left: ${x}%; top: ${y}%"
-           title="${point.month}: ${point.rating}">
-        <div class="point-value">${point.rating}</div>
+           title="${point.date}: ${rating}">
+        <div class="point-value">${rating}</div>
       </div>
     `);
   });
@@ -1971,6 +1974,9 @@ function createAchievementsSection(userData: any): HTMLElement {
 }
 
 function switchTab(tabId: string) {
+  // Store active tab in localStorage to persist across refreshes
+  localStorage.setItem('activeProfileTab', tabId);
+  
   // Update tab buttons
   document.querySelectorAll('.tab-button').forEach(btn => {
     btn.classList.remove('active');
@@ -2057,7 +2063,7 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
         <span class="result-text">${resultText}</span>
       </div>
       <div class="match-opponent">
-        <img src="${match.opponentAvatar}" alt="${match.opponent}'s avatar" class="opponent-avatar" />
+        <img src="http://localhost:5001${match.opponentAvatar}" alt="${match.opponent}'s avatar" class="opponent-avatar" />
         <div class="opponent-info">
           <div class="opponent-name">${match.opponent}</div>
           <div class="game-type">${match.gameType === '1v1' ? t.profile.history.match1v1 : t.profile.history.tournament}</div>
@@ -2066,7 +2072,7 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
       <div class="match-details">
         <div class="match-score">${match.score}</div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
-        <div class="match-duration">${match.duration} ${t.profile.history.min}</div>
+        <div class="match-duration">${match.duration ? `${match.duration} ${t.profile.history.min}` : ''}</div>
       </div>
     `;
     historyList.appendChild(matchCard);

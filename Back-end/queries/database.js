@@ -31,6 +31,7 @@ async function createTables() {
         played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         round TEXT,
         tournament_id INTEGER,        /* NEW: link match to a tournament */
+        opponent_name TEXT,           /* NEW: for guest players in local tournaments */
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
         FOREIGN KEY (opponent_id) REFERENCES users (id) ON DELETE SET NULL,
         FOREIGN KEY (tournament_id) REFERENCES tournaments (id) ON DELETE SET NULL
@@ -71,12 +72,66 @@ async function createTables() {
         FOREIGN KEY (friend_id) REFERENCES users (id) ON DELETE CASCADE
       );
     `);
+    
+    // Create migrations table to track applied migrations
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS migrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    // Run migrations only once
+    runMigrations();
+    
     //ON DELETE SET NULL: it will automatically remove all game history when a user is deleted
     console.log('Tables ensured');
   } catch (error) {
     console.error('Table setup failed:', error.message);
     process.exit(1);
   }
+}
+
+// Migration system - runs migrations only once
+function runMigrations() {
+  const migrations = [
+    {
+      name: 'add_opponent_name_column',
+      sql: 'ALTER TABLE game_history ADD COLUMN opponent_name TEXT'
+    }
+    // Add future migrations here
+  ];
+
+  migrations.forEach(migration => {
+    try {
+      // Check if migration was already applied
+      const applied = db.prepare('SELECT name FROM migrations WHERE name = ?').get(migration.name);
+      
+      if (!applied) {
+        // Run the migration
+        db.prepare(migration.sql).run();
+        
+        // Mark as applied
+        db.prepare('INSERT INTO migrations (name) VALUES (?)').run(migration.name);
+        
+        console.log(`✅ Applied migration: ${migration.name}`);
+      }
+    } catch (error) {
+      // Skip if column already exists or other expected errors
+      if (error.message.includes('duplicate column name') || error.message.includes('already exists')) {
+        // Mark as applied even if it already existed
+        try {
+          db.prepare('INSERT OR IGNORE INTO migrations (name) VALUES (?)').run(migration.name);
+        } catch (e) {
+          // Ignore if already marked
+        }
+        console.log(`⚠️  Migration ${migration.name} already applied`);
+      } else {
+        console.error(`❌ Migration ${migration.name} failed:`, error.message);
+      }
+    }
+  });
 }
 
 // Create tables immediately
