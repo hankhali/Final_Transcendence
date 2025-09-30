@@ -230,7 +230,7 @@ const apiService = {
 
     // Get specific tournament details
     getById: async (tournamentId) => {
-      return fetchApi("/tournaments/${tournamentId}", {
+      return fetchApi(`/tournaments/${tournamentId}`, {
         method: "GET"
       });
     },
@@ -238,6 +238,16 @@ const apiService = {
     // Join tournament with a single alias
     join: async (tournamentId, tournament_alias) => {
       return fetchApi(`/tournaments/${tournamentId}/join`, {
+        method: "POST",
+        body: JSON.stringify({ 
+          tournament_alias
+        })
+      });
+    },
+
+    // Join tournament as guest player
+    joinGuest: async (tournamentId, tournament_alias) => {
+      return fetchApi(`/tournaments/${tournamentId}/join-guest`, {
         method: "POST",
         body: JSON.stringify({ 
           tournament_alias

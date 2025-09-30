@@ -160,17 +160,25 @@ async function insertMatch(tournamentId, players, round){
     }
 
     //shuffle here maybe*
-    //matchmaking (pair players into matches)
     const matchMaking = [];
     for(let i = 0; i < players.length; i += 2){
         const player1 = players[i];
         const player2 = players[i + 1];
     
         //insert match into game_history as pending
-        //check result 
-        const insertResult = db.prepare(`INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id) VALUES (?, ?, 0, 0, 'pending', ?, ?)`).run(player1.player_id, player2.player_id, round, tournamentId);
+        //check result - support guest players with opponent_name
+        // For guest tournaments, we need a valid user_id, so we'll use the tournament creator
+        const tournament = db.prepare('SELECT created_by FROM tournaments WHERE id = ?').get(tournamentId);
+        const userId = tournament.created_by; // Use tournament creator as user_id
+        
+        const insertResult = db.prepare(`INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id, opponent_name) VALUES (?, NULL, 0, 0, 'pending', ?, ?, ?)`).run(
+            userId, // Use tournament creator as user_id
+            round, 
+            tournamentId,
+            `${player1.tournament_alias} vs ${player2.tournament_alias}`  // Store both player names
+        );
 
-        matchMaking.push({ player1, player2, matchId: insertResult.lastInsertRowid});
+        matchMaking.push({ player1, player2, matchId: insertResult.lastInsertRowid });
     }
 
     //return matchmaking so the fronted can show the players and who plays with who
@@ -223,7 +231,7 @@ async function startTournament(tournamentId){
     if(!tournament){
         throw new Error('Tournament not found');
     }
-    db.prepare(`UPDATE tournaments SET status = 'started', played_at = CURRENT_TIMESTAMP WHERE id = ?`).run(tournamentId);
+    db.prepare(`UPDATE tournaments SET status = 'started' WHERE id = ?`).run(tournamentId);
 
     // Log all matchIds in game_history for this tournament
     const allMatches = db.prepare('SELECT id, user_id, opponent_id, round, tournament_id FROM game_history WHERE tournament_id = ?').all(tournamentId);

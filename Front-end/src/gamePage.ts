@@ -1,8 +1,7 @@
 // @ts-ignore
 import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
 import { showOpponentUsernameModal } from './components/OpponentUsernameModal';
-import { GameCustomizationManager, createGameCustomizationModal } from './components/GameCustomization';
-import './styles/game-customization.css';
+// Game customization removed
 /// <reference path="./services/api.d.ts" />
 // Game Page Component - Handles the actual game interface
 
@@ -160,9 +159,6 @@ export class GamePage {
               <div class="game-status" id="game-status">Ready to Play</div>
             </div>
             <div style="display:flex; gap:.5rem;">
-              <button id="header-settings-btn" class="game-btn secondary">
-                <i class="fas fa-cog"></i>
-              </button>
               <button id="fullscreen-btn" class="game-btn secondary">
                 <i class="fas fa-expand"></i>
               </button>
@@ -241,10 +237,8 @@ export class GamePage {
       return;
     }
 
-    // Get customization settings
-    const customizationManager = GameCustomizationManager.getInstance();
-    const gameConfig = customizationManager.toGameConfig();
-    console.log('Using game customization settings:', gameConfig);
+    // Game customization removed - using default settings
+    const gameConfig = {};
 
     if (this.gameMode === 'tournament') {
       const tournamentId = this.getTournamentIdFromContext();
@@ -324,12 +318,9 @@ export class GamePage {
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     if (!this.gameCanvas) return;
 
-    // Get customization settings for AI game
-    const customizationManager = GameCustomizationManager.getInstance();
-    const gameConfig = customizationManager.toGameConfig();
-    
-    // For AI games, exclude physics settings that would override difficulty
-    const { ballSpeed: _, paddleSpeed: __, ...aiSafeConfig } = gameConfig;
+    // Game customization removed - using default settings
+    const gameConfig = {};
+    const aiSafeConfig = gameConfig;
     
     // For AI games, use demo IDs (or adapt for tournament if needed)
     this.game = createAIGame(this.gameCanvas, difficulty, aiSafeConfig);
@@ -379,17 +370,7 @@ export class GamePage {
       }
     });
 
-    // Header settings button
-    const headerSettingsBtn = document.getElementById('header-settings-btn');
-    headerSettingsBtn?.addEventListener('click', () => {
-      // Create and show customization modal
-      let customizationModal = document.getElementById('game-customization-modal');
-      if (!customizationModal) {
-        customizationModal = createGameCustomizationModal();
-        document.body.appendChild(customizationModal);
-      }
-      customizationModal.style.display = 'flex';
-    });
+    // Settings button removed
 
     // Fullscreen button
     const fullscreenBtn = document.getElementById('fullscreen-btn');

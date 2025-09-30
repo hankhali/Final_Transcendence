@@ -315,17 +315,49 @@ export function showTournamentBracketModal() {
       }
     });
   });
-  function startTournament() {
+  async function startTournament() {
     if (startBtn.disabled) return;
     const players = Array.from(inputs).map(input => input.value.trim());
-    startBtn.innerHTML = '🔥 CREATING BRACKET... 🔥';
+    startBtn.innerHTML = '🔥 CREATING TOURNAMENT... 🔥';
     startBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)';
-    setTimeout(() => {
+    
+    try {
+      // Step 1: Create tournament in backend with guest player support
+      const { apiService } = await import('../services/api');
+      const tournamentName = `Tournament ${new Date().toLocaleTimeString()}`;
+      const createResponse = await apiService.tournaments.create(
+        tournamentName,
+        4,
+        players
+      );
+      
+      const tournamentId = createResponse.data.tournamentId;
+      console.log('[DEBUG] Tournament created:', tournamentId);
+      
+      // Step 2: Join all players to tournament as guests
+      for (let i = 0; i < players.length; i++) {
+        try {
+          await apiService.tournaments.joinGuest(tournamentId, players[i]);
+          console.log(`[DEBUG] Player ${players[i]} joined tournament ${tournamentId}`);
+        } catch (error) {
+          console.log(`[DEBUG] Player ${players[i]} already in tournament or error:`, error);
+          // Continue with other players if one fails
+        }
+      }
+      
+      // Step 3: Show matchmaking animation with real backend tournament
       overlay.remove();
-      showBracket(players);
-      startBtn.innerHTML = '🏆 START TOURNAMENT 🏆';
-      startBtn.style.background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%)';
-    }, 1200);
+      await showMatchmakingAnimation(players, tournamentId);
+      
+    } catch (error) {
+      console.error('Error creating tournament:', error);
+      startBtn.innerHTML = '❌ ERROR - TRY AGAIN';
+      startBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)';
+      setTimeout(() => {
+        startBtn.innerHTML = '🏆 START TOURNAMENT 🏆';
+        startBtn.style.background = 'linear-gradient(90deg, #00fff7 0%, #ff00ea 100%)';
+      }, 2000);
+    }
   }
   startBtn.addEventListener('click', startTournament);
   checkAllInputs();
@@ -335,6 +367,475 @@ export function showTournamentBracketModal() {
     modal.style.animation = 'slideOut 0.4s ease-in';
     setTimeout(() => overlay.remove(), 400);
   });
+}
+
+// Slot Machine Matchmaking Animation Function
+async function showMatchmakingAnimation(players: string[], tournamentId: number | null): Promise<void> {
+  return new Promise(async (resolve) => {
+    // Create matchmaking overlay
+    const matchmakingOverlay = document.createElement('div');
+    matchmakingOverlay.id = 'matchmaking-overlay';
+    matchmakingOverlay.className = 'modal-overlay';
+    
+    // Slot Machine Matchmaking container
+    const matchmakingContainer = document.createElement('div');
+    matchmakingContainer.className = 'slot-machine-container';
+    matchmakingContainer.innerHTML = `
+      <div class="matchmaking-header">
+        <h1 class="matchmaking-title">🎰 TOURNAMENT MATCHMAKING 🎰</h1>
+        <p class="matchmaking-subtitle">Using advanced backend matchmaking algorithms...</p>
+      </div>
+      
+      <div class="matches-container">
+        <!-- Match 1 -->
+        <div class="match-picker">
+          <h3 class="match-title">SEMIFINAL MATCH 1</h3>
+          <div class="slot-machine-match">
+            <div class="player-slot" data-slot="match1-player1">
+              <div class="slot-reel">
+                ${players.map(player => `<div class="slot-name">${player}</div>`).join('')}
+              </div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="player-slot" data-slot="match1-player2">
+              <div class="slot-reel">
+                ${players.map(player => `<div class="slot-name">${player}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Match 2 -->
+        <div class="match-picker">
+          <h3 class="match-title">SEMIFINAL MATCH 2</h3>
+          <div class="slot-machine-match">
+            <div class="player-slot" data-slot="match2-player1">
+              <div class="slot-reel">
+                ${players.map(player => `<div class="slot-name">${player}</div>`).join('')}
+              </div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="player-slot" data-slot="match2-player2">
+              <div class="slot-reel">
+                ${players.map(player => `<div class="slot-name">${player}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="matchmaking-status">
+        <div class="status-text">⚙️ Backend system calculating optimal matches...</div>
+      </div>
+    `;
+    
+    matchmakingOverlay.appendChild(matchmakingContainer);
+    document.body.appendChild(matchmakingOverlay);
+    
+    // Add matchmaking styles
+    if (!document.getElementById('matchmaking-styles')) {
+      const style = document.createElement('style');
+      style.id = 'matchmaking-styles';
+      style.textContent = `
+        .slot-machine-container {
+          background: rgba(15, 23, 42, 0.95);
+          border: 2px solid #00fff7;
+          border-radius: 24px;
+          padding: 40px;
+          max-width: 1000px;
+          width: 100%;
+          backdrop-filter: blur(20px);
+          box-shadow: 0 0 50px rgba(0, 255, 247, 0.3);
+          animation: slideInScale 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .matches-container {
+          display: flex;
+          gap: 40px;
+          justify-content: center;
+          margin: 40px 0;
+        }
+        
+        .match-picker {
+          flex: 1;
+          max-width: 400px;
+        }
+        
+        .match-title {
+          color: #00fff7;
+          font-size: 1.2em;
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 20px;
+          text-shadow: 0 0 10px rgba(0, 255, 247, 0.5);
+        }
+        
+        .slot-machine-match {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          background: rgba(30, 41, 59, 0.8);
+          border: 2px solid rgba(0, 255, 247, 0.3);
+          border-radius: 16px;
+          padding: 30px 20px;
+        }
+        
+        .player-slot {
+          flex: 1;
+          height: 80px;
+          background: rgba(0, 0, 0, 0.5);
+          border: 2px solid #00fff7;
+          border-radius: 12px;
+          overflow: hidden;
+          position: relative;
+        }
+        
+        .slot-reel {
+          display: flex;
+          flex-direction: column;
+          animation: slotSpin 3s ease-out;
+          transform: translateY(0);
+        }
+        
+        .slot-name {
+          height: 80px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          font-size: 1.1em;
+          font-weight: 600;
+          background: linear-gradient(135deg, rgba(0, 255, 247, 0.1), rgba(255, 0, 234, 0.1));
+          border-bottom: 1px solid rgba(0, 255, 247, 0.2);
+        }
+        
+        .vs-divider {
+          color: #ff00ea;
+          font-size: 1.5em;
+          font-weight: 800;
+          text-shadow: 0 0 15px rgba(255, 0, 234, 0.8);
+          min-width: 50px;
+          text-align: center;
+        }
+        
+        @keyframes slotSpin {
+          0% { transform: translateY(0); }
+          70% { transform: translateY(-400px); }
+          100% { transform: translateY(-320px); }
+        }
+        
+        .matchmaking-header {
+          text-align: center;
+          margin-bottom: 40px;
+        }
+        
+        .matchmaking-title {
+          font-size: 2.5em;
+          font-weight: 800;
+          background: linear-gradient(135deg, #00fff7, #ff00ea);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          margin-bottom: 10px;
+          text-shadow: 0 0 30px rgba(0, 255, 247, 0.5);
+        }
+        
+        .matchmaking-subtitle {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 1.1em;
+          margin-bottom: 0;
+        }
+        
+        .matchmaking-status {
+          text-align: center;
+          margin-top: 30px;
+        }
+        
+        .status-text {
+          color: #fff;
+          font-size: 1.1em;
+          font-weight: 500;
+        }
+        
+        .players-analysis {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+          margin-bottom: 40px;
+        }
+        
+        .player-card {
+          background: rgba(30, 41, 59, 0.8);
+          border: 1px solid rgba(0, 255, 247, 0.3);
+          border-radius: 16px;
+          padding: 20px;
+          text-align: center;
+          transition: all 0.3s ease;
+        }
+        
+        .player-card.analyzing {
+          border-color: #00fff7;
+          box-shadow: 0 0 20px rgba(0, 255, 247, 0.4);
+          transform: scale(1.05);
+        }
+        
+        .player-avatar {
+          font-size: 2em;
+          margin-bottom: 10px;
+        }
+        
+        .player-name {
+          color: #fff;
+          font-weight: 600;
+          margin-bottom: 15px;
+          font-size: 1.1em;
+        }
+        
+        .analysis-bar {
+          width: 100%;
+          height: 8px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 10px;
+        }
+        
+        .analysis-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #00fff7, #ff00ea);
+          width: 0%;
+          transition: width 2s ease;
+        }
+        
+        .skill-rating {
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.9em;
+        }
+        
+        .matchmaking-progress {
+          margin-bottom: 30px;
+        }
+        
+        .progress-bar {
+          width: 100%;
+          height: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          overflow: hidden;
+          margin-bottom: 15px;
+        }
+        
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #00fff7, #ff00ea);
+          width: 0%;
+          transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+          text-align: center;
+          color: #fff;
+          font-weight: 500;
+        }
+        
+        .matchmaking-status {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        
+        .status-item {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 15px 10px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.05);
+          transition: all 0.3s ease;
+        }
+        
+        .status-item.active {
+          background: rgba(0, 255, 247, 0.2);
+          border: 1px solid #00fff7;
+          box-shadow: 0 0 15px rgba(0, 255, 247, 0.3);
+        }
+        
+        .status-item.completed {
+          background: rgba(34, 197, 94, 0.2);
+          border: 1px solid #22c55e;
+        }
+        
+        .status-icon {
+          font-size: 1.5em;
+          margin-bottom: 8px;
+        }
+        
+        .status-text {
+          color: #fff;
+          font-size: 0.9em;
+          text-align: center;
+        }
+        
+        @keyframes slideInScale {
+          from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .matches-container {
+            flex-direction: column;
+            gap: 30px;
+          }
+          .slot-machine-match {
+            flex-direction: column;
+            gap: 15px;
+          }
+          .vs-divider {
+            transform: rotate(90deg);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Slot Machine Animation Logic
+    let backendMatches: any[] = [];
+    
+    // Add spinning animation styles
+    const spinningStyle = document.createElement('style');
+    spinningStyle.id = 'spinning-styles';
+    spinningStyle.textContent = `
+      .slot-reel.spinning {
+        animation: slotSpinContinuous 0.1s linear infinite;
+      }
+      
+      @keyframes slotSpinContinuous {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(-80px); }
+      }
+    `;
+    document.head.appendChild(spinningStyle);
+    
+    // Start the slot machine animations immediately
+    const allSlotReels = matchmakingContainer.querySelectorAll('.slot-reel');
+    allSlotReels.forEach((reel, index) => {
+      // Add slight delay between each slot for visual effect
+      setTimeout(() => {
+        reel.classList.add('spinning');
+      }, index * 200);
+    });
+    
+    // Get real backend matchmaking results during animation
+    if (tournamentId) {
+      setTimeout(async () => {
+        try {
+          const { apiService } = await import('../services/api');
+          const startResponse = await apiService.tournaments.start(tournamentId);
+          console.log('[DEBUG] Tournament started with real backend matchmaking:', startResponse);
+          
+          if (startResponse.data && startResponse.data.matches) {
+            backendMatches = startResponse.data.matches;
+            console.log('[DEBUG] Backend matches received:', backendMatches);
+          }
+        } catch (error) {
+          console.error('Error starting tournament:', error);
+          // Fallback to local bracket if backend fails
+          backendMatches = [];
+        }
+      }, 1000);
+    }
+    
+    // Helper function to set slot result
+    function setSlotResult(slotId: string, playerName: string) {
+      const slot = matchmakingContainer.querySelector(`[data-slot="${slotId}"] .slot-reel`);
+      if (slot) {
+        // Instead of positioning, directly replace the content with the correct name
+        (slot as HTMLElement).innerHTML = `<div class="slot-name" style="height: 80px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.1em; font-weight: 600; background: linear-gradient(135deg, rgba(0, 255, 247, 0.1), rgba(255, 0, 234, 0.1));">${playerName}</div>`;
+        (slot as HTMLElement).style.transform = 'translateY(0px)';
+        (slot as HTMLElement).style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        console.log(`[DEBUG] Setting ${slotId} to ${playerName} - content replaced`);
+      }
+    }
+    
+    // Stop slot machines and show final results after 5 seconds of spinning
+    setTimeout(() => {
+      // Stop all animations
+      allSlotReels.forEach(reel => {
+        reel.classList.remove('spinning');
+        (reel as HTMLElement).style.animation = 'none';
+      });
+      
+      // Position slots to show final matches
+      if (backendMatches.length >= 2) {
+        // Use real backend matches
+        const match1 = backendMatches[0];
+        const match2 = backendMatches[1];
+        
+        // Set final positions based on backend results
+        setSlotResult('match1-player1', match1.player1.tournament_alias);
+        setSlotResult('match1-player2', match1.player2.tournament_alias);
+        setSlotResult('match2-player1', match2.player1.tournament_alias);
+        setSlotResult('match2-player2', match2.player2.tournament_alias);
+        
+        console.log('[DEBUG] Slot machine showing backend matches:');
+        console.log(`Match 1: ${match1.player1.tournament_alias} vs ${match1.player2.tournament_alias}`);
+        console.log(`Match 2: ${match2.player1.tournament_alias} vs ${match2.player2.tournament_alias}`);
+      } else {
+        // Fallback to random assignment if backend fails
+        const shuffled = [...players].sort(() => Math.random() - 0.5);
+        setSlotResult('match1-player1', shuffled[0]);
+        setSlotResult('match1-player2', shuffled[1]);
+        setSlotResult('match2-player1', shuffled[2]);
+        setSlotResult('match2-player2', shuffled[3]);
+        
+        console.log('[DEBUG] Slot machine using fallback random matches');
+      }
+      
+      // Update status to show results
+      const statusText = matchmakingContainer.querySelector('.status-text');
+      if (statusText) {
+        statusText.textContent = '🎉 Perfect matches found! Enjoy the results...';
+      }
+      
+      // Wait longer to show the final results before transitioning to bracket
+      setTimeout(() => {
+        if (statusText) {
+          statusText.textContent = '🏆 Loading tournament bracket...';
+        }
+        
+        // Final transition to bracket after showing results
+        setTimeout(() => {
+          matchmakingOverlay.remove();
+          showBracket(players);
+          resolve();
+        }, 1500);
+      }, 3000); // Show results for 3 seconds
+    }, 5000); // Spin for 5 seconds
+  });
+}
+
+// New function that uses backend tournament data
+async function showBracketWithBackendMatches(players: string[], tournamentId: number) {
+  try {
+    // Fetch tournament matches from backend
+    const { apiService } = await import('../services/api');
+    const tournamentData = await apiService.tournaments.getById(tournamentId);
+    console.log('[DEBUG] Tournament data:', tournamentData);
+    
+    // Show bracket with real backend matches
+    showBracket(players);
+    
+  } catch (error) {
+    console.error('Error fetching tournament data:', error);
+    // Fallback to local bracket
+    showBracket(players);
+  }
 }
 
 function showBracket(players: string[]) {
