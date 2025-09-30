@@ -1,0 +1,553 @@
+/* Game Customization Modal Styles */
+
+.customization-modal {
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #00fff7;
+  border-radius: 15px;
+  box-shadow: 0 0 30px rgba(0, 255, 247, 0.3);
+}
+
+.customization-modal .modal-header {
+  background: linear-gradient(90deg, #00fff7, #ff00ff);
+  padding: 20px;
+  border-radius: 13px 13px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.customization-modal .modal-header h2 {
+  color: #000;
+  font-weight: bold;
+  margin: 0;
+  font-size: 24px;
+}
+
+.customization-modal .close-btn {
+  background: none;
+  border: none;
+  color: #000;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+}
+
+.customization-modal .close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.customization-content {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.customization-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 255, 247, 0.2);
+}
+
+.customization-section h3 {
+  color: #00fff7;
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.customization-section h3 i {
+  color: #ff00ff;
+}
+
+/* Game Mode Options */
+.option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.radio-option:hover {
+  background: rgba(0, 255, 247, 0.1);
+  border-color: rgba(0, 255, 247, 0.3);
+}
+
+.radio-option input[type="radio"] {
+  display: none;
+}
+
+.radio-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #00fff7;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.radio-option input[type="radio"]:checked + .radio-custom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background: #00fff7;
+  border-radius: 50%;
+}
+
+.option-info strong {
+  color: #fff;
+  font-size: 16px;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.option-info p {
+  color: #ccc;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Theme Grid */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.theme-option:hover {
+  background: rgba(0, 255, 247, 0.1);
+  border-color: rgba(0, 255, 247, 0.3);
+}
+
+.theme-option.selected {
+  border-color: #00fff7;
+  background: rgba(0, 255, 247, 0.2);
+}
+
+.theme-preview {
+  width: 60px;
+  height: 40px;
+  border-radius: 5px;
+  border: 2px solid #333;
+}
+
+.theme-neon { background: linear-gradient(45deg, #00fff7, #ff00ff); }
+.theme-retro { background: linear-gradient(45deg, #ff6b35, #f7931e); }
+.theme-dark { background: linear-gradient(45deg, #333, #666); }
+.theme-space { background: linear-gradient(45deg, #1a1a2e, #16213e); }
+.theme-classic { background: linear-gradient(45deg, #fff, #ddd); }
+
+.theme-option span {
+  color: #fff;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+/* Toggle Switches */
+.toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #333;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #00fff7;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.toggle-option span {
+  color: #fff;
+  font-size: 16px;
+}
+
+/* Power-ups and Attacks Grid */
+.powerups-grid,
+.attacks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.powerup-option,
+.attack-option {
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+  text-align: center;
+}
+
+.powerup-option:hover,
+.attack-option:hover {
+  background: rgba(0, 255, 247, 0.1);
+  border-color: rgba(0, 255, 247, 0.3);
+}
+
+.powerup-option.selected,
+.attack-option.selected {
+  border-color: #00fff7;
+  background: rgba(0, 255, 247, 0.2);
+}
+
+.powerup-option i,
+.attack-option i {
+  font-size: 24px;
+  color: #ff00ff;
+  margin-bottom: 10px;
+}
+
+.powerup-option h4,
+.attack-option h4 {
+  color: #fff;
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.powerup-option p,
+.attack-option p {
+  color: #ccc;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Physics Grid */
+.physics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.physics-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.physics-option label {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.physics-option select {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 247, 0.3);
+  border-radius: 5px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.physics-option select:focus {
+  outline: none;
+  border-color: #00fff7;
+  box-shadow: 0 0 5px rgba(0, 255, 247, 0.3);
+}
+
+.physics-option select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+/* Rules Grid */
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.rule-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rule-option label {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rule-option select {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 247, 0.3);
+  border-radius: 5px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.rule-option select:focus {
+  outline: none;
+  border-color: #00fff7;
+  box-shadow: 0 0 5px rgba(0, 255, 247, 0.3);
+}
+
+.rule-option select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+/* Map Grid */
+.map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.map-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.map-option:hover {
+  background: rgba(0, 255, 247, 0.1);
+  border-color: rgba(0, 255, 247, 0.3);
+}
+
+.map-option.selected {
+  border-color: #00fff7;
+  background: rgba(0, 255, 247, 0.2);
+}
+
+.map-preview {
+  width: 80px;
+  height: 50px;
+  border-radius: 5px;
+  border: 2px solid #333;
+}
+
+.map-classic { background: linear-gradient(45deg, #000, #333); }
+.map-obstacles { background: linear-gradient(45deg, #000, #333), radial-gradient(circle at 30% 30%, #666, transparent 20%), radial-gradient(circle at 70% 70%, #666, transparent 20%); }
+.map-moving_walls { background: linear-gradient(90deg, #000 0%, #333 25%, #000 50%, #333 75%, #000 100%); }
+.map-portals { background: radial-gradient(circle at 20% 50%, #00fff7, transparent 30%), radial-gradient(circle at 80% 50%, #ff00ff, transparent 30%), #000; }
+
+.map-option span {
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Effects Grid */
+.effects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(0, 255, 247, 0.2);
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn.primary {
+  background: linear-gradient(45deg, #00fff7, #ff00ff);
+  color: #000;
+}
+
+.btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 255, 247, 0.3);
+}
+
+.btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Notification */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 500;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+  background: linear-gradient(45deg, #00ff88, #00cc6a);
+  border: 1px solid #00ff88;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .customization-modal {
+    max-width: 95vw;
+    margin: 10px;
+  }
+  
+  .theme-grid,
+  .powerups-grid,
+  .attacks-grid,
+  .physics-grid,
+  .map-grid,
+  .effects-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .option-group {
+    gap: 10px;
+  }
+  
+  .radio-option {
+    padding: 10px;
+  }
+}
+
+/* Scrollbar Styling */
+.customization-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.customization-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.customization-content::-webkit-scrollbar-thumb {
+  background: #00fff7;
+  border-radius: 4px;
+}
+
+.customization-content::-webkit-scrollbar-thumb:hover {
+  background: #ff00ff;
+}

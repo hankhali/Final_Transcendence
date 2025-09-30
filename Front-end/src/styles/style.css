@@ -7127,3 +7127,71 @@ footer p {
 .close-modal-btn:hover {
   background: #ff6666;
 }
+
+/* Game Modes Header */
+.game-modes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  border: 1px solid rgba(0, 255, 247, 0.2);
+}
+
+.game-modes-header h2 {
+  color: #00fff7;
+  margin: 0;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.game-modes-header h2 i {
+  color: #ff00ff;
+}
+
+.customization-btn {
+  background: linear-gradient(45deg, #00fff7, #ff00ff);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  color: #000;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(0, 255, 247, 0.3);
+}
+
+.customization-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 255, 247, 0.4);
+  background: linear-gradient(45deg, #ff00ff, #00fff7);
+}
+
+.customization-btn i {
+  font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .game-modes-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .game-modes-header h2 {
+    font-size: 24px;
+  }
+  
+  .customization-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,6 +1,7 @@
 // @ts-ignore
 import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
 import { showOpponentUsernameModal } from './components/OpponentUsernameModal';
+import { GameCustomizationManager } from './components/GameCustomization';
 /// <reference path="./services/api.d.ts" />
 // Game Page Component - Handles the actual game interface
 
@@ -236,10 +237,15 @@ export class GamePage {
       return;
     }
 
+    // Get customization settings
+    const customizationManager = GameCustomizationManager.getInstance();
+    const gameConfig = customizationManager.toGameConfig();
+    console.log('Using game customization settings:', gameConfig);
+
     if (this.gameMode === 'tournament') {
       const tournamentId = this.getTournamentIdFromContext();
-      // Tournament game logic (replace with actual API call if needed)
-      if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+      // Tournament game logic with customization
+      if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas, gameConfig); }
       if (this.game) this.game.matchId = 0; // Replace with actual matchId from backend if needed
       if (this.game) this.game.tournamentId = tournamentId;
       this.setupGameCallbacks();
@@ -283,7 +289,7 @@ export class GamePage {
                 return;
               }
               if (this.gameCanvas) {
-                if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+                if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas, gameConfig); }
                 if (this.game) this.game.matchId = matchId;
                 if (this.game) this.game.tournamentId = undefined;
                 this.setupGameCallbacks();
@@ -302,7 +308,7 @@ export class GamePage {
       }
     } else {
       // Non-tournament game (demo/AI)
-      if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+      if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas, gameConfig); }
       if (this.game) this.game.matchId = 0;
       if (this.game) this.game.tournamentId = 1;
       this.setupGameCallbacks();
@@ -314,8 +320,12 @@ export class GamePage {
     this.gameCanvas = document.getElementById('game-canvas') as HTMLCanvasElement;
     if (!this.gameCanvas) return;
 
+    // Get customization settings for AI game
+    const customizationManager = GameCustomizationManager.getInstance();
+    const gameConfig = customizationManager.toGameConfig();
+    
     // For AI games, use demo IDs (or adapt for tournament if needed)
-    this.game = createAIGame(this.gameCanvas, difficulty);
+    this.game = createAIGame(this.gameCanvas, difficulty, gameConfig);
     this.game.matchId = Date.now();
     if (this.game) this.game.tournamentId = 1;
     this.setupGameCallbacks();
