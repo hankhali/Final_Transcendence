@@ -447,7 +447,7 @@
   margin: 0;
 }
 
-/* Loading animation for game initialization */
+/* Add any additional game page specific styles here */
 .game-loading {
   position: absolute;
   top: 50%;

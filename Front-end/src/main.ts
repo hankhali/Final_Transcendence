@@ -1,10 +1,10 @@
 import "./styles/style.css"; // Ensure your CSS is imported
 import "./styles/game-page.css"; // Game page styles
-import "./styles/game-customization.css"; // Game customization styles
+// Game customization styles removed
 import { createProfileSettings } from "./components/ProfileSettings";
 import { showTournamentBracketModal } from './components/TournamentModal';
 import { createFriendsSection } from "./components/FriendsSection";
-import { createGameCustomizationModal, GameCustomizationManager } from "./components/GameCustomization";
+// Game customization removed
 import { languageManager } from "./translations";
 import { create1v1GamePage, createAIGamePage } from "./gamePage.js";
 import { apiService } from "./services/api";
@@ -767,11 +767,7 @@ function renderTournamentPage(): HTMLElement {
   if (isLoggedIn && currentUser) {
     gameModesSection.innerHTML = `
       <div class="game-modes-header">
-        <h2><i class="fas fa-gamepad"></i> Game Modes</h2>
-        <button class="customization-btn" id="open-customization-btn">
-          <i class="fas fa-cog"></i>
-          <span>Customize Games</span>
-        </button>
+
       </div>
       <div class="game-modes-container">
         <!-- 1v1 Battle Mode -->
@@ -1065,17 +1061,7 @@ function showAIDifficultyModal(): void {
       showTournamentBracketModal();
     });
     
-    // Add customization button event listener
-    const customizationBtn = document.getElementById('open-customization-btn');
-    customizationBtn?.addEventListener('click', () => {
-      // Create and show customization modal
-      let customizationModal = document.getElementById('game-customization-modal');
-      if (!customizationModal) {
-        customizationModal = createGameCustomizationModal();
-        document.body.appendChild(customizationModal);
-      }
-      customizationModal.style.display = 'flex';
-    });
+    // Customization button removed
     
   } else {
     // Login required section

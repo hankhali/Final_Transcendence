@@ -6300,13 +6300,6 @@ footer p {
   font-weight: 600;
 }
 
-/* Game Modes Section */
-.game-modes-section {
-  padding: 4rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  animation: fadeInUp 0.8s ease-out 0.5s both;
-}
 
 .game-modes-container {
   display: flex !important;
@@ -6736,10 +6729,6 @@ footer p {
   filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
 }
 
-/* Special button variants for different game modes */
-.game-mode-card.onevsone .premium-game-btn .btn-bg {
-  background: linear-gradient(135deg, #ff4757 0%, #ffa726 50%, #ff6b6b 100%);
-}
 
 .game-mode-card.onevsone .premium-game-btn:hover .btn-bg {
   background: linear-gradient(135deg, #ffa726 0%, #ff6b6b 50%, #ff4757 100%);
@@ -6759,11 +6748,6 @@ footer p {
 
 .game-mode-card.tournaments .premium-game-btn::before {
   background: linear-gradient(135deg, #8a2be2, #ffd700, #ba55d3, #8a2be2);
-}
-
-/* Special Effects for Different Game Modes */
-.game-mode-card.onevsone::before {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(255, 193, 7, 0.3), rgba(255, 107, 107, 0.3));
 }
 
 .game-mode-card.onevsone .game-mode-icon i {
@@ -7128,18 +7112,6 @@ footer p {
   background: #ff6666;
 }
 
-/* Game Modes Header */
-.game-modes-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  border: 1px solid rgba(0, 255, 247, 0.2);
-}
-
 .game-modes-header h2 {
   color: #00fff7;
   margin: 0;
@@ -7153,37 +7125,10 @@ footer p {
   color: #ff00ff;
 }
 
-.customization-btn {
-  background: linear-gradient(45deg, #00fff7, #ff00ff);
-  border: none;
-  border-radius: 10px;
-  padding: 12px 20px;
-  color: #000;
-  font-weight: 600;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 4px 15px rgba(0, 255, 247, 0.3);
-}
-
-.customization-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 255, 247, 0.4);
-  background: linear-gradient(45deg, #ff00ff, #00fff7);
-}
-
-.customization-btn i {
-  font-size: 18px;
-}
-
 @media (max-width: 768px) {
   .game-modes-header {
     flex-direction: column;
     gap: 15px;
-    text-align: center;
   }
   
   .game-modes-header h2 {

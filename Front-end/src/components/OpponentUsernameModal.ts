@@ -12,31 +12,29 @@ export function showOpponentUsernameModal(onSubmit: (username: string) => void, 
   overlay.className = 'modal-overlay';
   overlay.style.cssText = `
     position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1000;
-    display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);`
+    display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);`
 
   // Modal content
   const modal = document.createElement('div');
   modal.className = 'modal-content';
   modal.style.cssText = `
-    // Debug log and guard: Never show modal if tournament mode or suppressModal is true
-    const suppressModal = (window as any).currentTournamentMatch || (window as any).gamePageSuppressModal;
-    const gameMode = (window as any).gamePageMode;
-    console.log('[DEBUG] showOpponentUsernameModal called. suppressModal:', suppressModal, 'gameMode:', gameMode);
-    if (suppressModal || gameMode === 'tournament') {
-      console.log('[DEBUG] BLOCKED: OpponentUsernameModal will NOT be shown for tournament or suppressModal.');
-      return;
-    }
-    background: linear-gradient(135deg, rgba(15,18,40,0.95), rgba(8,10,28,0.98));
-    border-radius: 24px; box-shadow: 0 0 60px #00fff7, 0 0 24px #ff00ea;
-    border: 2px solid #00fff7; padding: 2.5rem 2rem; min-width: 400px; max-width: 90vw;
-    color: #fff; position: relative; text-align: center;`
+    background: rgba(30, 35, 50, 0.95);
+    border-radius: 12px; 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 247, 0.3); 
+    padding: 1.5rem; 
+    min-width: 320px; 
+    max-width: 400px;
+    color: #fff; 
+    position: relative; 
+    text-align: center;`
 
   modal.innerHTML = `
-    <span class="close" id="close-username-modal" style="position:absolute;top:18px;right:22px;font-size:2rem;cursor:pointer;color:#00fff7;">&times;</span>
-    <h2 style="font-size:2rem;font-weight:800;margin-bottom:2rem;color:#d946ef;text-shadow:0 0 32px #00fff7,0 0 8px #ff00ea;letter-spacing:2px;">Enter opponent username for 1v1 match</h2>
-    <input type="text" id="opponent-username-input" placeholder="Opponent username" style="width:100%;padding:1rem;margin-bottom:2rem;border-radius:12px;border:2px solid #00fff7;background:rgba(15,18,40,0.8);color:#00fff7;font-size:1.2rem;text-align:center;box-shadow:0 0 16px #00fff7 inset;outline:none;">
-    <button id="submit-username-btn" style="width:100%;padding:1rem 0;border-radius:16px;background:linear-gradient(90deg,#00fff7 0%,#ff00ea 100%);color:#222;font-weight:700;font-size:1.2rem;box-shadow:0 0 32px #00fff7;letter-spacing:2px;cursor:pointer;margin-bottom:1rem;">START MATCH</button>
-    <div id="username-error" style="display:none;color:#ff00ea;font-weight:600;margin-top:1rem;"></div>
+    <span class="close" id="close-username-modal" style="position:absolute;top:10px;right:15px;font-size:1.5rem;cursor:pointer;color:#ccc;">&times;</span>
+    <h3 style="font-size:1.2rem;font-weight:600;margin-bottom:1rem;color:#fff;">Enter opponent username</h3>
+    <input type="text" id="opponent-username-input" placeholder="Opponent username" style="width:100%;padding:0.75rem;margin-bottom:1rem;border-radius:6px;border:1px solid #555;background:rgba(40,45,60,0.9);color:#fff;font-size:1rem;outline:none;">
+    <button id="submit-username-btn" style="width:100%;padding:0.75rem;border-radius:6px;background:#00fff7;color:#000;font-weight:600;font-size:1rem;cursor:pointer;border:none;">Start Match</button>
+    <div id="username-error" style="display:none;color:#ff6b6b;font-size:0.9rem;margin-top:0.5rem;"></div>
   `;
 
   overlay.appendChild(modal);

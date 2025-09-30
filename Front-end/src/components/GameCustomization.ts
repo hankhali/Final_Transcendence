@@ -312,16 +312,49 @@ export function createGameCustomizationModal(): HTMLElement {
           </div>
         </div>
         
-        <!-- Map/Arena -->
+        <!-- Ball Style -->
         <div class="customization-section">
-          <h3><i class="fas fa-map"></i> Arena Type</h3>
-          <div class="map-grid">
-            ${['classic', 'obstacles', 'moving_walls', 'portals'].map(map => `
-              <div class="map-option ${currentSettings.mapType === map ? 'selected' : ''}" data-map="${map}">
-                <div class="map-preview map-${map}"></div>
-                <span>${map.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-              </div>
-            `).join('')}
+          <h3><i class="fas fa-circle"></i> Ball Style</h3>
+          <div class="ball-styles-grid">
+            <div class="ball-style-option selected" data-ball="neon">
+              <div class="ball-preview ball-neon"></div>
+              <span>Neon Glow</span>
+            </div>
+            <div class="ball-style-option" data-ball="fire">
+              <div class="ball-preview ball-fire"></div>
+              <span>Fire Ball</span>
+            </div>
+            <div class="ball-style-option" data-ball="ice">
+              <div class="ball-preview ball-ice"></div>
+              <span>Ice Ball</span>
+            </div>
+            <div class="ball-style-option" data-ball="rainbow">
+              <div class="ball-preview ball-rainbow"></div>
+              <span>Rainbow</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Arena -->
+        <div class="customization-section">
+          <h3><i class="fas fa-image"></i> Game Arena</h3>
+          <div class="arena-styles-grid">
+            <div class="arena-style-option selected" data-arena="classic">
+              <div class="arena-preview arena-classic"></div>
+              <span>Classic</span>
+            </div>
+            <div class="arena-style-option" data-arena="grid">
+              <div class="arena-preview arena-grid"></div>
+              <span>Cyber Grid</span>
+            </div>
+            <div class="arena-style-option" data-arena="stars">
+              <div class="arena-preview arena-stars"></div>
+              <span>Starfield</span>
+            </div>
+            <div class="arena-style-option" data-arena="waves">
+              <div class="arena-preview arena-waves"></div>
+              <span>Energy Waves</span>
+            </div>
           </div>
         </div>
         

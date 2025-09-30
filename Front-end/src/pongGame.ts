@@ -155,6 +155,11 @@ export class PongGame {
       powerUpTypes: ['paddle_size', 'ball_speed'],
       ...config
     };
+    
+    // Debug: Log final config after merge
+    console.log('🎮 PongGame Constructor - Final config after merge:');
+    console.log('   - ballSpeed:', this.config.ballSpeed);
+    console.log('   - paddleSpeed:', this.config.paddleSpeed);
 
     // Set canvas size
     this.canvas.width = this.config.canvasWidth;
@@ -380,6 +385,12 @@ export class PongGame {
 
   private getEffectivePaddleSpeed(player: Player): number {
     let base = this.config.paddleSpeed;
+    
+    // Debug: Log paddle speed every 100 frames
+    if (Math.random() < 0.01) {
+      console.log('🎮 Paddle Speed Check - config.paddleSpeed:', this.config.paddleSpeed, 'base:', base);
+    }
+    
     const now = Date.now();
     if (player.temporaryPaddleSlowUntilMs && now < player.temporaryPaddleSlowUntilMs) {
       base *= 0.6;
@@ -742,6 +753,8 @@ export class PongGame {
     const dir = direction || (Math.random() > 0.5 ? 1 : -1);
     this.ball.velocityX = this.config.ballSpeed * dir;
     this.ball.velocityY = this.config.ballSpeed * (Math.random() > 0.5 ? 1 : -1);
+    
+    console.log('⚽ Ball Reset - config.ballSpeed:', this.config.ballSpeed, 'velocityX:', this.ball.velocityX);
   }
 
   private resetPaddles(): void {
@@ -1431,14 +1444,25 @@ export function createPongGame(
 }
 
 export function create1v1Game(canvas: HTMLCanvasElement, overrides?: Partial<GameConfig>): PongGame {
+  // Get global customization settings but exclude game rules
+  const globalSettings = (window as any).gameCustomizationSettings || {};
+  const { maxScore: _, ...visualSettings } = globalSettings; // Exclude maxScore from global settings
+  
   const game = new PongGame(canvas, {
-    maxScore: 5,
+    maxScore: 5, // Always use 5 for 1v1 games
     ballSpeed: 5,
     paddleSpeed: 7,
-    ...overrides
+    ...visualSettings, // Only apply visual customizations
+    ...overrides // Allow explicit overrides
   });
   
   game.setPlayer2AI(false);
+  
+  // Store reference for real-time updates
+  (window as any).currentGame = game;
+  
+  console.log('🎮 Created 1v1 game with maxScore: 5, visual settings:', visualSettings);
+  
   return game;
 }
 
@@ -1449,19 +1473,39 @@ export function createAIGame(canvas: HTMLCanvasElement, difficulty: 'easy' | 'me
     hard: { ballSpeed: 6, paddleSpeed: 8 }
   } as const;
   
-  const game = new PongGame(canvas, {
-    maxScore: 5,
-    ...difficultyConfig[difficulty],
-    ...overrides
-  });
+  // Get global customization settings but exclude game rules and physics that affect difficulty
+  const globalSettings = (window as any).gameCustomizationSettings || {};
+  const { maxScore: _, ballSpeed: __, paddleSpeed: ___, ...visualSettings } = globalSettings; // Exclude game rules and physics
+  
+  console.log('🔍 DEBUG - Global settings:', globalSettings);
+  console.log('🔍 DEBUG - Visual settings after exclusion:', visualSettings);
+  console.log('🔍 DEBUG - Difficulty config:', difficultyConfig[difficulty]);
+  console.log('🔍 DEBUG - Overrides parameter:', overrides);
+  
+  const finalConfig = {
+    maxScore: 5, // Always use 5 for AI games
+    ...visualSettings, // Apply visual customizations first
+    ...difficultyConfig[difficulty], // Then apply difficulty settings (higher priority)
+    ...overrides // Allow explicit overrides (highest priority)
+  };
+  
+  console.log('🔍 DEBUG - Final config being passed to constructor:', finalConfig);
+  
+  const game = new PongGame(canvas, finalConfig);
   
   // Set AI after game creation
   game.setPlayer2AI(true);
   game.setAIDifficulty(difficulty);
   game.setPlayerNames('Player 1', 'AI Opponent');
   
-  console.log('AI Game created with difficulty:', difficulty);
-  console.log('Player2 isAI:', game.getPlayers().player2.isAI);
+  console.log('🤖 AI Game created with difficulty:', difficulty);
+  console.log('🤖 Difficulty config applied:', difficultyConfig[difficulty]);
+  console.log('🤖 Player2 isAI:', game.getPlayers().player2.isAI);
+  
+  // Force log the actual config to verify
+  console.log('🤖 ACTUAL CONFIG CHECK:');
+  console.log('   - Ball Speed should be:', difficultyConfig[difficulty].ballSpeed);
+  console.log('   - Paddle Speed should be:', difficultyConfig[difficulty].paddleSpeed);
   
   return game;
 }
