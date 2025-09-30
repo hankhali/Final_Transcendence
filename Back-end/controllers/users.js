@@ -111,7 +111,7 @@ async function userLogIn(username, password){
 //The userId should not come from the client. You should take it from the JWT/session of the logged-in user (so they can only see their own data).
 //userId = authenticatedUserId, ID from auth (their own profile). / ID from session/JWT (your own profile).
 async function getUserdata(userId){
-    const fetchData = db.prepare('SELECT id, alias, username, email, avatar, player_matches, player_wins, created_at, bio FROM users WHERE id = ?').get(userId);
+    const fetchData = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     if(!fetchData){
         throw new Error(`User with ID ${userId} not found`);
     }
@@ -133,10 +133,10 @@ async function getUserdata(userId){
     // Map fields for frontend
     const mappedHistory = getGameHistory.map(row => ({
         id: row.id,
-        // hanieh added: Show AI Opponent for AI matches
-        opponent: row.opponent_id === null ? 'AI Opponent' : (row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown')),
-        // hanieh added: Use a default AI avatar for AI matches
-        opponentAvatar: row.opponent_id === null ? '/uploads/vite.svg' : (row.opponentAvatar || ''),
+        // hanieh added: Use opponent_name for tournament matches, otherwise show AI Opponent for AI matches
+        opponent: row.opponent_id === null ? (row.opponent_name || 'AI Opponent') : (row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown')),
+        // hanieh added: Use tournament avatar for tournament matches, otherwise default AI avatar
+        opponentAvatar: row.opponent_id === null ? (row.opponent_name ? 'tournament-player.jpg' : '/uploads/vite.svg') : (row.opponentAvatar || ''),
         score: `${row.user_score}-${row.opponent_score}`,
         // hanieh added: Show 'ai' for AI matches, otherwise 1v1/tournament
         gameType: row.round === 'ai' ? 'ai' : (row.round === '1v1' ? '1v1' : 'tournament'),

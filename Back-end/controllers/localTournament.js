@@ -5,11 +5,11 @@ const db = require('../queries/database');
 async function createLocalMatch(userId, player1Name, player2Name, round) {
     try {
         // For local tournaments, the logged-in user plays all matches
-        // opponent_id = NULL since guest players don't have accounts
+        // opponent_id = NULL since guest players don't have accounts, but store opponent_name
         const insertResult = db.prepare(`
-            INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id) 
-            VALUES (?, NULL, 0, 0, 'pending', ?, NULL)
-        `).run(userId, round);
+            INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id, opponent_name) 
+            VALUES (?, NULL, 0, 0, 'pending', ?, NULL, ?)
+        `).run(userId, round, player2Name);
         
         return { matchId: insertResult.lastInsertRowid };
     } catch (error) {

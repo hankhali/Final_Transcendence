@@ -293,10 +293,10 @@ function handleLogin(username: string, token?: string, userId?: number): void {
   // Update global variables
   (window as any).isLoggedIn = isLoggedIn;
   (window as any).currentUser = currentUser;
-  localStorage.setItem('isLoggedIn', 'true');
-  localStorage.setItem('currentUser', JSON.stringify(currentUser));
+  sessionStorage.setItem('isLoggedIn', 'true');
+  sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
   if (token) {
-    localStorage.setItem('token', token);
+    sessionStorage.setItem('token', token);
   }
   updateNavbar();
   showMessage(`WELCOME BACK, ${username.toUpperCase()}!`, "success");
@@ -310,9 +310,9 @@ function handleLogout(): void {
   // Update global variables
   (window as any).isLoggedIn = isLoggedIn;
   (window as any).currentUser = currentUser;
-  localStorage.removeItem('isLoggedIn');
-  localStorage.removeItem('currentUser');
-  localStorage.removeItem('token');
+  sessionStorage.removeItem('isLoggedIn');
+  sessionStorage.removeItem('currentUser');
+  sessionStorage.removeItem('token');
   updateNavbar();
   showMessage("Logged out successfully!", "success");
   navigateTo("/");
@@ -320,9 +320,9 @@ function handleLogout(): void {
 
 // Function to check stored login state
 function checkLoginState(): void {
-  const storedLoginState = localStorage.getItem('isLoggedIn');
-  const storedUser = localStorage.getItem('currentUser');
-  const storedToken = localStorage.getItem('token');
+  const storedLoginState = sessionStorage.getItem('isLoggedIn');
+  const storedUser = sessionStorage.getItem('currentUser');
+  const storedToken = sessionStorage.getItem('token');
   
   if (storedLoginState === 'true' && storedUser && storedToken) {
     isLoggedIn = true;
@@ -337,9 +337,9 @@ function checkLoginState(): void {
     currentUser = null;
     (window as any).isLoggedIn = isLoggedIn;
     (window as any).currentUser = currentUser;
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('token');
   }
 }
 // Navbar Component

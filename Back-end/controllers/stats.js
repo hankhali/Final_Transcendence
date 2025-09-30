@@ -122,24 +122,48 @@ async function getUserStats(userId) {
             gamesPlayed
         });
     }
-    // Skill progression: generate a point for each game played
+    // Skill progression: generate a point for each completed game
     const skillProgression = [];
-    const progressionRows = db.prepare('SELECT played_at, user_score, opponent_score FROM game_history WHERE user_id = ? ORDER BY played_at ASC').all(userId);
-    let cumulativeWins = 0, cumulativeLosses = 0;
-    progressionRows.forEach(row => {
+    const progressionRows = db.prepare('SELECT played_at, user_score, opponent_score, result FROM game_history WHERE user_id = ? AND result = ? ORDER BY played_at ASC').all(userId, 'finished');
+    let baseSkill = 1000; // Start with 1000 skill points (like ELO)
+    let currentSkill = baseSkill;
+    
+    progressionRows.forEach((row, index) => {
         // Convert scores to numbers
         const userScore = Number(row.user_score);
         const opponentScore = Number(row.opponent_score);
         if (isNaN(userScore) || isNaN(opponentScore)) return;
-        if (userScore > opponentScore) cumulativeWins++;
-        if (userScore < opponentScore) cumulativeLosses++;
+        
+        // Calculate skill change based on match result
+        let skillChange = 0;
+        if (userScore > opponentScore) {
+            // Win: gain skill points based on score difference
+            skillChange = 20 + Math.min(10, (userScore - opponentScore) * 2);
+        } else if (userScore < opponentScore) {
+            // Loss: lose skill points based on score difference
+            skillChange = -15 - Math.min(10, (opponentScore - userScore) * 2);
+        }
+        // Draw: no change (though pong rarely has draws)
+        
+        currentSkill += skillChange;
+        // Ensure skill doesn't go below 0
+        currentSkill = Math.max(0, currentSkill);
+        
         let date = typeof row.played_at === 'string' && row.played_at.length >= 10 ? row.played_at.slice(0, 10) : (row.played_at ? String(row.played_at) : 'Unknown');
-        let skill = Math.round((cumulativeWins - cumulativeLosses) * 100 / ((cumulativeWins + cumulativeLosses) || 1));
+        
         skillProgression.push({
             date,
-            skill
+            skill: Math.round(currentSkill)
         });
     });
+    
+    // If no completed games, add a starting point
+    if (skillProgression.length === 0) {
+        skillProgression.push({
+            date: new Date().toISOString().slice(0, 10),
+            skill: baseSkill
+        });
+    }
     return {
         gamesPlayed,
         wins,

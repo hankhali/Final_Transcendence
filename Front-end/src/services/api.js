@@ -58,7 +58,7 @@ async function fetchApi(endpoint, options){
       headers["Content-Type"] = "application/json";
     }
 
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if(token){
       headers["Authorization"] = `Bearer ${token}`;
       console.log(token);
@@ -189,7 +189,7 @@ const apiService = {
     
     // Upload avatar (expects a File object, returns uploaded filename)
     uploadAvatar: async (file) => {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       const formData = new FormData();
       formData.append("avatar", file);
       const response = await fetch(`${API_BASE_URL}/uploads`, {

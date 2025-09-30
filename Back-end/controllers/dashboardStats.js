@@ -41,6 +41,17 @@ function getDashboardStats(userId) {
   const matchesWithOpponent = matches.map(m => {
     let isUserPlayer = m.user_id === userId;
     let opponentId = isUserPlayer ? m.opponent_id : m.user_id;
+    
+    // For tournament matches with guest players, use opponent_name instead of looking up user
+    if (!opponentId && m.opponent_name) {
+      return {
+        ...m,
+        opponent: m.opponent_name,
+        opponentAvatar: 'tournament-player.jpg', // Special avatar for tournament players
+        isUserPlayer
+      };
+    }
+    
     const opponent = db.prepare('SELECT username, avatar FROM users WHERE id = ?').get(opponentId);
     return {
       ...m,
@@ -50,8 +61,9 @@ function getDashboardStats(userId) {
     };
   });
   console.log('[DEBUG] Fetched matches:', matches);
+  console.log('[DEBUG] Matches with opponent info:');
   matchesWithOpponent.forEach((m, i) => {
-    console.log(`[MATCH ${i}]`, m);
+    console.log(`[MATCH ${i}] ID:${m.id} opponent:"${m.opponent}" opponent_name:"${m.opponent_name}" opponent_id:${m.opponent_id}`);
   });
   // Count wins/losses for this user (regardless of role)
   const wins = matchesWithOpponent.filter(m =>

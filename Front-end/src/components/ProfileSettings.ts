@@ -72,14 +72,30 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     const file = avatarInput.files?.[0];
     if (!file) return;
     try {
+      console.log('[DEBUG] Starting avatar upload for file:', file.name);
       const res = await apiService.users.uploadAvatar(file);
+      console.log('[DEBUG] Avatar upload response:', res);
+      
       if (res.error) {
+        console.error('[DEBUG] Avatar upload failed with error:', res.error);
         showMessage(`Failed to upload avatar: ${res.error}`, 'error');
       } else {
-        avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${res.data.file}" alt="Avatar" class="avatar-img" />`;
+        console.log('[DEBUG] Avatar upload successful, updating preview');
+        // Fix: Use res.file instead of res.data.file since response is direct
+        const fileName = (res as any).file;
+        avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/${fileName}" alt="Avatar" class="avatar-img" />`;
         showMessage('Avatar uploaded successfully!', 'success');
+        
+        // Update the main avatar display as well
+        const mainAvatar = document.querySelector('.avatar-img') as HTMLImageElement;
+        if (mainAvatar) {
+          mainAvatar.src = `http://localhost:5001/uploads/${fileName}`;
+          console.log('[DEBUG] Updated main avatar display');
+        }
       }
     } catch (err) {
+      console.error('[DEBUG] Avatar upload exception:', err);
+      console.error('[DEBUG] Exception details:', (err as any).message || err);
       showMessage('Error uploading avatar.', 'error');
     }
   });

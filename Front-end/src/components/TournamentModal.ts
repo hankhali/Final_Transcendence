@@ -437,6 +437,9 @@ function showBracket(players: string[]) {
               <div class="vs-divider">VS</div>
               <div class="player placeholder" data-from="match2">Winner of Match 2</div>
             </div>
+            <div class="start-match-btn-container">
+              <button class="btn btn-primary start-match-btn" data-match="final">Start Final</button>
+            </div>
           </div>
         </div>
       </div>
@@ -446,24 +449,25 @@ function showBracket(players: string[]) {
   // Add start match button logic
   const startBtns = bracket.querySelectorAll('.start-match-btn');
   const match2Btn = bracket.querySelector('.start-match-btn[data-match="2"]') as HTMLButtonElement;
-  // Initially disable Match 2 button
+  const finalBtn = bracket.querySelector('.start-match-btn[data-match="final"]') as HTMLButtonElement;
+  
+  // Initially disable Match 2 and Final buttons
   if (match2Btn) {
     match2Btn.disabled = true;
     match2Btn.style.opacity = '0.5';
     match2Btn.title = 'Finish Match 1 first';
   }
+  if (finalBtn) {
+    finalBtn.disabled = true;
+    finalBtn.style.opacity = '0.5';
+    finalBtn.title = 'Finish both semifinals first';
+  }
   startBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const matchNum = (btn as HTMLButtonElement).getAttribute('data-match');
       console.log('[DEBUG] Start Match button clicked:', { matchNum, btn });
-      // Prevent Match 2 if Match 1 not finished
-      if (matchNum === '2' && !matchWinners[1]) {
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-        btn.title = 'Finish Match 1 first';
-        alert('You must finish Match 1 before starting Match 2!');
-        return;
-      }
+      // Note: Match progression is now handled automatically by winner detection
+      // No manual validation needed since buttons are enabled/disabled automatically
       // Get the two player names for this match
       let playerA = '', playerB = '';
       if (matchNum === '1') {
@@ -472,9 +476,19 @@ function showBracket(players: string[]) {
       } else if (matchNum === '2') {
         playerA = players[2];
         playerB = players[3];
+      } else if (matchNum === 'final') {
+        // Get winners from previous matches
+        const results = (window as any).globalMatchResults;
+        if (results && results['1'] && results['2']) {
+          playerA = results['1'];
+          playerB = results['2'];
+        } else {
+          console.error('[ERROR] Cannot start final - missing semifinal winners');
+          return;
+        }
       }
       console.log('[DEBUG] About to call startGame with:', { playerA, playerB, matchNum });
-      // Call your real game logic here
+      // Call tournament-specific game logic
       startGame(playerA, playerB, matchNum);
     });
   });
@@ -498,16 +512,23 @@ function showBracket(players: string[]) {
     console.log('[DEBUG] TournamentModal startGame called with:', { playerA, playerB, matchNum });
     try {
       // Use local tournament API for guest players, but set 1v1 mode for UI
-      const { localTournament } = await import('../services/api.js');
+      const apiModule = await import('../services/api.js');
+      const localTournament = apiModule.localTournament;
       const matchResponse = await localTournament.startMatch(playerA, playerB, `match${matchNum}`);
+      
+      console.log('[DEBUG] Full API response:', matchResponse);
+      console.log('[DEBUG] Response type:', typeof matchResponse);
+      console.log('[DEBUG] Response keys:', Object.keys(matchResponse || {}));
       
       if (matchResponse.error) {
         throw new Error(matchResponse.error);
       }
       
       const matchId = matchResponse.data?.matchId;
+      console.log('[DEBUG] Extracted matchId:', matchId);
       
       if (!matchId) {
+        console.error('[DEBUG] matchResponse structure:', JSON.stringify(matchResponse, null, 2));
         throw new Error('Failed to create match - no matchId returned');
       }
       
@@ -563,6 +584,64 @@ function showBracket(players: string[]) {
                   
                   (window as any).globalMatchResults[matchNum] = winner;
                   console.log('[DEBUG] DIRECT: Updated globalMatchResults:', (window as any).globalMatchResults);
+                  
+                  // Submit result to backend
+                  (async () => {
+                    try {
+                      const apiModule = await import('../services/api.js');
+                      const localTournament = apiModule.localTournament;
+                      await localTournament.finishMatch(matchId, player1Score, player2Score, winner);
+                      console.log('[DEBUG] Tournament match result submitted to backend successfully');
+                    } catch (error) {
+                      console.error('[DEBUG] Error submitting tournament result to backend:', error);
+                    }
+                  })();
+                  
+                  // Special announcement for FINAL match - TOURNAMENT CHAMPION!
+                  if (matchNum === 'final') {
+                    console.log('🏆🏆🏆 TOURNAMENT CHAMPION: ' + winner + ' 🏆🏆🏆');
+                    
+                    // Show champion announcement modal
+                    setTimeout(() => {
+                      const championModal = document.createElement('div');
+                      championModal.className = 'modal-overlay';
+                      championModal.style.cssText = `
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                        justify-content: center; z-index: 10000;
+                      `;
+                      
+                      championModal.innerHTML = `
+                        <div style="
+                          background: linear-gradient(135deg, #FFD700, #FFA500);
+                          padding: 40px; border-radius: 20px; text-align: center;
+                          box-shadow: 0 0 30px rgba(255,215,0,0.5);
+                          border: 3px solid #FFD700;
+                        ">
+                          <h1 style="color: #8B4513; font-size: 3em; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                            🏆 TOURNAMENT CHAMPION! 🏆
+                          </h1>
+                          <h2 style="color: #8B4513; font-size: 2.5em; margin: 20px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+                            ${winner}
+                          </h2>
+                          <p style="color: #8B4513; font-size: 1.3em; margin: 20px 0;">
+                            Congratulations on winning the tournament!
+                          </p>
+                          <button onclick="this.parentElement.parentElement.remove()" 
+                                  style="
+                                    background: #8B4513; color: white; border: none;
+                                    padding: 15px 30px; font-size: 1.2em; border-radius: 10px;
+                                    cursor: pointer; margin-top: 20px;
+                                  ">
+                            🎉 Celebrate! 🎉
+                          </button>
+                        </div>
+                      `;
+                      
+                      document.body.appendChild(championModal);
+                    }, 1000);
+                  }
+                  
                   console.log('[DEBUG] DIRECT: Winner will be displayed when bracket is shown');
                 }
               }
@@ -664,7 +743,21 @@ function showBracket(players: string[]) {
       }
     } catch (error) {
       console.error('Error starting local tournament match:', error);
-      alert('Error starting match. Please make sure you are logged in and try again.');
+      console.error('Full error details:', (error as any).message || error);
+      
+      // Check if user is logged in
+      const token = sessionStorage.getItem('token');
+      console.log('[DEBUG] Auth token present:', !!token);
+      
+      if (!token) {
+        alert('Error: You must be logged in to play tournament matches. Please log in and try again.');
+        return;
+      }
+      
+      // More detailed error message
+      const errorMsg = (error as any).message || String(error);
+      console.error('[DEBUG] Tournament match creation failed:', errorMsg);
+      alert(`Error starting match: ${errorMsg}. Please make sure you are logged in and try again.`);
     }
   }
 
@@ -747,7 +840,26 @@ function showBracket(players: string[]) {
         if (finalMatch) {
           finalMatch.textContent = results['1'];
           finalMatch.classList.remove('placeholder');
-          finalMatch.style.color = '#4CAF50';
+          (finalMatch as HTMLElement).style.color = '#4CAF50';
+        }
+        
+        // AUTOMATICALLY ENABLE MATCH 2 when Match 1 is complete
+        const match2Btn = bracket.querySelector('.start-match-btn[data-match="2"]') as HTMLButtonElement;
+        if (match2Btn) {
+          match2Btn.disabled = false;
+          match2Btn.style.opacity = '1';
+          match2Btn.title = '';
+          console.log('[DEBUG] Match 2 automatically enabled after Match 1 completion');
+        }
+        
+        // DISABLE MATCH 1 button since it's complete
+        const match1Btn = bracket.querySelector('.start-match-btn[data-match="1"]') as HTMLButtonElement;
+        if (match1Btn) {
+          match1Btn.disabled = true;
+          match1Btn.style.opacity = '0.5';
+          match1Btn.textContent = 'Match Complete';
+          match1Btn.title = 'This match is already complete';
+          console.log('[DEBUG] Match 1 button disabled - match complete');
         }
       }
     }
@@ -769,7 +881,28 @@ function showBracket(players: string[]) {
         if (finalMatch) {
           finalMatch.textContent = results['2'];
           finalMatch.classList.remove('placeholder');
-          finalMatch.style.color = '#4CAF50';
+          (finalMatch as HTMLElement).style.color = '#4CAF50';
+        }
+        
+        // DISABLE MATCH 2 button since it's complete
+        const match2Btn = bracket.querySelector('.start-match-btn[data-match="2"]') as HTMLButtonElement;
+        if (match2Btn) {
+          match2Btn.disabled = true;
+          match2Btn.style.opacity = '0.5';
+          match2Btn.textContent = 'Match Complete';
+          match2Btn.title = 'This match is already complete';
+          console.log('[DEBUG] Match 2 button disabled - match complete');
+        }
+        
+        // ENABLE FINAL MATCH if both semifinals are complete
+        if (results['1'] && results['2']) {
+          const finalBtn = bracket.querySelector('.start-match-btn[data-match="final"]') as HTMLButtonElement;
+          if (finalBtn) {
+            finalBtn.disabled = false;
+            finalBtn.style.opacity = '1';
+            finalBtn.title = '';
+            console.log('[DEBUG] Final match automatically enabled - both semifinals complete');
+          }
         }
       }
     }
@@ -783,20 +916,26 @@ function showBracket(players: string[]) {
         winnerDiv.className = 'tournament-champion';
         winnerDiv.innerHTML = `<h2 style="color: #FFD700; text-align: center; margin-top: 20px;">🏆 CHAMPION: ${results['final']} 🏆</h2>`;
         finalElement.appendChild(winnerDiv);
+        
+        // DISABLE FINAL button since tournament is complete
+        const finalBtn = bracket.querySelector('.start-match-btn[data-match="final"]') as HTMLButtonElement;
+        if (finalBtn) {
+          finalBtn.disabled = true;
+          finalBtn.style.opacity = '0.5';
+          finalBtn.textContent = 'Tournament Complete';
+          finalBtn.title = 'Tournament has ended - Champion crowned!';
+          console.log('[DEBUG] Final button disabled - tournament complete');
+        }
       }
     }
   }
 
-  // Interactive logic
+  // Interactive logic - DISABLED manual selection since we have automatic winner detection
   let matchWinners: { [key: string]: string } = {};
   function selectWinner(playerElement: HTMLElement, matchNumber: string | number) {
-    // Remove winner class from both players in this match
-    const match = playerElement.closest('.match');
-    if (!match) return;
-    const players = match.querySelectorAll('.player:not(.placeholder)');
-    players.forEach(p => p.classList.remove('winner'));
-    // Add winner class to selected player
-    playerElement.classList.add('winner');
+    // Manual selection disabled - winners are determined automatically by game results
+    console.log('[DEBUG] Manual winner selection disabled - winners determined by game results');
+    return;
     // Store winner
     const playerName = playerElement.getAttribute('data-player') || '';
     matchWinners[matchNumber] = playerName;
@@ -865,12 +1004,16 @@ function showBracket(players: string[]) {
       alert('🆕 New tournament ready!\n\nGood luck to all players! 🍀');
     }
   }
-  // Attach event listeners
-  // Semifinal player click
-  const match1Players = bracket.querySelectorAll('.match[data-match="1"] .player');
-  match1Players.forEach(p => (p as HTMLElement).onclick = () => selectWinner(p as HTMLElement, 1));
-  const match2Players = bracket.querySelectorAll('.match[data-match="2"] .player');
-  match2Players.forEach(p => (p as HTMLElement).onclick = () => selectWinner(p as HTMLElement, 2));
+  // Attach event listeners - DISABLED manual selection
+  // Manual player selection disabled - winners determined automatically by game results
+  console.log('[DEBUG] Manual player selection disabled - winners determined by game results');
+  
+  // Remove click events from players to prevent manual selection
+  const allPlayers = bracket.querySelectorAll('.player:not(.placeholder)');
+  allPlayers.forEach(p => {
+    (p as HTMLElement).style.cursor = 'default';
+    (p as HTMLElement).onclick = null;
+  });
   // controls removed
 }
 
