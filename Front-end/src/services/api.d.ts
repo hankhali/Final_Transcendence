@@ -8,11 +8,13 @@ export interface ApiService {
     getAll: () => Promise<{ data: any; error: any }>;
     getById: (tournamentId: number) => Promise<{ data: any; error: any }>;
     join: (tournamentId: number, tournament_alias: string) => Promise<{ data: any; error: any }>;
+    joinGuest: (tournamentId: number, guestUsername: string) => Promise<{ data: any; error: any }>;
     leave: (tournamentId: number, playerId: number) => Promise<{ data: any; error: any }>;
   };
   users: {
     register: (username: string, password: string, email: string) => Promise<{ data: any; error: any }>;
     login: (username: string, password: string) => Promise<{ data: any; error: any }>;
+    logout: () => Promise<{ data: any; error: any }>;
     updateProfile: (profileData: any) => Promise<{ data: any; error: any }>;
     getMyProfile: () => Promise<{ data: any; error: any }>;
     getOthersProfile: (userId: number) => Promise<{ data: any; error: any }>;
@@ -29,6 +31,12 @@ export interface ApiService {
     submitResult: (player1Score: number, player2Score: number) => Promise<{ data: any; error: any; }>;
     start: (difficulty: string) => Promise<{ data: any; error: any }>;
     finish: (matchId: number, result: any) => Promise<{ data: any; error: any }>;
+  };
+  localTournament: {
+    create: (name: string, maxPlayers: number, playerNames: string[]) => Promise<{ data: any; error: any }>;
+    start: (tournamentId: number) => Promise<{ data: any; error: any }>;
+    submitMatchResult: (tournamentId: number, matchId: number, player1Score: number, player2Score: number) => Promise<{ data: any; error: any }>;
+    getMatches: (tournamentId: number) => Promise<{ data: any; error: any }>;
   };
 }
 
