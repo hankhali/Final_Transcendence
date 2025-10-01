@@ -67,7 +67,7 @@ async function createTables() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         friend_id INTEGER NOT NULL,
-        friend_request TEXT DEFAULT 'pending', /*'pending', 'accepted', 'rejected'*/
+        friend_request TEXT DEFAULT 'pending',
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
         FOREIGN KEY (friend_id) REFERENCES users (id) ON DELETE CASCADE
       );

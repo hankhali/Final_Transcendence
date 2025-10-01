@@ -170,10 +170,20 @@ export function createFriendsSection(): HTMLElement {
   }
 
   // Remove friend
+  // function removeFriend(_friendId: number) {
+  //   // TODO: Implement backend remove friend endpoint
+  //   showMessage("Friend removed successfully.");
+  //   loadFriends();
+  // }
+
+    // Remove friend
   function removeFriend(_friendId: number) {
-    // TODO: Implement backend remove friend endpoint
-    showMessage("Friend removed successfully.");
-    loadFriends();
+    // call backend API
+      apiService.users.removeFriend(_friendId).then((res) => {
+        showMessage(res.data?.message || "Response sent!");
+        showMessage("Friend removed successfully.");
+        loadFriends();
+    });
   }
 
   // Respond to request

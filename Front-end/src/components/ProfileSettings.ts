@@ -135,31 +135,34 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
     }
   });
 
-  // Function to handle avatar removal (placeholder for backend integration)
-  function handleRemoveAvatar() {
+  // Function to handle avatar removal with real API call
+  async function handleRemoveAvatar() {
     try {
-      console.log('[DEBUG] Remove avatar requested - placeholder for backend integration');
+      // Call the real API to remove avatar
+      const res = await (apiService.users as any).removeAvatar();
       
-      // Reset avatar to default immediately in UI
+      if (res.error) {
+        showMessage(`Failed to remove avatar: ${res.error}`, 'error');
+        return;
+      }
+      
+      // Reset avatar to default in UI
       avatarPreview.innerHTML = `<img src="http://localhost:5001/uploads/default.jpg" alt="Default Avatar" class="avatar-img" />`;
       
       // Update the main avatar display as well
       const mainAvatar = document.querySelector('.avatar-img') as HTMLImageElement;
       if (mainAvatar) {
         mainAvatar.src = `http://localhost:5001/uploads/default.jpg`;
-        console.log('[DEBUG] Reset main avatar display to default');
       }
       
       // Hide remove button since we're back to default
       removeButton.style.display = 'none';
       
-      showMessage('Avatar removed successfully! Reset to default avatar.', 'success');
-      
-      // TODO: Your friend will implement the actual API call here
-      // Example: await apiService.users.removeAvatar();
+      const successMessage = res.data?.message || 'Avatar removed successfully! Reset to default avatar.';
+      showMessage(successMessage, 'success');
       
     } catch (err) {
-      console.error('[DEBUG] Avatar removal error:', err);
+      console.error('Avatar removal error:', err);
       showMessage('Error removing avatar. Please try again.', 'error');
     }
   }

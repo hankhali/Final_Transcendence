@@ -257,6 +257,22 @@ async function updateUserProfile(userId, updates){
     
 }
 
+//add remove avatar function
+async function removeAvatar(userId){
+    const user = db.prepare(`SELECT id, avatar FROM users WHERE id = ?`).get(userId);
+    if(!user){
+        throw new Error('User not found');
+    }
+    if(user.avatar === 'default.jpg'){
+        throw new Error('No custom avatar to remove');
+    }
+    db.prepare(`UPDATE users SET avatar = 'default.jpg' WHERE id = ?`).run(userId);
+    return { message: 'Avatar removed, reverted to default' };
+}
+
+
+
+
 //1. search friends
 //2. add friends
 
@@ -398,19 +414,42 @@ async function viewSentRequests(userId) {
 }
 
 
+async function removeFriend(userId, friendId){
+    //check if useres exists
+    const checkUsers = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+    const checkFriends = db.prepare('SELECT id FROM users WHERE id = ?').get(friendId);
+    if (!checkUsers || !checkFriends){
+        throw new Error('User not found');
+    }
 
+    //prevent duplicates, logged in user shouldnt be the same as friend id
+    if(userId === friendId){
+        throw new Error('you cannot remove yourself as a friend');
+    }
 
+    //check that this user is in the friend list of the logged in user
+    const friendshipExist = db.prepare(`SELECT * FROM friends WHERE ((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)) AND friend_request = 'accepted'`).get(userId, friendId, friendId, userId);
 
+    if(!friendshipExist){
+        throw new Error('Friendship does not exist');
+    }
 
+    //remove a friend from the list
+    //remove row from friendship table
+    db.prepare('DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)').run(userId, friendId, friendId, userId);
+    return {message: "Friend removed successfully!"}; 
+}
 
 module.exports = {
     createUser,
     userLogIn,
     getUserdata,
     getPublicProfile,
+    removeAvatar,
     setAlias,
     searchFriends,
     addFriends,
+    removeFriend,
     requestResponse,
     viewPendingRequests,
     // hanieh changed: Added viewSentRequests for sender to see outgoing requests

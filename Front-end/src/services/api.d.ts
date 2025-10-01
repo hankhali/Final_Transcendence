@@ -19,6 +19,7 @@ export interface ApiService {
     deleteMyAccount: () => Promise<{ data: any; error: any }>;
     searchForFriends: () => Promise<{ data: any; error: any }>;
     addFriends: (friendId: number) => Promise<{ data: any; error: any }>;
+    removeFriend: (friendId: number) => Promise<{ data: any; error: any }>;
     listRequests: () => Promise<{ data: any; error: any }>;
     listSentRequests: () => Promise<{ data: any; error: any }>;
     sendRequestResponse: (requestId: number, response: string) => Promise<{ data: any; error: any }>;

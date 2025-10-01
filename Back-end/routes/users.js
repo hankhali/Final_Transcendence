@@ -17,7 +17,8 @@ const { requestResponse } = require('../controllers/users');
 const { viewPendingRequests } = require('../controllers/users');
 const { viewSentRequests } = require('../controllers/users'); // hanieh changed: import for sent requests endpoint
 const { listFriends } = require('../controllers/users');
-
+const { removeFriend } = require('../controllers/users');
+const { removeAvatar } = require('../controllers/users');
 
 const db = require('../queries/database');
 const fs = require('fs'); //filesystem
@@ -261,6 +262,18 @@ async function userRoutes(fastify, options){
         }
     });
 
+    //remove avatar
+    fastify.delete('/me/avatar', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try{
+            const userId = request.user.id;
+            const result = await removeAvatar(userId);
+            return reply.send(result);
+        }
+        catch(error){
+            return reply.code(400).send({error: error.message});
+        }
+    });
+
 
     //search for friends to add (will list available users first)
     fastify.get('/search-friends', { preHandler: [fastify.authenticate] }, async (request, reply) => {
@@ -340,9 +353,42 @@ async function userRoutes(fastify, options){
             return reply.code(400).send({ error: error.message });
         }
     });
+    //for now, the delete friend is not working.
+    fastify.delete('/friends/:friendId', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try {
+            const userId = request.user.id;
+            const friendIdNum = Number(request.params.friendId);
+            if (!friendIdNum) {
+                return reply.code(400).send({ error: "Invalid friendId, friendId is required" });
+            }
+            await removeFriend(userId, friendIdNum);
+            reply.send({ message: 'Friend removed successfully' });
+        } catch (error) {
+            return reply.code(400).send({ error: error.message });
+        }
+    });
+
+    // Delete user account - requires password confirmation
+    fastify.delete('/me', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+        try {
+            const userId = request.user.id;
+            const { password } = request.body;
+            
+            if (!password) {
+                return reply.code(400).send({ error: 'Password is required to delete account' });
+            }
+            
+            console.log('[DEBUG] DELETE /me called for userId:', userId);
+            const result = await deleteMyAccount(userId, password);
+            
+            // Account deleted successfully - return success message
+            return reply.send(result);
+        } catch (error) {
+            console.error('[DEBUG] DELETE /me error:', error);
+            return reply.code(400).send({ error: error.message });
+        }
+    });
     
-
-
 
 // hanieh edited: removed stray closing brace after last route
 }

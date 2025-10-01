@@ -165,6 +165,12 @@ const apiService = {
       });
     },
 
+    removeFriend: async (friendId) => {
+      return fetchApi(`/friends/${friendId}`, {
+        method: "DELETE"
+      });
+    },
+
 
     sendRequestResponse: async (requestId, action) => {
       return fetchApi(`/friend/requests/${requestId}/respond`, {
@@ -204,6 +210,13 @@ const apiService = {
       }
       // Response: { message, file } where file is the avatar filename
       return response.json();
+    },
+
+    // Remove avatar (reset to default)
+    removeAvatar: async () => {
+      return fetchApi("/me/avatar", {
+        method: "DELETE"
+      });
     }
   },
 
