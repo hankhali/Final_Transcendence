@@ -58,40 +58,126 @@ async function userRoutes(fastify, options){
     });
 
     
-    //log in authentication
-    fastify.post('/login', async (request, reply) => {
-        try{
-            // hanieh debug: log login request
-            const { username, password } = request.body;
-            console.log('[hanieh debug] login request:', { username, password });
-            const userData = await userLogIn(username, password);
-            //if valid, sign a token
-            const token = fastify.jwt.sign({
-                id: userData.userId, username: userData.username}, {
-                    // expiresIn: '2h'
-                });
-            //return token
-            reply.send({message: 'Login successful', token, userId: userData.userId, current_status: 'online'}); //...userData
-        }
-        catch(error){
-            console.log('[hanieh debug] login error:', error);
-            return reply.code(400).send({error: error.message});
-        }
-    });
+//log in authentication
+fastify.post('/login', async (request, reply) => {
+    try{
+        // hanieh debug: log login request
+        const { username, password } = request.body;
+        console.log('[hanieh debug] login request:', { username, password });
+        const userData = await userLogIn(username, password);
+        // update status in DB
+        db.prepare(`UPDATE users SET current_status = 'online', last_seen = CURRENT_TIMESTAMP WHERE id = ?`).run(userData.userId);
 
+        //if valid, sign a token
+        const token = fastify.jwt.sign({
+            id: userData.userId, username: userData.username}, {
+                // expiresIn: '2h'
+            });
+        //return token
+        reply.send({message: 'Login successful', token, userId: userData.userId, current_status: 'online'}); //...userData
+    }
+    catch(error){
+        console.log('[hanieh debug] login error:', error);
+        return reply.code(400).send({error: error.message});
+    }
+});
     
-    //log out
-    fastify.post('/logout', { preHandler: [fastify.authenticate] }, async (request, reply) => {
-        try{
-            const userId = request.user.id;
-            db.prepare(`UPDATE users SET current_status = 'offline' WHERE id = ?`).run(userId);
-            reply.send({ message: "Logged out successfully" });
-        }
-        catch(error){
-            return reply.code(400).send({error: error.message});
-        }
-    });
+//log out
+fastify.post('/logout', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    try{
+        const userId = request.user.id;
+        db.prepare("UPDATE users SET current_status = 'offline', last_seen = CURRENT_TIMESTAMP WHERE id = ?").run(userId);
+        reply.send({ message: "Logged out successfully" });
+    }
+    catch(error){
+        return reply.code(400).send({error: error.message});
+    }
+});
 
+//status
+fastify.get('/friends-status/:userId', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    try{
+        console.log('[🚀 BACKEND STATUS] === FRIENDS STATUS REQUEST START ===');
+        const { userId } = request.params;
+        const authenticatedUserId = request.user.id;
+        console.log('[🆔 BACKEND STATUS] URL userId:', userId);
+        console.log('[🔐 BACKEND STATUS] Authenticated userId:', authenticatedUserId);
+        
+        // Use authenticated user ID instead of URL parameter for security
+        const actualUserId = authenticatedUserId;
+        
+        // Check if authenticated user exists
+        const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(actualUserId);
+        console.log('[👤 BACKEND STATUS] Authenticated user lookup result:', user);
+        
+        if (!user) {
+            console.log('[❌ BACKEND STATUS] Authenticated user not found!');
+            return reply.code(404).send({error: 'User not found'});
+        }
+        
+        // First, let's check what's in the friends table
+        const allFriends = db.prepare('SELECT * FROM friends').all();
+        console.log('[🔍 BACKEND STATUS] All friends in database:', allFriends);
+        
+        const allUsers = db.prepare('SELECT id, username, current_status, last_seen FROM users').all();
+        console.log('[👥 BACKEND STATUS] All users in database:', allUsers);
+        
+        // First, update offline status for inactive users (5 minutes of inactivity)
+        const inactiveThreshold = 5; // minutes
+        const updateOfflineQuery = `
+            UPDATE users 
+            SET current_status = 'offline' 
+            WHERE current_status = 'online' 
+            AND last_seen < datetime('now', '-${inactiveThreshold} minutes')
+        `;
+        const offlineUpdates = db.prepare(updateOfflineQuery).run();
+        console.log('[🕐 BACKEND STATUS] Set', offlineUpdates.changes, 'inactive users offline (inactive > 5 min)');
+        
+        // Get friends with their status (check both directions of friendship)
+        const query = `SELECT DISTINCT u.id, u.username, u.current_status, u.last_seen, u.avatar 
+                       FROM friends f 
+                       JOIN users u ON (
+                           (f.user_id = ? AND u.id = f.friend_id) OR 
+                           (f.friend_id = ? AND u.id = f.user_id)
+                       )
+                       WHERE f.friend_request = 'accepted' AND u.id != ?`;
+        console.log('[📝 BACKEND STATUS] Executing bidirectional query:', query);
+        console.log('[📝 BACKEND STATUS] Query params:', [actualUserId, actualUserId, actualUserId]);
+        
+        const friends = db.prepare(query).all(actualUserId, actualUserId, actualUserId);
+        console.log('[📊 BACKEND STATUS] Query result - number of friends:', friends.length);
+        console.log('[👥 BACKEND STATUS] Friends data:', friends);
+        
+        // Convert last_seen to proper ISO format for frontend
+        friends.forEach(friend => {
+            if (friend.last_seen) {
+                // Convert SQLite datetime to proper ISO format
+                const lastSeenDate = new Date(friend.last_seen + ' UTC'); // Treat as UTC
+                friend.last_seen = lastSeenDate.toISOString();
+                console.log(`[🕐 BACKEND STATUS] Converted ${friend.username} last_seen to ISO:`, friend.last_seen);
+            }
+        });
+        
+        // Log each friend's status
+        friends.forEach((friend, index) => {
+            console.log(`[👤 BACKEND STATUS] Friend ${index + 1}: ${friend.username} (ID: ${friend.id})`);
+            console.log(`[📊 BACKEND STATUS] - Status: ${friend.current_status}`);
+            console.log(`[⏰ BACKEND STATUS] - Last seen: ${friend.last_seen}`);
+            console.log(`[🖼️ BACKEND STATUS] - Avatar: ${friend.avatar}`);
+        });
+        
+        const response = { userId: actualUserId, friends };
+        console.log('[📤 BACKEND STATUS] Sending response:', response);
+        console.log('[✅ BACKEND STATUS] === FRIENDS STATUS REQUEST END ===');
+        
+        reply.send(response);
+    }
+    catch(error){
+        console.error('[❌ BACKEND STATUS] Error fetching friends status:', error);
+        console.error('[🔍 BACKEND STATUS] Error stack:', error.stack);
+        return reply.code(400).send({error: error.message});
+    }
+});
 
 
 

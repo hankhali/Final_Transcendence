@@ -124,6 +124,13 @@ const apiService = {
       });
     },
 
+    // Logout
+    logout: async () => {
+      return fetchApi("/logout", {
+        method: "POST"
+      });
+    },
+
     // Update user profile (send only provided fields)
     updateProfile: async (profileData) => {
       // profileData: { username?, email?, alias?, password?, avatar? }
@@ -169,6 +176,22 @@ const apiService = {
       return fetchApi(`/friends/${friendId}`, {
         method: "DELETE"
       });
+    },
+
+    currentStatus: async (userId) => {
+      console.log('[🌐 API SERVICE] Making currentStatus request for userId:', userId);
+      console.log('[🌐 API SERVICE] Full URL:', `/friends-status/${userId}`);
+      
+      try {
+        const result = await fetchApi(`/friends-status/${userId}`, {
+          method: "GET"
+        });
+        console.log('[✅ API SERVICE] currentStatus response received:', result);
+        return result;
+      } catch (error) {
+        console.error('[❌ API SERVICE] currentStatus error:', error);
+        throw error;
+      }
     },
 
 

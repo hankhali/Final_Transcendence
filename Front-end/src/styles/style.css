@@ -7140,3 +7140,159 @@ footer p {
     justify-content: center;
   }
 }
+
+/* Friends Online Status Styles */
+.friend-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, rgba(15, 18, 40, 0.8), rgba(8, 10, 28, 0.9));
+  border: 1px solid rgba(0, 230, 255, 0.2);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.friend-card:hover {
+  border-color: rgba(0, 230, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 230, 255, 0.2);
+}
+
+.friend-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.friend-avatar {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.friend-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(0, 230, 255, 0.3);
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(15, 18, 40, 1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.status-indicator.status-online {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+  animation: pulse-online 2s infinite;
+}
+
+.status-indicator.status-offline {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+@keyframes pulse-online {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.8);
+  }
+}
+
+.friend-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.friend-username {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.friend-status-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.friend-status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.friend-status.status-online {
+  color: #22c55e;
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.friend-status.status-offline {
+  color: #9ca3af;
+}
+
+.last-seen {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+.remove-friend-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.remove-friend-btn:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.friends-section {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(15, 18, 40, 0.9), rgba(8, 10, 28, 0.95));
+  border-radius: 16px;
+  border: 1px solid rgba(0, 230, 255, 0.1);
+}
+
+.friends-title {
+  color: #00e6ff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 0 15px rgba(0, 230, 255, 0.5);
+}
+
+.no-friends {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px dashed rgba(0, 230, 255, 0.2);
+}

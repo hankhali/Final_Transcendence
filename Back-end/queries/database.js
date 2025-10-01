@@ -14,6 +14,7 @@ async function createTables() {
         bio TEXT,
         avatar TEXT DEFAULT 'default.jpg',
         current_status TEXT DEFAULT 'offline',
+        last_seen DATETIME,
         player_matches INTEGER DEFAULT 0,
         player_wins INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -99,6 +100,10 @@ function runMigrations() {
     {
       name: 'add_opponent_name_column',
       sql: 'ALTER TABLE game_history ADD COLUMN opponent_name TEXT'
+    },
+    {
+      name: 'add_last_seen_column',
+      sql: 'ALTER TABLE users ADD COLUMN last_seen DATETIME'
     }
     // Add future migrations here
   ];

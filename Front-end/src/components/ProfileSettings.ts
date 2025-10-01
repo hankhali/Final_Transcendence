@@ -128,11 +128,12 @@ export function createProfileSettings(profile: Partial<UserProfile> = {}): HTMLE
   removeButton.style.display = hasCustomAvatar ? 'block' : 'none';
   
   removeButton.addEventListener('click', () => {
-    // Show confirmation dialog
-    const confirmed = confirm('Are you sure you want to remove your avatar? This will reset it to the default avatar.');
-    if (confirmed) {
-      handleRemoveAvatar();
-    }
+    // Show custom confirmation modal
+    showConfirmationModal(
+      'Remove Avatar',
+      'Are you sure you want to remove your avatar? This will reset it to the default avatar.',
+      () => handleRemoveAvatar()
+    );
   });
 
   // Function to handle avatar removal with real API call
@@ -451,3 +452,72 @@ const showMessage = (window as any).showMessage || ((text: string, type: string)
   console.log(`${type.toUpperCase()}: ${text}`);
   // No alert fallback; only use neon-styled message
 });
+
+// Custom confirmation modal function
+function showConfirmationModal(title: string, message: string, onConfirm: () => void) {
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.className = 'confirmation-modal';
+  
+  // Create modal content
+  modal.innerHTML = `
+    <div class="confirmation-modal-content">
+      <div class="confirmation-modal-header">
+        <div class="confirmation-modal-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirmation-modal-title">${title}</h3>
+      </div>
+      <div class="confirmation-modal-message">
+        ${message}
+      </div>
+      <div class="confirmation-modal-actions">
+        <button class="confirmation-btn confirmation-btn-cancel">Cancel</button>
+        <button class="confirmation-btn confirmation-btn-confirm">Remove</button>
+      </div>
+    </div>
+  `;
+  
+  // Add to body
+  document.body.appendChild(modal);
+  
+  // Show modal with animation
+  setTimeout(() => modal.classList.add('show'), 10);
+  
+  // Get buttons
+  const cancelBtn = modal.querySelector('.confirmation-btn-cancel') as HTMLButtonElement;
+  const confirmBtn = modal.querySelector('.confirmation-btn-confirm') as HTMLButtonElement;
+  
+  // Close modal function
+  const closeModal = () => {
+    modal.classList.remove('show');
+    setTimeout(() => {
+      document.body.removeChild(modal);
+    }, 300);
+  };
+  
+  // Cancel button
+  cancelBtn.addEventListener('click', closeModal);
+  
+  // Confirm button
+  confirmBtn.addEventListener('click', () => {
+    closeModal();
+    onConfirm();
+  });
+  
+  // Close on overlay click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+  
+  // Close on Escape key
+  const handleEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
+}

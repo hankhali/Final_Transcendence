@@ -307,6 +307,9 @@ function handleLogin(username: string, token?: string, userId?: number): void {
 
 // Function to handle logout
 function handleLogout(): void {
+  // Call backend logout API to set status offline
+  callLogoutAPI();
+  
   isLoggedIn = false;
   currentUser = null;
   // Update global variables
@@ -318,6 +321,21 @@ function handleLogout(): void {
   updateNavbar();
   showMessage("Logged out successfully!", "success");
   navigateTo("/");
+}
+
+// Function to call logout API
+async function callLogoutAPI(): Promise<void> {
+  try {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      console.log('[🚪 LOGOUT] Calling logout API...');
+      await apiService.users.logout();
+      console.log('[✅ LOGOUT] Logout API call successful');
+    }
+  } catch (error) {
+    console.error('[❌ LOGOUT] Logout API call failed:', error);
+    // Don't show error to user, just log it
+  }
 }
 
 // Function to check stored login state
@@ -2806,6 +2824,29 @@ window.addEventListener("popstate", () => {
 // Global functions for dashboard and profile features
 (window as any).switchTab = switchTab;
 (window as any).showMessage = showMessage;
+
+// Browser event listeners for automatic logout
+window.addEventListener('beforeunload', () => {
+  // Call logout API when user closes browser/tab or refreshes
+  if (isLoggedIn && sessionStorage.getItem('token')) {
+    console.log('[🚪 BEFOREUNLOAD] User closing browser, calling logout API...');
+    
+    // Use the existing API service logout method
+    callLogoutAPI();
+  }
+});
+
+// Also handle page visibility changes (when user switches tabs)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && isLoggedIn) {
+    console.log('[👁️ VISIBILITY] Page hidden, user might be leaving...');
+    // Don't logout immediately on tab switch, just log it
+    // The 5-minute inactivity timer will handle this
+  } else if (document.visibilityState === 'visible' && isLoggedIn) {
+    console.log('[👁️ VISIBILITY] Page visible, user is back');
+    // User is back, they're still active
+  }
+});
 
 // Add this function after the existing functions
 // @ts-ignore

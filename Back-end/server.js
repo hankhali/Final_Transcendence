@@ -38,13 +38,23 @@ fastify.register(require('@fastify/jwt'), {
 fastify.decorate('authenticate', async (request, reply) => {
     try{
         await request.jwtVerify();
+        
+        console.log('[🔐 AUTH DEBUG] JWT payload after verification:', request.user);
+        console.log('[🔐 AUTH DEBUG] JWT user ID from token:', request.user.id);
 
         //fetch user from db, ensure user still exists
         const user = db.prepare('SELECT id, username, alias, avatar FROM users WHERE id = ?').get(request.user.id);
+        console.log('[🔐 AUTH DEBUG] User from database:', user);
+        
         if(!user){
             return reply.code(401).send({error: 'Invalid token (user not found)'});
         }
         request.user = user;
+        console.log('[🔐 AUTH DEBUG] Final request.user set to:', request.user);
+        
+        // Update last_seen timestamp and set status to online for active users (heartbeat)
+        db.prepare('UPDATE users SET last_seen = CURRENT_TIMESTAMP, current_status = ? WHERE id = ?').run('online', user.id);
+        console.log('[💓 HEARTBEAT] Updated last_seen and set online status for user:', user.id);
     }
     catch(error){
         return reply.code(401).send({error: 'Not authenticated: ' + error.message});
