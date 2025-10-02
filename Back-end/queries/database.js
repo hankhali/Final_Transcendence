@@ -15,6 +15,7 @@ async function createTables() {
         avatar TEXT DEFAULT 'default.jpg',
         current_status TEXT DEFAULT 'offline',
         last_seen DATETIME,
+        google_id TEXT,
         player_matches INTEGER DEFAULT 0,
         player_wins INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -22,8 +23,8 @@ async function createTables() {
       
       CREATE TABLE IF NOT EXISTS game_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        opponent_id INTEGER,
+        user_id INTEGER,              -- allow NULL for guest-only matches
+        opponent_id INTEGER,          -- allow NULL for guest-only matches
         user_score INTEGER NOT NULL,
         opponent_score INTEGER NOT NULL,
         result TEXT NOT NULL, /* 'WIN', 'LOSS', 'DRAW' */
@@ -47,21 +48,22 @@ async function createTables() {
         winner_id INTEGER NULL,
         finished_at TIMESTAMP NULL,
         created_by INTEGER NULL,
+        creator_alias TEXT NOT NULL,
+        player_id INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (created_by) REFERENCES users (id),
+        FOREIGN KEY (player_id) REFERENCES users (id),
         FOREIGN KEY (winner_id) REFERENCES users (id)
       );
 
       CREATE TABLE IF NOT EXISTS tournament_players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tournament_id INTEGER NOT NULL,
-        player_id INTEGER,
         tournament_alias TEXT NOT NULL,
         status TEXT DEFAULT 'joined',
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (tournament_id) REFERENCES tournaments (id) ON DELETE SET NULL,
-        FOREIGN KEY (player_id) REFERENCES users (id) ON DELETE SET NULL,
-        UNIQUE (tournament_id, player_id)
+        FOREIGN KEY (tournament_id) REFERENCES tournaments (id) ON DELETE CASCADE,
+        UNIQUE (tournament_id, tournament_alias)
       );
 
       CREATE TABLE IF NOT EXISTS friends (
@@ -86,11 +88,11 @@ async function createTables() {
     // Run migrations only once
     runMigrations();
     
-    //ON DELETE SET NULL: it will automatically remove all game history when a user is deleted
-    console.log('Tables ensured');
-  } catch (error) {
-    console.error('Table setup failed:', error.message);
-    process.exit(1);
+    console.log("✅ Tables created successfully");
+  }
+  catch (error) {
+    console.error("❌ Error creating tables:", error);
+    throw error;
   }
 }
 
@@ -104,6 +106,10 @@ function runMigrations() {
     {
       name: 'add_last_seen_column',
       sql: 'ALTER TABLE users ADD COLUMN last_seen DATETIME'
+    },
+    {
+      name: 'add_creator_alias_column',
+      sql: 'ALTER TABLE tournaments ADD COLUMN creator_alias TEXT'
     }
     // Add future migrations here
   ];
@@ -138,13 +144,11 @@ function runMigrations() {
     }
   });
 }
-
+    
+  
 // Create tables immediately
 createTables();
 
 // Export db so other files can use it
 module.exports = db;
-
-
-
 

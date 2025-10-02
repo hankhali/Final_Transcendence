@@ -4,7 +4,7 @@ export interface ApiService {
     finish: (matchId: number, result: any) => Promise<{ data: any; error: any }>;
     submitMatchResult: (tournamentId: number, matchId: number, player1Score: number, player2Score: number) => Promise<{ data: any; error: any }>;
     getMatchHistory: (tournamentId: any) => Promise<{ data: any; error: any }>;
-    create: (name: string, maxPlayers: number, playerNames: string[]) => Promise<{ data: any; error: any }>;
+    create: (name: string, min_players: number, max_players: number, creator_alias: string) => Promise<{ data: any; error: any }>;
     getAll: () => Promise<{ data: any; error: any }>;
     getById: (tournamentId: number) => Promise<{ data: any; error: any }>;
     join: (tournamentId: number, tournament_alias: string) => Promise<{ data: any; error: any }>;

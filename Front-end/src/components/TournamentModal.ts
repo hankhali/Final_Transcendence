@@ -515,29 +515,50 @@ export function showTournamentBracketModal() {
     startBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)';
     
     try {
-      // Step 1: Create tournament in backend with guest player support
+      console.log('[🚀 FRONTEND DEBUG] Starting tournament creation process...');
+      console.log('[🚀 FRONTEND DEBUG] Players array:', players);
+      
+      // Step 1: Create tournament in backend with creator as first player
       const { apiService } = await import('../services/api');
       const tournamentName = `Tournament ${new Date().toLocaleTimeString()}`;
+      const creatorAlias = players[0]; // First player becomes the creator
+      
+      console.log('[🚀 FRONTEND DEBUG] Tournament parameters:', {
+        name: tournamentName,
+        creatorAlias: creatorAlias,
+        min_players: 4,
+        max_players: 4
+      });
+      
+      console.log('[🚀 FRONTEND DEBUG] Calling apiService.tournaments.create...');
       const createResponse = await apiService.tournaments.create(
         tournamentName,
-        4,
-        players
+        4, // min_players
+        4, // max_players
+        creatorAlias
       );
       
+      console.log('[✅ FRONTEND SUCCESS] Tournament creation response:', createResponse);
       const tournamentId = createResponse.data.tournamentId;
-      console.log('[DEBUG] Tournament created:', tournamentId);
+      console.log('[🚀 FRONTEND DEBUG] Tournament ID:', tournamentId);
       
-      // Step 2: Join all players to tournament as guests
-      for (let i = 0; i < players.length; i++) {
+      // Store tournament ID globally for result submission
+      (window as any).currentTournamentId = tournamentId;
+      
+      // Step 2: Join remaining players (2-4) as guests
+      console.log('[🚀 FRONTEND DEBUG] Starting guest player joins...');
+      for (let i = 1; i < players.length; i++) {
         try {
-          await apiService.tournaments.joinGuest(tournamentId, players[i]);
-          console.log(`[DEBUG] Player ${players[i]} joined tournament ${tournamentId}`);
+          console.log(`[🚀 FRONTEND DEBUG] Joining guest ${i}: ${players[i]} to tournament ${tournamentId}`);
+          const joinResponse = await apiService.tournaments.join(tournamentId, players[i]);
+          console.log(`[✅ FRONTEND SUCCESS] Player ${players[i]} joined:`, joinResponse);
         } catch (error) {
-          console.log(`[DEBUG] Player ${players[i]} already in tournament or error:`, error);
+          console.log(`[❌ FRONTEND ERROR] Player ${players[i]} join failed:`, error);
           // Continue with other players if one fails
         }
       }
       
+      console.log('[🚀 FRONTEND DEBUG] All players processed, showing matchmaking...');
       // Step 3: Show matchmaking animation with real backend tournament
       overlay.remove();
       await showMatchmakingAnimation(players, tournamentId);
@@ -970,6 +991,9 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
         const match1 = backendMatches[0];
         const match2 = backendMatches[1];
         
+        // Store backend matches globally for startGame function
+        (window as any).globalBackendMatches = backendMatches;
+        
         // Set final positions based on backend results
         setSlotResult('match1-player1', match1.player1.tournament_alias);
         setSlotResult('match1-player2', match1.player2.tournament_alias);
@@ -1037,8 +1061,12 @@ function showBracket(players: string[]) {
   const { apiService } = await import('../services/api');
   // hanieh added: use tournaments.getById
   const response = await apiService.tournaments.getById(tournamentId);
-  // Assume response.data.matches is an array of { matchId, player1, player2, round }
-  return response.data && response.data.matches ? response.data.matches : [];
+  console.log('[DEBUG] fetchTournamentMatches raw response:', response);
+  console.log('[DEBUG] response.data:', response.data);
+  console.log('[DEBUG] response.data.data:', response.data?.data);
+  console.log('[DEBUG] response.data.data.matches:', response.data?.data?.matches);
+  // The backend returns {data: {data: {tournament, matches}}} so we need response.data.data.matches
+  return response.data && response.data.data && response.data.data.matches ? response.data.data.matches : [];
   }
   // Helper to show 'Back to Bracket' button after match ends
   function showGameOverModal() {
@@ -1201,30 +1229,61 @@ function showBracket(players: string[]) {
     enableMatch2IfReady();
   };
 
-  // Real game integration using 1v1 system (from memory approach)
+  // Real game integration using your friend's backend approach
   async function startGame(playerA: string, playerB: string, matchNum: string | null) {
     console.log('[DEBUG] TournamentModal startGame called with:', { playerA, playerB, matchNum });
     try {
-      // Use local tournament API for guest players, but set 1v1 mode for UI
-      const apiModule = await import('../services/api.js');
-      const localTournament = apiModule.localTournament;
-      const matchResponse = await localTournament.startMatch(playerA, playerB, `match${matchNum}`);
+      // Get matchId from stored backend matches (your friend's approach)
+      const backendMatches = (window as any).globalBackendMatches;
+      let matchId: number;
       
-      console.log('[DEBUG] Full API response:', matchResponse);
-      console.log('[DEBUG] Response type:', typeof matchResponse);
-      console.log('[DEBUG] Response keys:', Object.keys(matchResponse || {}));
-      
-      if (matchResponse.error) {
-        throw new Error(matchResponse.error);
+      if (matchNum === '1' && backendMatches?.[0]) {
+        matchId = backendMatches[0].matchId;
+      } else if (matchNum === '2' && backendMatches?.[1]) {
+        matchId = backendMatches[1].matchId;
+      } else if (matchNum === 'final') {
+        // For final match, check if there's a third match (created after semifinals)
+        if (backendMatches?.[2]) {
+          matchId = backendMatches[2].matchId;
+        } else {
+          // Final match might be created dynamically after semifinals - need to fetch latest matches
+          console.log('[DEBUG] Final match not found in stored matches, fetching latest from backend...');
+          
+          // Get tournament ID from the current tournament data
+          const tournamentId = (window as any).currentTournamentId;
+          if (!tournamentId) {
+            throw new Error('Tournament ID not found');
+          }
+          
+          try {
+            // Fetch latest matches from backend
+            const latestMatches = await fetchTournamentMatches(tournamentId);
+            console.log('[DEBUG] Latest matches from backend:', latestMatches);
+            
+            // Update global storage with latest matches
+            (window as any).globalBackendMatches = latestMatches;
+            
+            // Look for final match in the updated matches
+            const finalMatch = latestMatches.find(match => match.round === 'final');
+            if (finalMatch) {
+              matchId = finalMatch.matchId;
+              console.log('[DEBUG] Found final match with ID:', matchId);
+            } else {
+              throw new Error('Final match not yet available - complete both semifinals first');
+            }
+          } catch (fetchError) {
+            console.error('[DEBUG] Error fetching latest matches:', fetchError);
+            throw new Error('Final match not yet available - complete both semifinals first');
+          }
+        }
+      } else {
+        throw new Error(`No matchId found for match ${matchNum}`);
       }
       
-      const matchId = matchResponse.data?.matchId;
-      console.log('[DEBUG] Extracted matchId:', matchId);
+      console.log('[DEBUG] Using backend matchId:', matchId);
       
-      if (!matchId) {
-        console.error('[DEBUG] matchResponse structure:', JSON.stringify(matchResponse, null, 2));
-        throw new Error('Failed to create match - no matchId returned');
-      }
+      // No API call needed - your friend's backend already created the match
+      // Just start the game directly with the existing matchId
       
       // Launch the real pong game in the current view
       const app = document.getElementById("app");
@@ -1279,13 +1338,34 @@ function showBracket(players: string[]) {
                   (window as any).globalMatchResults[matchNum] = winner;
                   console.log('[DEBUG] DIRECT: Updated globalMatchResults:', (window as any).globalMatchResults);
                   
-                  // Submit result to backend
+                  // Submit result to backend using your friend's tournament endpoint
                   (async () => {
                     try {
                       const apiModule = await import('../services/api.js');
-                      const localTournament = apiModule.localTournament;
-                      await localTournament.finishMatch(matchId, player1Score, player2Score, winner);
-                      console.log('[DEBUG] Tournament match result submitted to backend successfully');
+                      const apiService = apiModule.apiService;
+                      
+                      // Get tournament ID from stored data
+                      const tournamentId = (window as any).currentTournamentId;
+                      
+                      // Use your friend's tournament finish endpoint
+                      const response = await fetch(`http://localhost:5001/tournaments/${tournamentId}/finish`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                          matchId: matchId,
+                          userScore: player1Score,
+                          opponentScore: player2Score
+                        })
+                      });
+                      
+                      if (response.ok) {
+                        console.log('[DEBUG] Tournament match result submitted to backend successfully');
+                      } else {
+                        throw new Error(`HTTP ${response.status}`);
+                      }
                     } catch (error) {
                       console.error('[DEBUG] Error submitting tournament result to backend:', error);
                     }
@@ -1380,10 +1460,20 @@ function showBracket(players: string[]) {
                 
                 console.log('[DEBUG] Local tournament match ended. Winner:', winnerName, 'Scores:', player1Score, player2Score);
                 
-                // Submit result to local tournament API
-                const { localTournament } = await import('../services/api.js');
-                await localTournament.finishMatch(matchId, player1Score, player2Score, winnerName);
-                console.log('[DEBUG] Match result submitted to backend');
+                // Submit result to tournament API using our new approach
+                const { apiService } = await import('../services/api.js');
+                const globalTournamentId = (window as any).globalTournamentId;
+                if (globalTournamentId) {
+                  await apiService.tournaments.finish(globalTournamentId, {
+                    matchId: matchId,
+                    player1Score: player1Score,
+                    player2Score: player2Score,
+                    winner: winnerName
+                  });
+                  console.log('[DEBUG] Match result submitted to backend via tournaments.finish');
+                } else {
+                  console.error('[ERROR] No globalTournamentId found for result submission');
+                }
                 
                 // Update bracket with winner using globalMatchResults approach from memory
                 if (!(window as any).globalMatchResults) {

@@ -246,47 +246,26 @@ const apiService = {
   // Tournament related endpoints
   tournaments: {
     //Create tournament (local, with 4 player names)
-    create: async (name, maxPlayers, playerNames) => {
+    create: async (name, min_players, max_players, creator_alias) => {
       return fetchApi("/tournaments", {
         method: "POST",
         body: JSON.stringify({ 
           name,
-          maxPlayers,
-          playerNames
+          min_players,
+          max_players,
+          creator_alias
         })
       });
     },
 
-    // Get all tournaments
-    getAll: async () => {
-      return fetchApi("/tournaments", {
-        method: "GET"
-      });
-    },
-
-    // Get specific tournament details
-    getById: async (tournamentId) => {
-      return fetchApi(`/tournaments/${tournamentId}`, {
-        method: "GET"
-      });
-    },
 
     // Join tournament with a single alias
-    join: async (tournamentId, tournament_alias) => {
-      return fetchApi(`/tournaments/${tournamentId}/join`, {
+    join: async (tournamentId, tournamentAlias) => {
+      return fetchApi(`/tournament/join`, {
         method: "POST",
         body: JSON.stringify({ 
-          tournament_alias
-        })
-      });
-    },
-
-    // Join tournament as guest player
-    joinGuest: async (tournamentId, tournament_alias) => {
-      return fetchApi(`/tournaments/${tournamentId}/join-guest`, {
-        method: "POST",
-        body: JSON.stringify({ 
-          tournament_alias
+          tournamentId,
+          tournamentAlias
         })
       });
     },
@@ -298,20 +277,21 @@ const apiService = {
       })
     },
 
-    // Leave tournament
-    leave: async (tournamentId, playerId) => {
-      return fetchApi(`/tournaments/${tournamentId}/leave`, {
-        method: "DELETE",
+    // Get tournament by ID with matches
+    getById: async (tournamentId) => {
+      return fetchApi(`/tournaments/${tournamentId}`, {
+        method: "GET",
+      })
+    },
+
+
+    // Update user profile (send only provided fields)
+    updateProfile: async (profileData) => {
+        return fetchApi("/me", {
+        method: "PATCH",
+        body: JSON.stringify(profileData)
       });
     }
-      ,
-        // Update user profile (send only provided fields)
-        updateProfile: async (profileData) => {
-          return fetchApi("/me", {
-            method: "PATCH",
-            body: JSON.stringify(profileData)
-          });
-      }
   }
 };
 

@@ -24,7 +24,6 @@ fastify.decorate('db', db);
 fastify.register(require('./routes/users'));
 fastify.register(require('./routes/tournaments'));
 fastify.register(require('./routes/onevone')); // hanieh added
-fastify.register(require('./routes/localTournament')); // hanieh added: Local tournament routes
 fastify.register(require('./routes/ai')); // hanieh added: AI match route
 fastify.register(require('./routes/auth')); // Google OAuth routes
 require('dotenv').config();

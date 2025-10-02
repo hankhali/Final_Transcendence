@@ -37,13 +37,14 @@ declare module '../services/api.js' {
   }
 
   interface TournamentService {
-    create: (name: string, maxPlayers: number, playerNames: string[]) => Promise<ApiResponse>;
+    create: (name: string, creator_alias: string, min_players: number, max_players: number) => Promise<ApiResponse>;
     getAll: () => Promise<ApiResponse>;
     getById: (tournamentId: string) => Promise<ApiResponse>;
     join: (tournamentId: string, tournament_alias: string) => Promise<ApiResponse>;
     joinGuest: (tournamentId: string, tournament_alias: string) => Promise<ApiResponse>;
     start: (tournamentId: string) => Promise<ApiResponse>;
     leave: (tournamentId: string, playerId: string) => Promise<ApiResponse>;
+    deleteAll: () => Promise<ApiResponse>;
     submitMatchResult: (tournamentId: string, matchId: string, player1Score: number, player2Score: number) => Promise<ApiResponse>;
   }
 
