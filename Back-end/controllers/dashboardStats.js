@@ -52,6 +52,16 @@ function getDashboardStats(userId) {
       };
     }
     
+    // For AI matches (opponent_id is null and no opponent_name)
+    if (!opponentId && !m.opponent_name) {
+      return {
+        ...m,
+        opponent: 'AI Opponent',
+        opponentAvatar: 'ai-avatar.svg', // Special AI avatar
+        isUserPlayer
+      };
+    }
+    
     const opponent = db.prepare('SELECT username, avatar FROM users WHERE id = ?').get(opponentId);
     return {
       ...m,
