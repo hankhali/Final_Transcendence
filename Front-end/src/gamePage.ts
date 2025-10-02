@@ -98,7 +98,27 @@ export class GamePage {
           console.error('[DEBUG] Tournament: Game canvas not found!');
           return;
         }
-        if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
+        
+        // Apply different speeds based on tournament match type
+        let tournamentGameConfig = {};
+        const tournamentSpeed = (window as any).tournamentGameSpeed;
+        if (tournamentSpeed === 'very-fast') {
+          // Final match: very fast speed
+          tournamentGameConfig = {
+            ballSpeed: 8,
+            paddleSpeed: 10
+          };
+          console.log('[DEBUG] Final match: Using very fast speed settings');
+        } else if (tournamentSpeed === 'medium') {
+          // Semi-final match: medium speed
+          tournamentGameConfig = {
+            ballSpeed: 5,
+            paddleSpeed: 7
+          };
+          console.log('[DEBUG] Semi-final match: Using medium speed settings');
+        }
+        
+        if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas, tournamentGameConfig); }
         if (this.game) this.game.matchId = 0;
         if (this.game) this.game.tournamentId = this.getTournamentIdFromContext();
         this.setupGameCallbacks();
@@ -268,10 +288,29 @@ export class GamePage {
     }
 
     // Game customization removed - using default settings
-    const gameConfig = {};
+    let gameConfig = {};
 
     if (this.gameMode === 'tournament') {
       const tournamentId = this.getTournamentIdFromContext();
+      
+      // Apply different speeds based on tournament match type
+      const tournamentSpeed = (window as any).tournamentGameSpeed;
+      if (tournamentSpeed === 'very-fast') {
+        // Final match: very fast speed
+        gameConfig = {
+          ballSpeed: 8,
+          paddleSpeed: 10
+        };
+        console.log('[DEBUG] Final match: Using very fast speed settings');
+      } else if (tournamentSpeed === 'medium') {
+        // Semi-final match: medium speed
+        gameConfig = {
+          ballSpeed: 5,
+          paddleSpeed: 7
+        };
+        console.log('[DEBUG] Semi-final match: Using medium speed settings');
+      }
+      
       // Tournament game logic with customization
       if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas, gameConfig); }
       if (this.game) this.game.matchId = 0; // Replace with actual matchId from backend if needed

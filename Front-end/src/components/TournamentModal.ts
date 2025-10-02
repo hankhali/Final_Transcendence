@@ -1296,6 +1296,13 @@ function showBracket(players: string[]) {
         (window as any).localTournamentPlayers = { playerA, playerB };
         (window as any).suppressGamePageResultSubmission = true; // Suppress gamePage submission
         
+        // Set game speed based on match type (semi-final vs final)
+        if (matchNum === 'final') {
+          (window as any).tournamentGameSpeed = 'very-fast'; // Final matches are very fast
+        } else {
+          (window as any).tournamentGameSpeed = 'medium'; // Semi-final matches are medium speed
+        }
+        
         console.log('[DEBUG] TournamentModal: Setting flags before game creation:', {
           gamePageMode: (window as any).gamePageMode,
           suppressGamePageResultSubmission: (window as any).suppressGamePageResultSubmission,
@@ -1526,6 +1533,7 @@ function showBracket(players: string[]) {
             delete (window as any).localTournamentMatchId;
             delete (window as any).localTournamentPlayers;
             delete (window as any).suppressGamePageResultSubmission;
+            delete (window as any).tournamentGameSpeed; // Clean up speed setting
           }, 1000);
         });
       }
