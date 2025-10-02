@@ -57,6 +57,39 @@ export function showTournamentBracketModal() {
     style.id = 'tournament-modal-styles';
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+      
+      /* Mobile-first modal overlay */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        padding: 10px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      
+      @media (max-width: 768px) {
+        .modal-overlay {
+          padding: 5px;
+          align-items: flex-start;
+          padding-top: 20px;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .modal-overlay {
+          padding: 2px;
+          padding-top: 10px;
+        }
+      }
+      
       .tournament-container {
         font-family: 'JetBrains Mono', monospace;
         background: rgba(20, 20, 30, 0.95);
@@ -329,15 +362,95 @@ export function showTournamentBracketModal() {
         stroke-width: 2;
       }
       @media (max-width: 640px) {
-        .tournament-container { padding: 18px; margin: 10px; }
-        .players-grid { gap: 14px; }
-        .player-slot { padding: 14px 8px; min-height: 80px; }
-        .title { font-size: 24px; }
-        .player-input { font-size: 14px; }
+        .tournament-container { 
+          padding: 15px; 
+          margin: 5px; 
+          max-width: calc(100vw - 10px);
+          max-height: calc(100vh - 10px);
+          overflow-y: auto;
+        }
+        .players-grid { 
+          gap: 12px; 
+          grid-template-columns: 1fr;
+        }
+        .player-slot { 
+          padding: 12px 8px; 
+          min-height: 70px; 
+          font-size: 14px;
+        }
+        .title { 
+          font-size: 20px; 
+          margin-bottom: 15px;
+        }
+        .player-input { 
+          font-size: 16px;
+          padding: 12px;
+          min-height: 44px; /* Touch target */
+        }
+        .tournament-title-input {
+          font-size: 16px;
+          padding: 12px;
+          min-height: 44px;
+        }
+        .vs-indicator { display: none; }
+        .bracket-preview {
+          height: 60px;
+          margin: 10px 0;
+        }
+        .players-grid .player-slot {
+          width: 100%;
+          margin: 0;
+        }
       }
       @media (max-width: 480px) {
-        .players-grid { grid-template-columns: 1fr; gap: 8px; }
+        .tournament-container {
+          padding: 10px;
+          margin: 2px;
+          border-radius: 12px;
+          max-width: calc(100vw - 4px);
+          max-height: calc(100vh - 4px);
+          overflow-y: auto;
+        }
+        .players-grid { 
+          grid-template-columns: 1fr; 
+          gap: 8px; 
+        }
+        .player-slot {
+          padding: 10px 6px;
+          min-height: 60px;
+          border-radius: 8px;
+        }
+        .title {
+          font-size: 18px;
+          margin-bottom: 12px;
+        }
+        .player-input {
+          font-size: 16px;
+          padding: 10px;
+          border-radius: 8px;
+        }
+        .tournament-title-input {
+          font-size: 16px;
+          padding: 10px;
+          border-radius: 8px;
+        }
         .vs-indicator { display: none; }
+        .bracket-preview {
+          height: 50px;
+          margin: 8px 0;
+        }
+        /* Make buttons mobile-friendly */
+        button {
+          min-height: 44px !important;
+          padding: 12px 20px !important;
+          font-size: 16px !important;
+          touch-action: manipulation;
+          border-radius: 8px;
+        }
+        /* Ensure proper spacing on mobile */
+        .tournament-title-container {
+          margin-bottom: 15px;
+        }
       }
       @keyframes slideIn {
         from { opacity: 0; transform: translateY(30px) scale(0.9); }
@@ -1284,13 +1397,40 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
 // New function that uses backend tournament data
 async function showBracketWithBackendMatches(players: string[], tournamentId: number) {
   try {
-    // Fetch tournament matches from backend
+    // Fetch tournament matches from backend to get shuffled player order
     const { apiService } = await import('../services/api');
     const tournamentData = await apiService.tournaments.getById(tournamentId);
-    console.log('[DEBUG] Tournament data:', tournamentData);
+    console.log('[DEBUG] Tournament data from backend:', tournamentData);
     
-    // Show bracket with real backend matches
-    showBracket(players);
+    // Extract the actual player order from backend matches
+    const matches = tournamentData?.data?.data?.matches || [];
+    console.log('[DEBUG] Backend matches:', matches);
+    
+    if (matches.length >= 2) {
+      // Extract shuffled player order from the first two matches
+      const match1Players = matches[0].opponent_name.split(' vs ');
+      const match2Players = matches[1].opponent_name.split(' vs ');
+      
+      // Create shuffled players array in the order the backend created the matches
+      const shuffledPlayers = [
+        match1Players[0],  // Player 1 of Match 1
+        match1Players[1],  // Player 2 of Match 1  
+        match2Players[0],  // Player 1 of Match 2
+        match2Players[1]   // Player 2 of Match 2
+      ];
+      
+      console.log('[🎲 FRONTEND] Using backend shuffled order:', shuffledPlayers);
+      console.log('[🎲 FRONTEND] Original input order was:', players);
+      
+      // Store backend matches globally for game creation
+      (window as any).globalBackendMatches = matches;
+      
+      // Show bracket with shuffled order
+      showBracket(shuffledPlayers);
+    } else {
+      console.log('[DEBUG] No backend matches found, using original order');
+      showBracket(players);
+    }
     
   } catch (error) {
     console.error('Error fetching tournament data:', error);
@@ -1361,46 +1501,93 @@ function showBracket(players: string[]) {
         <p class="tournament-subtitle">✨ 4-Player Single Elimination Championship ✨</p>
       </div>
       <div class="bracket-container">
-        <div class="semifinals-column">
-          <div class="match" data-match="1">
-            <div class="match-header">🥊 Match 1 - Semifinal</div>
-            <div class="match-players">
-              <div class="player" data-player="${players[0]}">${players[0]}</div>
-              <div class="vs-divider">VS</div>
-              <div class="player" data-player="${players[1]}">${players[1]}</div>
+        <div class="tournament-rounds">
+          <!-- Semifinals Round -->
+          <div class="round-section">
+            <div class="round-header">
+              <span class="round-emoji">🥊</span>
+              <h2 class="round-title">SEMIFINALS</h2>
+              <span class="round-subtitle">First Round</span>
             </div>
-            <div class="start-match-btn-container">
-              <button class="btn btn-primary start-match-btn" data-match="1">Start Match</button>
+            <div class="matches-container">
+              <div class="match semifinal-match" data-match="1">
+                <div class="match-label">Match 1</div>
+                <div class="match-players">
+                  <div class="player player-1" data-player="${players[0]}">
+                    <span class="player-badge">P1</span>
+                    <span class="player-name">${players[0]}</span>
+                  </div>
+                  <div class="vs-divider">
+                    <span class="vs-text">VS</span>
+                  </div>
+                  <div class="player player-2" data-player="${players[1]}">
+                    <span class="player-badge">P2</span>
+                    <span class="player-name">${players[1]}</span>
+                  </div>
+                </div>
+                <div class="start-match-btn-container">
+                  <button class="btn btn-primary start-match-btn" data-match="1">
+                    <span class="btn-icon">⚡</span>
+                    Start Match 1
+                  </button>
+                </div>
+              </div>
+              
+              <div class="match semifinal-match" data-match="2">
+                <div class="match-label">Match 2</div>
+                <div class="match-players">
+                  <div class="player player-1" data-player="${players[2]}">
+                    <span class="player-badge">P3</span>
+                    <span class="player-name">${players[2]}</span>
+                  </div>
+                  <div class="vs-divider">
+                    <span class="vs-text">VS</span>
+                  </div>
+                  <div class="player player-2" data-player="${players[3]}">
+                    <span class="player-badge">P4</span>
+                    <span class="player-name">${players[3]}</span>
+                  </div>
+                </div>
+                <div class="start-match-btn-container">
+                  <button class="btn btn-primary start-match-btn" data-match="2">
+                    <span class="btn-icon">⚡</span>
+                    Start Match 2
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="match" data-match="2">
-            <div class="match-header">🥊 Match 2 - Semifinal</div>
-            <div class="match-players">
-              <div class="player" data-player="${players[2]}">${players[2]}</div>
-              <div class="vs-divider">VS</div>
-              <div class="player" data-player="${players[3]}">${players[3]}</div>
+
+          <!-- Finals Round -->
+          <div class="round-section final-round">
+            <div class="round-header">
+              <span class="round-emoji">🏆</span>
+              <h2 class="round-title">CHAMPIONSHIP</h2>
+              <span class="round-subtitle">Final Round</span>
             </div>
-            <div class="start-match-btn-container">
-              <button class="btn btn-primary start-match-btn" data-match="2">Start Match</button>
-            </div>
-          </div>
-        </div>
-        <div class="bracket-lines">
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path class="connection-line" id="line1" d="M 25 25 L 50 25 L 50 50 L 75 50" />
-            <path class="connection-line" id="line2" d="M 25 75 L 50 75 L 50 50 L 75 50" />
-          </svg>
-        </div>
-        <div class="final-column">
-          <div class="match final-match" data-match="final">
-            <div class="match-header">🏆 CHAMPIONSHIP FINAL 🏆</div>
-            <div class="match-players">
-              <div class="player placeholder" data-from="match1">Winner of Match 1</div>
-              <div class="vs-divider">VS</div>
-              <div class="player placeholder" data-from="match2">Winner of Match 2</div>
-            </div>
-            <div class="start-match-btn-container">
-              <button class="btn btn-primary start-match-btn" data-match="final">Start Final</button>
+            <div class="matches-container">
+              <div class="match final-match" data-match="final">
+                <div class="match-label">Championship Final</div>
+                <div class="match-players">
+                  <div class="player placeholder winner-1" data-from="match1">
+                    <span class="player-badge">W1</span>
+                    <span class="player-name">Winner of Match 1</span>
+                  </div>
+                  <div class="vs-divider final-vs">
+                    <span class="vs-text">VS</span>
+                  </div>
+                  <div class="player placeholder winner-2" data-from="match2">
+                    <span class="player-badge">W2</span>
+                    <span class="player-name">Winner of Match 2</span>
+                  </div>
+                </div>
+                <div class="start-match-btn-container">
+                  <button class="btn btn-primary start-match-btn" data-match="final">
+                    <span class="btn-icon">🏆</span>
+                    Start Final
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1814,44 +2001,375 @@ function showBracket(players: string[]) {
     style.id = 'tournament-bracket-styles';
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-      .tournament-container { font-family: 'Inter', sans-serif; background: none; max-width: 1000px; width: 100%; color: white; }
-      .tournament-header { text-align: center; margin-bottom: 60px; }
-      .tournament-title { font-size: 42px; font-weight: 700; background: linear-gradient(135deg, #00d4ff, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 10px; }
-      .tournament-subtitle { font-size: 16px; color: rgba(255,255,255,0.6); font-weight: 500; }
-      .bracket-container { display: flex; align-items: center; justify-content: center; gap: 100px; position: relative; min-height: 500px; }
-      .semifinals-column { display: flex; flex-direction: column; gap: 60px; }
-      .final-column { display: flex; align-items: center; }
-      .match { background: rgba(30,41,59,0.9); border: 2px solid rgba(59,130,246,0.4); border-radius: 16px; backdrop-filter: blur(10px); transition: all 0.3s; overflow: hidden; width: 280px; animation: slideIn 0.7s ease-out forwards; opacity: 0; transform: translateY(40px); }
-      .match:hover { border-color: rgba(0,212,255,0.7); transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,212,255,0.2); }
-      .match-header { background: linear-gradient(135deg, rgba(59,130,246,0.8), rgba(147,51,234,0.8)); padding: 14px 20px; text-align: center; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; }
-      .match-players { padding: 24px; }
-      .player { display: flex; align-items: center; justify-content: center; padding: 18px 20px; background: rgba(15,23,42,0.7); border: 2px solid rgba(71,85,105,0.4); border-radius: 12px; margin-bottom: 14px; font-weight: 600; font-size: 16px; transition: all 0.3s; cursor: pointer; min-height: 65px; position: relative; }
-      .player:last-child { margin-bottom: 0; }
-      .player:hover { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.6); transform: translateX(8px); }
-      .player.winner { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.7); color: #10b981; transform: translateX(8px); }
-      .player.winner::after { content: '✓'; position: absolute; right: 15px; font-size: 20px; color: #10b981; }
-      .player.placeholder { color: rgba(255,255,255,0.4); font-style: italic; cursor: default; border-style: dashed; }
-      .player.placeholder:hover { background: rgba(15,23,42,0.7); border-color: rgba(71,85,105,0.4); transform: none; }
-      .vs-divider { text-align: center; font-weight: 700; color: rgba(147,51,234,0.9); font-size: 14px; margin: 12px 0; letter-spacing: 2px; }
-      .match.final-match { border-color: rgba(255,215,0,0.7); background: rgba(30,41,59,0.95); width: 320px; }
-      .match.final-match:hover { border-color: rgba(255,215,0,0.9); box-shadow: 0 15px 30px rgba(255,215,0,0.3); }
-      .match.final-match .match-header { background: linear-gradient(135deg, rgba(255,215,0,0.9), rgba(245,158,11,0.9)); color: #1a1a2e; font-size: 14px; }
-      .bracket-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
-      .bracket-lines svg { width: 100%; height: 100%; }
-      .connection-line { stroke: rgba(59,130,246,0.5); stroke-width: 3; fill: none; transition: all 0.3s; }
-      .connection-line.active { stroke: rgba(0,212,255,0.9); stroke-width: 4; filter: drop-shadow(0 0 8px rgba(0,212,255,0.4)); }
-      .controls { text-align: center; margin-top: 50px; display: flex; gap: 20px; justify-content: center; }
-      .btn { padding: 14px 28px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-      .btn-primary { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
-      .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(59,130,246,0.3); }
-      .btn-secondary { background: rgba(71,85,105,0.7); color: white; border: 2px solid rgba(148,163,184,0.4); }
-      .btn-secondary:hover { background: rgba(71,85,105,0.9); transform: translateY(-2px); }
-      @media (max-width: 768px) { .bracket-container { flex-direction: column; gap: 50px; } .tournament-title { font-size: 32px; } .match { width: 100%; max-width: 300px; } .match.final-match { width: 100%; max-width: 320px; } .bracket-lines { display: none; } .controls { flex-direction: column; align-items: center; gap: 15px; } }
-      .match { animation: slideIn 0.7s ease-out forwards; opacity: 0; transform: translateY(40px); }
+      
+      /* Main Container */
+      .tournament-container { 
+        font-family: 'Inter', sans-serif; 
+        background: none; 
+        max-width: 1000px; 
+        width: 100%; 
+        color: white; 
+        padding: 20px;
+      }
+      
+      /* Header Styles */
+      .tournament-header { 
+        text-align: center; 
+        margin-bottom: 40px; 
+      }
+      .tournament-title { 
+        font-size: 42px; 
+        font-weight: 700; 
+        background: linear-gradient(135deg, #00d4ff, #0ea5e9); 
+        -webkit-background-clip: text; 
+        -webkit-text-fill-color: transparent; 
+        background-clip: text; 
+        margin-bottom: 10px; 
+      }
+      .tournament-subtitle { 
+        font-size: 16px; 
+        color: rgba(255,255,255,0.6); 
+        font-weight: 500; 
+      }
+      
+      /* New Enhanced Bracket Layout */
+      .bracket-container {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+        width: 100%;
+      }
+      
+      .tournament-rounds {
+        display: flex;
+        flex-direction: column;
+        gap: 50px;
+        width: 100%;
+      }
+      
+      /* Round Section Styles */
+      .round-section {
+        width: 100%;
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 20px;
+        padding: 25px;
+        border: 2px solid rgba(59, 130, 246, 0.3);
+        backdrop-filter: blur(10px);
+      }
+      
+      .round-section.final-round {
+        border-color: rgba(255, 215, 0, 0.5);
+        background: rgba(30, 27, 75, 0.6);
+      }
+      
+      .round-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+      }
+      
+      .final-round .round-header {
+        border-bottom-color: rgba(255, 215, 0, 0.5);
+      }
+      
+      .round-emoji {
+        font-size: 28px;
+        display: block;
+        margin-bottom: 10px;
+      }
+      
+      .round-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #00d4ff;
+        margin: 0 0 5px 0;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      
+      .final-round .round-title {
+        color: #ffd700;
+      }
+      
+      .round-subtitle {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      
+      /* Matches Container */
+      .matches-container {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        width: 100%;
+      }
+      
+      /* Match Styles */
+      .match { 
+        background: rgba(30, 41, 59, 0.9); 
+        border: 2px solid rgba(59, 130, 246, 0.4); 
+        border-radius: 16px; 
+        backdrop-filter: blur(10px); 
+        transition: all 0.3s; 
+        overflow: hidden; 
+        width: 100%;
+        max-width: 100%;
+        animation: slideIn 0.7s ease-out forwards; 
+        opacity: 0; 
+        transform: translateY(40px); 
+      }
+      
+      .semifinal-match {
+        border-color: rgba(59, 130, 246, 0.4);
+      }
+      
+      .final-match {
+        border-color: rgba(255, 215, 0, 0.7);
+        background: rgba(30, 41, 59, 0.95);
+      }
+      
+      .match:hover { 
+        border-color: rgba(0, 212, 255, 0.7); 
+        transform: translateY(-3px); 
+        box-shadow: 0 15px 30px rgba(0, 212, 255, 0.2); 
+      }
+      
+      .final-match:hover {
+        border-color: rgba(255, 215, 0, 0.9);
+        box-shadow: 0 15px 30px rgba(255, 215, 0, 0.3);
+      }
+      
+      /* Match Labels */
+      .match-label {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(147, 51, 234, 0.8));
+        padding: 12px 20px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 13px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: white;
+      }
+      
+      .final-match .match-label {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(245, 158, 11, 0.9));
+        color: #1a1a2e;
+        font-size: 14px;
+      }
+      
+      /* Player Styles */
+      .match-players { 
+        padding: 20px; 
+      }
+      
+      .player { 
+        display: flex; 
+        align-items: center; 
+        padding: 16px 18px; 
+        background: rgba(15, 23, 42, 0.7); 
+        border: 2px solid rgba(71, 85, 105, 0.4); 
+        border-radius: 12px; 
+        margin-bottom: 12px; 
+        font-weight: 600; 
+        font-size: 16px; 
+        transition: all 0.3s; 
+        cursor: pointer; 
+        min-height: 60px; 
+        position: relative;
+        gap: 12px;
+      }
+      
+      .player:last-child { 
+        margin-bottom: 0; 
+      }
+      
+      .player:hover { 
+        background: rgba(59, 130, 246, 0.15); 
+        border-color: rgba(59, 130, 246, 0.6); 
+        transform: translateX(8px); 
+      }
+      
+      .player.winner { 
+        background: rgba(34, 197, 94, 0.2); 
+        border-color: rgba(34, 197, 94, 0.7); 
+        color: #10b981; 
+        transform: translateX(8px); 
+      }
+      
+      .player.winner::after { 
+        content: '✓'; 
+        position: absolute; 
+        right: 15px; 
+        font-size: 20px; 
+        color: #10b981; 
+      }
+      
+      .player.placeholder { 
+        color: rgba(255, 255, 255, 0.4); 
+        font-style: italic; 
+        cursor: default; 
+        border-style: dashed; 
+      }
+      
+      .player.placeholder:hover { 
+        background: rgba(15, 23, 42, 0.7); 
+        border-color: rgba(71, 85, 105, 0.4); 
+        transform: none; 
+      }
+      
+      /* Player Badges and Names */
+      .player-badge {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        min-width: 28px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      
+      .final-match .player-badge {
+        background: linear-gradient(135deg, #ffd700, #f59e0b);
+        color: #1a1a2e;
+      }
+      
+      .player-name {
+        flex: 1;
+        text-align: left;
+      }
+      
+      /* VS Divider */
+      .vs-divider { 
+        text-align: center; 
+        font-weight: 700; 
+        color: rgba(147, 51, 234, 0.9); 
+        font-size: 14px; 
+        margin: 8px 0; 
+        letter-spacing: 2px;
+        padding: 8px 0;
+      }
+      
+      .vs-text {
+        background: rgba(147, 51, 234, 0.2);
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: 1px solid rgba(147, 51, 234, 0.4);
+      }
+      
+      .final-vs .vs-text {
+        background: rgba(255, 215, 0, 0.2);
+        border-color: rgba(255, 215, 0, 0.4);
+        color: #ffd700;
+      }
+      
+      /* Button Styles */
+      .start-match-btn-container {
+        padding: 0 20px 20px 20px;
+      }
+      
+      .btn { 
+        width: 100%;
+        padding: 14px 28px; 
+        border: none; 
+        border-radius: 12px; 
+        font-weight: 600; 
+        cursor: pointer; 
+        transition: all 0.3s; 
+        font-size: 14px; 
+        text-transform: uppercase; 
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      
+      .btn-primary { 
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
+        color: white; 
+      }
+      
+      .btn-primary:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3); 
+      }
+      
+      .btn-primary:disabled {
+        background: rgba(71, 85, 105, 0.5);
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      
+      .btn-primary:disabled:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      
+      .btn-icon {
+        font-size: 16px;
+      }
+      
+      /* Animation Delays */
       .semifinals-column .match:nth-child(1) { animation-delay: 0.2s; }
       .semifinals-column .match:nth-child(2) { animation-delay: 0.4s; }
       .final-column .match { animation-delay: 0.6s; }
-      @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+      
+      /* Mobile Optimizations */
+      @media (max-width: 768px) { 
+        .tournament-container {
+          padding: 15px;
+        }
+        
+        .tournament-title { 
+          font-size: 28px; 
+        }
+        
+        .round-title {
+          font-size: 20px;
+        }
+        
+        .round-section {
+          padding: 20px 15px;
+        }
+        
+        .match-players {
+          padding: 15px;
+        }
+        
+        .player {
+          padding: 14px 16px;
+          font-size: 15px;
+          min-height: 55px;
+        }
+        
+        .player-badge {
+          font-size: 11px;
+          padding: 3px 6px;
+          min-width: 24px;
+        }
+        
+        .vs-text {
+          font-size: 12px;
+          padding: 4px 8px;
+        }
+        
+        .btn {
+          font-size: 13px;
+          padding: 12px 24px;
+        }
+      }
+      
+      @keyframes slideIn { 
+        to { 
+          opacity: 1; 
+          transform: translateY(0); 
+        } 
+      }
     `;
     document.head.appendChild(style);
   }

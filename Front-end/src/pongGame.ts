@@ -122,6 +122,13 @@ export class PongGame {
   private gameState: GameState;
   private keys: { [key: string]: boolean } = {};
   private animationId: number | null = null;
+  
+  // Mobile touch control properties
+  private isTouchDevice: boolean = false;
+  private touchStartY: number = 0;
+  private touchCurrentY: number = 0;
+  private activeTouches: { [id: number]: { x: number; y: number; player?: 'player1' | 'player2' } } = {};
+  
   private onGameEnd?: (winner: Player, gameTime: number) => void;
   private onScoreUpdate?: (player1Score: number, player2Score: number) => void;
   private powerUps: PowerUp[] = [];
@@ -341,6 +348,43 @@ export class PongGame {
     };
   }
 
+  public updateCanvasSize(width: number, height: number): void {
+    // Update canvas size
+    this.canvas.width = width;
+    this.canvas.height = height;
+    
+    // Update game config
+    this.config.canvasWidth = width;
+    this.config.canvasHeight = height;
+    
+    // Scale paddles and ball proportionally
+    const widthRatio = width / 800; // 800 was the original width
+    const heightRatio = height / 400; // 400 was the original height
+    
+    // Keep paddle proportions reasonable
+    this.config.paddleHeight = Math.min(80 * heightRatio, height * 0.2);
+    this.config.paddleWidth = Math.max(10 * widthRatio, 8);
+    
+    // Scale ball size
+    this.config.ballSize = Math.max(8 * Math.min(widthRatio, heightRatio), 6);
+    
+    // Reposition paddles if they're out of bounds
+    const paddleHeight = this.getPaddleHeight(this.player1);
+    if (this.player1.y + paddleHeight > height) {
+      this.player1.y = height - paddleHeight;
+    }
+    if (this.player2.y + paddleHeight > height) {
+      this.player2.y = height - paddleHeight;
+    }
+    
+    // Reposition ball if it's out of bounds
+    if (this.ball.x > width) this.ball.x = width / 2;
+    if (this.ball.y > height) this.ball.y = height / 2;
+    
+    // Force a render
+    this.render();
+  }
+
   // Private Methods
   private setupEventListeners(): void {
     // Keyboard controls
@@ -399,8 +443,96 @@ export class PongGame {
       this.keys[e.key.toLowerCase()] = false;
     });
 
-    // Mouse/Touch controls for mobile
-  // Removed mouse and touch controls for player 2. Only arrow keys control player 2 now.
+    // Mobile touch controls
+    this.setupTouchControls();
+  }
+
+  private setupTouchControls(): void {
+    // Detect if device supports touch
+    this.isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    if (!this.isTouchDevice) return;
+
+    // Prevent default touch behaviors on canvas
+    this.canvas.style.touchAction = 'none';
+    
+    // Touch event listeners
+    this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+    this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+    this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
+    this.canvas.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+  }
+
+  private handleTouchStart(e: TouchEvent): void {
+    e.preventDefault();
+    
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      const rect = this.canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      // Scale coordinates to canvas size
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const canvasX = x * scaleX;
+      const canvasY = y * scaleY;
+      
+      // Determine which side of the screen was touched
+      let player: 'player1' | 'player2' | undefined;
+      if (canvasX < this.canvas.width / 2) {
+        player = 'player1';
+      } else {
+        player = 'player2';
+      }
+      
+      this.activeTouches[touch.identifier] = {
+        x: canvasX,
+        y: canvasY,
+        player: player
+      };
+    }
+  }
+
+  private handleTouchMove(e: TouchEvent): void {
+    e.preventDefault();
+    
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      const activeTouch = this.activeTouches[touch.identifier];
+      
+      if (!activeTouch) continue;
+      
+      const rect = this.canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      
+      // Scale coordinates to canvas size
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const canvasY = y * scaleY;
+      
+      // Update touch position
+      activeTouch.y = canvasY;
+      
+      // Move the appropriate paddle
+      if (activeTouch.player === 'player1') {
+        const paddleHeight = this.getPaddleHeight(this.player1);
+        this.player1.y = Math.max(0, Math.min(this.canvas.height - paddleHeight, canvasY - paddleHeight / 2));
+      } else if (activeTouch.player === 'player2' && !this.player2.isAI) {
+        const paddleHeight = this.getPaddleHeight(this.player2);
+        this.player2.y = Math.max(0, Math.min(this.canvas.height - paddleHeight, canvasY - paddleHeight / 2));
+      }
+    }
+  }
+
+  private handleTouchEnd(e: TouchEvent): void {
+    e.preventDefault();
+    
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      delete this.activeTouches[touch.identifier];
+    }
   }
 
   private gameLoop(): void {

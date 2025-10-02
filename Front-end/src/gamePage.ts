@@ -240,14 +240,19 @@ export class GamePage {
                 </div>
                 <h3>Ready to Play!</h3>
                 <p class="controls-info">
-                  <strong>Player 1:</strong> W/S<br>
-                  ${this.gameMode === '1v1' ? '<strong>Player 2:</strong> Arrow Keys' : '<strong>AI:</strong> Automated'}
+                  <strong>Player 1:</strong> W/S or Touch Left Side<br>
+                  ${this.gameMode === '1v1' ? '<strong>Player 2:</strong> Arrow Keys or Touch Right Side' : '<strong>AI:</strong> Automated'}
                 </p>
                 <button id="start-game-btn" class="game-btn primary">
                   <i class="fas fa-play"></i>
                   Start Game
                 </button>
               </div>
+            </div>
+            
+            <!-- Mobile Touch Instructions (show only when game is active) -->
+            <div class="mobile-touch-hint" id="mobile-touch-hint" style="display: none;">
+              <span>Touch left/right side to control paddles</span>
             </div>
           </div>
 
@@ -476,6 +481,9 @@ export class GamePage {
       this.showGameOverlay();
     });
 
+    // Setup mobile responsiveness
+    this.setupMobileControls();
+
     // Game end modal buttons REMOVED
 
     // Keyboard shortcuts
@@ -503,11 +511,22 @@ export class GamePage {
     // Force overlay to hide in case of CSS issues
     const overlay = document.getElementById('game-overlay');
     if (overlay) overlay.style.display = 'none';
+    
+    // Show mobile touch hint when game starts
+    const mobileHint = document.getElementById('mobile-touch-hint');
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (mobileHint && isTouchDevice) {
+      mobileHint.style.display = 'block';
+      // Hide hint after 3 seconds
+      setTimeout(() => {
+        if (mobileHint) mobileHint.style.display = 'none';
+      }, 3000);
+    }
+    
     // Ensure canvas is visible and sized correctly
     if (this.gameCanvas) {
       this.gameCanvas.style.display = 'block';
-      this.gameCanvas.width = 800;
-      this.gameCanvas.height = 400;
+      this.resizeCanvas();
     }
     this.game.startGame();
     this.updateGameStatus('Playing...');
@@ -700,6 +719,93 @@ export class GamePage {
     const fullscreenBtn = document.getElementById('fullscreen-btn');
     if (fullscreenBtn) {
       fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+    }
+  }
+
+  private setupMobileControls(): void {
+    // Setup responsive canvas
+    window.addEventListener('resize', () => this.resizeCanvas());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.resizeCanvas(), 100); // Delay to allow orientation change to complete
+    });
+  }
+
+  private resizeCanvas(): void {
+    if (!this.gameCanvas) return;
+    
+    const container = this.gameCanvas.parentElement;
+    if (!container) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    
+    let targetWidth, targetHeight;
+    
+    if (isMobile) {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const isLandscape = screenWidth > screenHeight;
+      
+      // Reserve space for UI elements (header + score section) - using smaller values
+      const headerHeight = 35; // Much smaller header space  
+      const scoreHeight = 60; // Smaller score section space
+      const totalUIHeight = headerHeight + scoreHeight;
+      
+      if (isLandscape) {
+        // Landscape mode: maximize both width and height
+        const availableHeight = screenHeight - totalUIHeight - 10; // Minimal padding
+        const availableWidth = screenWidth - 10; // Minimal padding
+        
+        // Use almost all available space in landscape
+        targetHeight = availableHeight * 0.95; // Use 95% of available height
+        targetWidth = availableWidth * 0.98; // Use 98% of available width
+        
+        // Ensure reasonable aspect ratio while maximizing size
+        const aspectRatio = targetWidth / targetHeight;
+        if (aspectRatio > 2.5) {
+          // Too wide - adjust width
+          targetWidth = targetHeight * 2.2;
+        } else if (aspectRatio < 1.5) {
+          // Too narrow - adjust height  
+          targetHeight = targetWidth * 0.6;
+        }
+        
+      } else {
+        // Portrait mode: maximize width and use generous height
+        const availableWidth = screenWidth - 10; // Minimal padding
+        const availableHeight = screenHeight - totalUIHeight - 10;
+        
+        targetWidth = availableWidth * 0.99; // Use almost full width
+        targetHeight = availableHeight * 0.85; // Use 85% of available height
+        
+        // Ensure good aspect ratio for Pong
+        const minHeight = targetWidth * 0.4; // Minimum 40% of width
+        const maxHeight = targetWidth * 0.7; // Maximum 70% of width
+        
+        if (targetHeight < minHeight) {
+          targetHeight = minHeight;
+        } else if (targetHeight > maxHeight) {
+          targetHeight = maxHeight;
+        }
+        
+        // Final size boost - make it even bigger
+        targetWidth = Math.max(targetWidth, screenWidth * 0.96);
+        targetHeight = Math.max(targetHeight, Math.min(availableHeight * 0.8, targetWidth * 0.6));
+      }
+      
+    } else {
+      // Desktop: use fixed size
+      targetWidth = 800;
+      targetHeight = 400;
+    }
+    
+    this.gameCanvas.width = targetWidth;
+    this.gameCanvas.height = targetHeight;
+    this.gameCanvas.style.width = targetWidth + 'px';
+    this.gameCanvas.style.height = targetHeight + 'px';
+    
+    // Update game config if game exists
+    if (this.game) {
+      this.game.updateCanvasSize(targetWidth, targetHeight);
     }
   }
 

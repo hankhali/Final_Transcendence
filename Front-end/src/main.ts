@@ -2848,13 +2848,6 @@ function checkGoogleOAuthToken(): void {
 
   console.log('[App] Initialization complete');
 });
-// Handle browser history changes (back/forward buttons)
-window.addEventListener("popstate", () => {
-  const app = document.getElementById("app");
-  if (app) {
-    setupRoutes(app);
-  }
-});
 
 // Global functions for dashboard and profile features
 (window as any).switchTab = switchTab;
