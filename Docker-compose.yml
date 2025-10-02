@@ -9,10 +9,6 @@ services:
       - NODE_ENV=production
       - PORT=5001
       - JWT_SECRET=${JWT_SECRET}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
-      - FRONTEND_URL=http://localhost:5173
     restart: unless-stopped
 
   auth:

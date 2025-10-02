@@ -1,5 +1,4 @@
 // Ping Pong Game Implementation
-// @ts-nocheck - disable TypeScript checks for unused functions
 export interface GameConfig {
   canvasWidth: number;
   canvasHeight: number;
@@ -306,6 +305,8 @@ export class PongGame {
   public setPlayerNames(player1Name: string, player2Name: string): void {
     this.player1.name = player1Name;
     this.player2.name = player2Name;
+    // Force a re-render to immediately update the names on canvas
+    this.render();
   }
 
   public onGameEndCallback(callback: (winner: Player, gameTime: number) => void): void {
@@ -615,8 +616,8 @@ export class PongGame {
         
         // Only go for power-up if it's closer than the ball or ball is far away
         if (distanceToPlayer < distanceToBall * 0.7) {
-          // _shouldCollectPowerUp = true;
-          // _targetPowerUp = nearbyPowerUp;
+          _shouldCollectPowerUp = true;
+          _targetPowerUp = nearbyPowerUp;
           targetY = nearbyPowerUp.y;
         }
       }
@@ -1126,7 +1127,6 @@ export class PongGame {
     }
   }
 
-  // @ts-ignore - unused function kept for completeness
   private drawPowerUps(): void {
     this.ctx.save();
     for (const pu of this.powerUps) {
@@ -1170,7 +1170,6 @@ export class PongGame {
   //   }
   // }
 
-  // @ts-ignore - unused function kept for completeness
   private getPowerUpColor(type: PowerUpType): string {
     switch (type) {
       case 'paddle_size_boost': return 'rgba(0, 255, 0, 1)'; // Green
@@ -1189,7 +1188,6 @@ export class PongGame {
     }
   }
 
-  // @ts-ignore - unused function
   private getPowerUpSymbol(type: PowerUpType): string {
     switch (type) {
       case 'paddle_size_boost': return '⬆';
@@ -1701,7 +1699,7 @@ export class PongGame {
     
     this.ctx.font = '10px Arial';
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillText('Player 1: Press A | Player 2: Press T', x + 10, y + 40);
+    this.ctx.fillText(`${this.player1.name}: Press A | ${this.player2.name}: Press T`, x + 10, y + 40);
     
     // Show power-ups for each player
     const p1PowerUps = this.collectedPowerUps.filter(pu => pu.collector === 'player1').length;
@@ -1756,7 +1754,7 @@ export class PongGame {
     this.ctx.fillStyle = '#ffffff';
     this.ctx.font = '16px Arial';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText('Player 1: A key | Player 2: T key', centerX, centerY - 10);
+    this.ctx.fillText(`${this.player1.name}: A key | ${this.player2.name}: T key`, centerX, centerY - 10);
     this.ctx.fillText('Press SPACE to start', centerX, centerY + 20);
     
     this.ctx.restore();
@@ -1789,7 +1787,7 @@ export class PongGame {
       this.ctx.font = 'bold 24px Arial';
       this.ctx.fillText('Press SPACE to Start', this.config.canvasWidth / 2, this.config.canvasHeight / 2 + 50);
       this.ctx.font = '16px Arial';
-      this.ctx.fillText('Player 1: W/S or ↑/↓ | Player 2: I/K or Mouse', this.config.canvasWidth / 2, this.config.canvasHeight / 2 + 80);
+      this.ctx.fillText(`${this.player1.name}: W/S or ↑/↓ | ${this.player2.name}: I/K or Mouse`, this.config.canvasWidth / 2, this.config.canvasHeight / 2 + 80);
       this.ctx.fillText('Press R to Reset', this.config.canvasWidth / 2, this.config.canvasHeight / 2 + 100);
     } else if (this.gameState.isPaused) {
       this.ctx.font = 'bold 36px Arial';

@@ -1,6 +1,6 @@
 // @ts-ignore
 import { PongGame, create1v1Game, createAIGame, Player } from './pongGame.js';
-// import { showOpponentUsernameModal } from './components/OpponentUsernameModal';
+import { showOpponentUsernameModal } from './components/OpponentUsernameModal';
 // Game customization removed
 /// <reference path="./services/api.d.ts" />
 // Game Page Component - Handles the actual game interface
@@ -24,6 +24,28 @@ export class GamePage {
     if (this.game) {
       this.game.setPlayerNames(player1Name, player2Name);
     }
+    
+    // Update the UI elements to show the actual player names
+    const player1NameEl = document.getElementById('player1-name');
+    const player2NameEl = document.getElementById('player2-name');
+    
+    if (player1NameEl) {
+      player1NameEl.textContent = player1Name;
+    }
+    if (player2NameEl) {
+      player2NameEl.textContent = player2Name;
+    }
+    
+    // Update the controls info to show actual player names
+    const controlsInfo = document.querySelector('.controls-info');
+    if (controlsInfo) {
+      controlsInfo.innerHTML = `
+        <strong>${player1Name}:</strong> W/S<br>
+        ${this.gameMode === '1v1' || this.gameMode === 'tournament' ? `<strong>${player2Name}:</strong> Arrow Keys` : '<strong>AI:</strong> Automated'}
+      `;
+    }
+    
+    console.log('[DEBUG] Player names updated in UI:', { player1Name, player2Name });
   }
   private gameCanvas: HTMLCanvasElement | null = null;
   public gameMode: '1v1' | 'ai' | 'tournament' = '1v1';
@@ -80,7 +102,7 @@ export class GamePage {
         if (this.game) this.game.matchId = 0;
         if (this.game) this.game.tournamentId = this.getTournamentIdFromContext();
         this.setupGameCallbacks();
-        console.log('[DEBUG] Tournament: Game started with matchId 0 and tournamentId', this.game?.tournamentId);
+        console.log('[DEBUG] Tournament: Game started with matchId 0 and tournamentId', this.game.tournamentId);
       });
     }
     // Only show modal for direct 1v1
@@ -131,6 +153,14 @@ export class GamePage {
         if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas); }
         if (this.game) this.game.matchId = data.matchId;
         if (this.game) this.game.tournamentId = undefined;
+        
+        // Set player names for 1v1 match
+        const currentUser = (window as any).currentUser;
+        const player1Name = currentUser?.username || 'Player 1';
+        const player2Name = opponentUsername;
+        this.setPlayerNames(player1Name, player2Name);
+        console.log('[DEBUG] 1v1 player names set:', { player1Name, player2Name });
+        
         this.setupGameCallbacks();
       });
     });
@@ -290,8 +320,16 @@ export class GamePage {
                 if (this.gameCanvas) { this.game = create1v1Game(this.gameCanvas, gameConfig); }
                 if (this.game) this.game.matchId = matchId;
                 if (this.game) this.game.tournamentId = undefined;
+                
+                // Set player names for 1v1 match
+                const currentUser = (window as any).currentUser;
+                const player1Name = currentUser?.username || 'Player 1';
+                const player2Name = opponentUsername;
+                this.setPlayerNames(player1Name, player2Name);
+                console.log('[DEBUG] 1v1 player names set (initializeGame):', { player1Name, player2Name });
+                
                 this.setupGameCallbacks();
-                console.log('[hanieh added] 1v1 game created with matchId:', this.game?.matchId);
+                console.log('[hanieh added] 1v1 game created with matchId:', this.game.matchId);
               } else {
                 errorDiv.textContent = 'Game canvas not found.';
                 errorDiv.style.display = 'block';
@@ -472,7 +510,7 @@ export class GamePage {
     
     // Check if result submission is suppressed (e.g., handled by TournamentModal)
     const suppressFlag = (window as any).suppressGamePageResultSubmission;
-    const isLocalTournament = this.gameMode === 'tournament';
+    const isLocalTournament = this.gameMode === 'localTournament';
     const hasLocalTournamentId = (window as any).localTournamentMatchId;
     
     if (suppressFlag || isLocalTournament || hasLocalTournamentId) {
@@ -524,15 +562,31 @@ export class GamePage {
               console.error('[hanieh added] Error sending AI match result:', err);
             });
         });
-      } else if (this.gameMode === 'tournament') {
-        // hanieh added: Handle tournament matches 
-        const players = this.game?.getPlayers?.();
-        const player1Score = players?.player1?.score || 0;
-        const player2Score = players?.player2?.score || 0;
-        const winnerName = player1Score > player2Score ? players?.player1?.name : players?.player2?.name;
+      } else if (this.gameMode === 'localTournament') {
+        // hanieh added: Handle local tournament matches using localTournament API
+        const winner = this.game?.gameState.winner;
+        const winnerName = winner?.name || 'Unknown';
         
-        console.log('[DEBUG] Tournament match result:', { winnerName, player1Score, player2Score });
-        // Tournament result handling disabled for now
+        import('./services/api.js').then(({ localTournament }) => {
+          console.log('[DEBUG] Sending local tournament match result:', {
+            matchId,
+            player1Score,
+            player2Score,
+            winnerName
+          });
+          localTournament.finishMatch(matchId, player1Score, player2Score, winnerName)
+            .then(({ data, error }: { data: any; error: any }) => {
+              if (error) {
+                console.error('[DEBUG] Error sending local tournament match result:', error);
+              } else {
+                console.log('[DEBUG] Local tournament match result sent successfully:', data);
+                window.dispatchEvent(new Event('reloadDashboardStats'));
+              }
+            })
+            .catch((err: unknown) => {
+              console.error('[DEBUG] Error sending local tournament match result (catch):', err);
+            });
+        });
       } else if (this.gameMode === 'tournament' && typeof tournamentId === 'number') {
         import('./services/api.js').then(({ apiService }) => {
           console.log('[DEBUG] Sending tournament match result:', {

@@ -15,7 +15,6 @@ async function createTables() {
         avatar TEXT DEFAULT 'default.jpg',
         current_status TEXT DEFAULT 'offline',
         last_seen DATETIME,
-        google_id TEXT,
         player_matches INTEGER DEFAULT 0,
         player_wins INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
