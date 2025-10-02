@@ -420,29 +420,22 @@ export function showTournamentBracketModal() {
     }, 5000);
   }
   
-  function highlightDuplicateInputs(duplicateNames: string[]) {
-    console.log('[DEBUG] highlightDuplicateInputs called with:', duplicateNames);
-    console.log('[DEBUG] Total inputs found:', inputs.length);
-    console.log('[DEBUG] Total slots found:', slots.length);
-    
+  function highlightDuplicateInputs(duplicateNames: string[]) {    
     // Reset all input highlights
     inputs.forEach((input, index) => {
       const slot = slots[index];
       slot.classList.remove('duplicate-error');
       input.classList.remove('duplicate-input');
-      console.log(`[DEBUG] Reset slot ${index + 1}:`, slot);
     });
     
     // Highlight inputs with duplicate names
     if (duplicateNames.length > 0) {
       inputs.forEach((input, index) => {
         const inputValue = input.value.trim().toLowerCase();
-        console.log(`[DEBUG] Checking slot ${index + 1}, value: "${inputValue}"`);
         if (duplicateNames.includes(inputValue)) {
           const slot = slots[index];
           slot.classList.add('duplicate-error');
           input.classList.add('duplicate-input');
-          console.log(`[DEBUG] Applied duplicate styling to slot ${index + 1}`);
         }
       });
     }
@@ -1061,10 +1054,6 @@ function showBracket(players: string[]) {
   const { apiService } = await import('../services/api');
   // hanieh added: use tournaments.getById
   const response = await apiService.tournaments.getById(tournamentId);
-  console.log('[DEBUG] fetchTournamentMatches raw response:', response);
-  console.log('[DEBUG] response.data:', response.data);
-  console.log('[DEBUG] response.data.data:', response.data?.data);
-  console.log('[DEBUG] response.data.data.matches:', response.data?.data?.matches);
   // The backend returns {data: {data: {tournament, matches}}} so we need response.data.data.matches
   return response.data && response.data.data && response.data.data.matches ? response.data.data.matches : [];
   }
@@ -1375,7 +1364,7 @@ function showBracket(players: string[]) {
                   if (matchNum === 'final') {
                     console.log('🏆🏆🏆 TOURNAMENT CHAMPION: ' + winner + ' 🏆🏆🏆');
                     
-                    // Show champion announcement modal
+                    // Show simple champion announcement modal
                     setTimeout(() => {
                       const championModal = document.createElement('div');
                       championModal.className = 'modal-overlay';
@@ -1401,13 +1390,24 @@ function showBracket(players: string[]) {
                           <p style="color: #8B4513; font-size: 1.3em; margin: 20px 0;">
                             Congratulations on winning the tournament!
                           </p>
-                          <button onclick="this.parentElement.parentElement.remove()" 
+                          <button onclick="
+                            this.parentElement.parentElement.remove();
+                            // Close tournament modal if open
+                            const tournamentModal = document.getElementById('tournament-bracket-modal');
+                            if (tournamentModal) tournamentModal.remove();
+                            // Navigate back to tournaments page
+                            if (window.navigateTo) window.navigateTo('/tournament');
+                            else window.location.hash = '/tournament';
+                          " 
                                   style="
-                                    background: #8B4513; color: white; border: none;
+                                    background: #228B22; color: white; border: none;
                                     padding: 15px 30px; font-size: 1.2em; border-radius: 10px;
                                     cursor: pointer; margin-top: 20px;
-                                  ">
-                            🎉 Celebrate! 🎉
+                                    transition: all 0.3s ease;
+                                  "
+                                  onmouseover="this.style.background='#32CD32'"
+                                  onmouseout="this.style.background='#228B22'">
+                            🏠 Back to Tournaments �
                           </button>
                         </div>
                       `;
