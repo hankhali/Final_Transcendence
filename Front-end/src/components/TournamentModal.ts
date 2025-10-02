@@ -944,24 +944,26 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
       // Start the backend request immediately and store the promise
       backendMatchesPromise = (async () => {
         try {
+          console.log('[🚀 FRONTEND API] Calling backend tournament start API for tournament:', tournamentId);
           const { apiService } = await import('../services/api');
           const startResponse = await apiService.tournaments.start(tournamentId);
-          console.log('[DEBUG] Tournament started with real backend matchmaking:', startResponse);
+          console.log('[🚀 FRONTEND API] ✅ Backend API call successful! Response:', startResponse);
           
           if (startResponse.data && startResponse.data.matches) {
             const matches = startResponse.data.matches;
-            console.log('[DEBUG] Backend matches received:', matches);
+            console.log('[🚀 FRONTEND API] ✅ Backend provided matches:', matches);
             
             // IMPORTANT: Store backend matches globally immediately when received
             (window as any).globalBackendMatches = matches;
-            console.log('[DEBUG] Stored backend matches globally:', (window as any).globalBackendMatches);
+            console.log('[🚀 FRONTEND API] ✅ Stored backend matches globally for slot machine use');
             return matches;
           } else {
-            console.error('[DEBUG] No matches found in startResponse:', startResponse);
+            console.error('[🚀 FRONTEND API] ❌ Backend API success but no matches found in response:', startResponse);
             return [];
           }
         } catch (error) {
-          console.error('Error starting tournament:', error);
+          console.error('[🚀 FRONTEND API] ❌ Backend API call failed with error:', error);
+          console.error('[🚀 FRONTEND API] This will trigger frontend fallback randomization');
           return [];
         }
       })();
@@ -1008,24 +1010,38 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
         (window as any).globalBackendMatches = finalMatches;
         
         // Set final positions based on backend results
+        console.log('[🎯 FRONTEND] ✅ Using BACKEND randomization! Backend Fisher-Yates shuffle was successful.');
+        console.log('[🎯 FRONTEND] Backend provided matches:', finalMatches);
         setSlotResult('match1-player1', match1.player1.tournament_alias);
         setSlotResult('match1-player2', match1.player2.tournament_alias);
         setSlotResult('match2-player1', match2.player1.tournament_alias);
         setSlotResult('match2-player2', match2.player2.tournament_alias);
         
-        console.log('[DEBUG] Slot machine showing backend matches:');
-        console.log(`Match 1: ${match1.player1.tournament_alias} vs ${match1.player2.tournament_alias}`);
-        console.log(`Match 2: ${match2.player1.tournament_alias} vs ${match2.player2.tournament_alias}`);
+        console.log('[🎯 FRONTEND] Final pairings from backend:');
+        console.log(`[🎯 FRONTEND] Match 1: ${match1.player1.tournament_alias} vs ${match1.player2.tournament_alias}`);
+        console.log(`[🎯 FRONTEND] Match 2: ${match2.player1.tournament_alias} vs ${match2.player2.tournament_alias}`);
       } else {
         // Fallback to random assignment if backend fails
-        const shuffled = [...players].sort(() => Math.random() - 0.5);
+        console.log('[⚠️ FRONTEND] ❌ Backend failed! Using FRONTEND fallback randomization.');
+        console.log('[⚠️ FRONTEND] Backend matches were:', finalMatches);
+        console.log('[⚠️ FRONTEND] Players before frontend shuffle:', players);
+        
+        // Use Fisher-Yates shuffle for proper randomization
+        const shuffled = [...players];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        console.log('[⚠️ FRONTEND] Players after frontend Fisher-Yates shuffle:', shuffled);
+        
         setSlotResult('match1-player1', shuffled[0]);
         setSlotResult('match1-player2', shuffled[1]);
         setSlotResult('match2-player1', shuffled[2]);
         setSlotResult('match2-player2', shuffled[3]);
         
-        console.log('[DEBUG] Slot machine using fallback random matches');
-        console.log('[DEBUG] Backend matches were:', finalMatches);
+        console.log('[⚠️ FRONTEND] Final pairings from frontend fallback:');
+        console.log(`[⚠️ FRONTEND] Match 1: ${shuffled[0]} vs ${shuffled[1]}`);
+        console.log(`[⚠️ FRONTEND] Match 2: ${shuffled[2]} vs ${shuffled[3]}`);
       }
       
       // Update status to show results

@@ -114,16 +114,24 @@ async function leaveTournament(tournamentId, tournamentAlias){
     }
 }
 
-async function insertMatch(tournamentId, players, round){
+async function insertMatch(tournamentId, players, round, shouldShuffle = true){
     // Use the provided players (don't query database again)
     if (!players || players.length < 2) {
         throw new Error('Not enough players to create a match');
     }
 
-    // Shuffle players with Fisher–Yates algorithm
-    for (let i = players.length - 1; i > 0; i--) {
-        const random = Math.floor(Math.random() * (i + 1));
-        [players[i], players[random]] = [players[random], players[i]];
+    // Only shuffle if not already shuffled
+    if (shouldShuffle) {
+        console.log('[🎲 BACKEND SHUFFLE] Using proper Fisher-Yates algorithm for tournament randomization');
+        console.log('[🎲 BACKEND SHUFFLE] Players before shuffle:', players.map(p => p.tournament_alias));
+        for (let i = players.length - 1; i > 0; i--) {
+            const random = Math.floor(Math.random() * (i + 1));
+            [players[i], players[random]] = [players[random], players[i]];
+        }
+        console.log('[🎲 BACKEND SHUFFLE] Players after shuffle:', players.map(p => p.tournament_alias));
+    } else {
+        console.log('[🎲 BACKEND SHUFFLE] Skipping shuffle - already shuffled at tournament level');
+        console.log('[🎲 BACKEND SHUFFLE] Using pre-shuffled players:', players.map(p => p.tournament_alias));
     }
 
     const matchMaking = [];
@@ -171,9 +179,21 @@ async function createMatch(tournamentId){
 
     const allMatches = [];
     if (players.length === 4) {
-        // two matches for semifinal
-        const match1 = await insertMatch(tournamentId, players.slice(0, 2), 'semifinal');
-        const match2 = await insertMatch(tournamentId, players.slice(2, 4), 'semifinal');
+        // 🎲 SHUFFLE ALL 4 PLAYERS FIRST, then split into pairs
+        console.log('[🎲 BACKEND FIX] Shuffling all 4 players together BEFORE creating pairs');
+        console.log('[🎲 BACKEND FIX] Players before full shuffle:', players.map(p => p.tournament_alias));
+        
+        // Fisher-Yates shuffle on ALL players
+        for (let i = players.length - 1; i > 0; i--) {
+            const random = Math.floor(Math.random() * (i + 1));
+            [players[i], players[random]] = [players[random], players[i]];
+        }
+        
+        console.log('[🎲 BACKEND FIX] Players after full shuffle:', players.map(p => p.tournament_alias));
+        
+        // NOW split into pairs (no more shuffling in insertMatch)
+        const match1 = await insertMatch(tournamentId, players.slice(0, 2), 'semifinal', false);
+        const match2 = await insertMatch(tournamentId, players.slice(2, 4), 'semifinal', false);
         allMatches.push(...match1.matchMaking, ...match2.matchMaking);
     } 
     else if (players.length === 2) {
