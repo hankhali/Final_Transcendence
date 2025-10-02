@@ -359,6 +359,128 @@ export function showTournamentBracketModal() {
         50% { opacity: 1; transform: translateY(0) scale(1.02); }
         100% { opacity: 1; transform: translateY(0) scale(1); }
       }
+      
+      /* Player Selection Styles */
+      .player-selection-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin: 32px 0;
+        padding: 20px;
+      }
+      
+      .player-selection-card {
+        background: linear-gradient(135deg, rgba(0,255,247,0.1), rgba(255,0,234,0.1));
+        border: 2px solid #333;
+        border-radius: 16px;
+        padding: 24px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        position: relative;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .player-selection-card:hover {
+        border-color: #00fff7;
+        box-shadow: 0 0 20px rgba(0, 255, 247, 0.3);
+        transform: translateY(-2px);
+      }
+      
+      .player-selection-card.selected {
+        border-color: #00fff7;
+        background: linear-gradient(135deg, rgba(0,255,247,0.2), rgba(255,0,234,0.2));
+        box-shadow: 0 0 30px rgba(0, 255, 247, 0.5);
+        transform: scale(1.05);
+      }
+      
+      .player-selection-number {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #00fff7, #ff00ea);
+        color: #222;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 20px;
+        letter-spacing: 1px;
+      }
+      
+      .player-selection-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #fff;
+        margin: 8px 0;
+        letter-spacing: 1px;
+      }
+      
+      .player-selection-indicator {
+        font-size: 24px;
+        opacity: 0.7;
+        transition: all 0.3s ease;
+      }
+      
+      .player-selection-card.selected .player-selection-indicator {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+      
+      .selection-buttons {
+        display: flex;
+        gap: 16px;
+        margin-top: 32px;
+      }
+      
+      .back-button {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid #666;
+        border-radius: 12px;
+        padding: 16px 24px;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      .back-button:hover {
+        border-color: #888;
+        background: rgba(255, 255, 255, 0.15);
+      }
+      
+      .confirm-selection-button {
+        flex: 2;
+        background: linear-gradient(90deg, #00fff7 0%, #ff00ea 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 16px 24px;
+        color: #222;
+        font-size: 16px;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        opacity: 0.5;
+      }
+      
+      .confirm-selection-button:not(:disabled) {
+        opacity: 1;
+      }
+      
+      .confirm-selection-button:not(:disabled):hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 255, 247, 0.4);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -504,17 +626,101 @@ export function showTournamentBracketModal() {
       return;
     }
     
-    startBtn.innerHTML = '🔥 CREATING TOURNAMENT... 🔥';
-    startBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)';
+    // Show player selection step
+    showPlayerSelectionStep(players);
+  }
+
+  function showPlayerSelectionStep(players: string[]) {
+    // Hide the current form and show player selection
+    const modal = overlay.querySelector('.tournament-container') as HTMLElement;
+    if (!modal) return;
+    
+    modal.innerHTML = `
+      <button class="close-btn">×</button>
+      <div class="bracket-preview">
+        <svg viewBox="0 0 100 100">
+          <path d="M20 20 L40 20 L40 35 L60 35 M40 35 L40 50 L20 50 M20 70 L40 70 L40 65 L60 65 M40 65 L40 80 L20 80 M60 35 L60 50 L80 50 M60 65 L60 50"/>
+        </svg>
+      </div>
+      <h1 class="title">WHICH PLAYER ARE YOU?</h1>
+      <p class="subtitle">SELECT YOUR TOURNAMENT ALIAS</p>
+      <div class="player-selection-grid">
+        ${players.map((player: string, index: number) => `
+          <div class="player-selection-card" data-player="${player}" data-index="${index}">
+            <div class="player-selection-number">P${index + 1}</div>
+            <div class="player-selection-name">${player}</div>
+            <div class="player-selection-indicator">👤</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="selection-buttons">
+        <button class="back-button" id="backBtn">← Back to Edit Players</button>
+        <button class="confirm-selection-button" id="confirmBtn" disabled>Create Tournament</button>
+      </div>
+    `;
+
+    // Add event listeners for player selection
+    let selectedPlayer: string | null = null;
+    const playerCards = modal.querySelectorAll('.player-selection-card');
+    const confirmBtn = modal.querySelector('#confirmBtn') as HTMLButtonElement;
+    const backBtn = modal.querySelector('#backBtn') as HTMLButtonElement;
+    const closeBtn = modal.querySelector('.close-btn') as HTMLButtonElement;
+
+    playerCards.forEach(card => {
+      card.addEventListener('click', () => {
+        // Remove previous selection
+        playerCards.forEach(c => c.classList.remove('selected'));
+        
+        // Add selection to clicked card
+        card.classList.add('selected');
+        selectedPlayer = (card as HTMLElement).dataset.player || null;
+        
+        // Enable confirm button
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.style.opacity = '1';
+        }
+      });
+    });
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        // Go back to original form
+        overlay.remove();
+        showTournamentBracketModal();
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        overlay.remove();
+      });
+    }
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
+        if (selectedPlayer) {
+          createTournamentWithAlias(players, selectedPlayer);
+        }
+      });
+    }
+  }
+
+  async function createTournamentWithAlias(players: string[], creatorAlias: string) {
+    const confirmBtn = overlay.querySelector('#confirmBtn') as HTMLButtonElement;
+    if (confirmBtn) {
+      confirmBtn.innerHTML = '🔥 CREATING TOURNAMENT... 🔥';
+      confirmBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)';
+    }
     
     try {
       console.log('[🚀 FRONTEND DEBUG] Starting tournament creation process...');
       console.log('[🚀 FRONTEND DEBUG] Players array:', players);
+      console.log('[🚀 FRONTEND DEBUG] Selected creator alias:', creatorAlias);
       
-      // Step 1: Create tournament in backend with creator as first player
+      // Step 1: Create tournament in backend with selected player as creator
       const { apiService } = await import('../services/api');
       const tournamentName = `Tournament ${new Date().toLocaleTimeString()}`;
-      const creatorAlias = players[0]; // First player becomes the creator
       
       console.log('[🚀 FRONTEND DEBUG] Tournament parameters:', {
         name: tournamentName,
@@ -538,11 +744,19 @@ export function showTournamentBracketModal() {
       // Store tournament ID globally for result submission
       (window as any).currentTournamentId = tournamentId;
       
-      // Step 2: Join remaining players (2-4) as guests
+      // Step 2: Join remaining players as guests (skip the creator who's already joined)
       console.log('[🚀 FRONTEND DEBUG] Starting guest player joins...');
-      for (let i = 1; i < players.length; i++) {
+      console.log('[🚀 FRONTEND DEBUG] Creator alias (already joined):', creatorAlias);
+      
+      for (let i = 0; i < players.length; i++) {
+        // Skip the creator - they're already joined during tournament creation
+        if (players[i] === creatorAlias) {
+          console.log(`[🚀 FRONTEND DEBUG] Skipping creator ${players[i]} - already joined`);
+          continue;
+        }
+        
         try {
-          console.log(`[🚀 FRONTEND DEBUG] Joining guest ${i}: ${players[i]} to tournament ${tournamentId}`);
+          console.log(`[🚀 FRONTEND DEBUG] Joining guest: ${players[i]} to tournament ${tournamentId}`);
           const joinResponse = await apiService.tournaments.join(tournamentId, players[i]);
           console.log(`[✅ FRONTEND SUCCESS] Player ${players[i]} joined:`, joinResponse);
         } catch (error) {

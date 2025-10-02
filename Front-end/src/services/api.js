@@ -27,7 +27,7 @@ const onevone = {
 
 
 // Base API URL - update this to match your backend   //check account deletion
-const API_BASE_URL = 'http://localhost:5001'; 
+const API_BASE_URL = 'http://192.168.0.129:5001'; 
 
 // Generic fetch wrapper
 async function fetchApi(endpoint, options){

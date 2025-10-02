@@ -117,8 +117,9 @@ async function tournamentRoutes(fastify, options){
         try{
             const tournamentId = Number(request.params.id);
             const { matchId, userScore, opponentScore } = request.body;
+            const loggedInUserId = request.user.id; // Get the authenticated user ID
 
-            const result = await updateMatchResults(matchId, userScore, opponentScore);
+            const result = await updateMatchResults(matchId, userScore, opponentScore, loggedInUserId);
             return reply.code(200).send(result);
         }
         catch(error){

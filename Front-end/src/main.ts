@@ -1853,18 +1853,35 @@ function createRecentMatchesSummary(recentMatches: any[]): HTMLElement {
   
   recentMatches.forEach(match => {
     const matchItem = document.createElement("div");
-    matchItem.className = `recent-match-item ${match.result}`;
     
-    const resultIcon = match.result === 'win' ? 'fa-check-circle' : 'fa-times-circle';
+    // Handle different match results for recent matches
+    let resultIcon, cardClass;
+    if (match.result === 'DID_NOT_PARTICIPATE') {
+      cardClass = 'did-not-participate';
+      resultIcon = 'fa-eye';
+    } else if (match.result === 'win') {
+      cardClass = 'win';
+      resultIcon = 'fa-check-circle';
+    } else if (match.result === 'loss') {
+      cardClass = 'loss';
+      resultIcon = 'fa-times-circle';
+    } else {
+      cardClass = match.result;
+      resultIcon = 'fa-minus-circle';
+    }
+    
+    matchItem.className = `recent-match-item ${cardClass}`;
     
     const durationText = (typeof match.duration === 'number' && !isNaN(match.duration)) ? ` • ${match.duration}min` : '';
+    const scoreText = match.result === 'DID_NOT_PARTICIPATE' ? 'Tournament match' : match.score;
+    
     matchItem.innerHTML = `
       <div class="match-result-icon">
         <i class="fas ${resultIcon}"></i>
       </div>
       <div class="match-info">
         <div class="opponent-name">${match.opponent}</div>
-        <div class="match-details">${match.score}${durationText}</div>
+        <div class="match-details">${scoreText}${durationText}</div>
       </div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
     `;
@@ -2077,10 +2094,28 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
   
   matchHistory.forEach(match => {
     const matchCard = document.createElement("div");
-    matchCard.className = `match-card ${match.result}`;
     
-    const resultIcon = match.result === 'win' ? 'fa-trophy' : 'fa-times-circle';
-    const resultText = match.result === 'win' ? t.profile.history.victory : t.profile.history.defeat;
+    // Handle different match results
+    let resultIcon, resultText, cardClass;
+    if (match.result === 'DID_NOT_PARTICIPATE') {
+      cardClass = 'did-not-participate';
+      resultIcon = 'fa-eye';
+      resultText = 'Did not participate';
+    } else if (match.result === 'win') {
+      cardClass = 'win';
+      resultIcon = 'fa-trophy';
+      resultText = t.profile.history.victory;
+    } else if (match.result === 'loss') {
+      cardClass = 'loss';
+      resultIcon = 'fa-times-circle';
+      resultText = t.profile.history.defeat;
+    } else {
+      cardClass = match.result;
+      resultIcon = 'fa-minus-circle';
+      resultText = 'Draw';
+    }
+    
+    matchCard.className = `match-card ${cardClass}`;
     
     matchCard.innerHTML = `
       <div class="match-result">
@@ -2095,7 +2130,7 @@ function createMatchHistorySection(matchHistory: any[]): HTMLElement {
         </div>
       </div>
       <div class="match-details">
-        <div class="match-score">${match.score}</div>
+        <div class="match-score">${match.result === 'DID_NOT_PARTICIPATE' ? 'Tournament match' : match.score}</div>
   <div class="match-date">${match.date && typeof match.date.toLocaleDateString === 'function' ? match.date.toLocaleDateString() : ''}</div>
         <div class="match-duration">${match.duration ? `${match.duration} ${t.profile.history.min}` : ''}</div>
       </div>

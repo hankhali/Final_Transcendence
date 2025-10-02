@@ -134,19 +134,48 @@ async function getUserdata(userId){
         throw new Error('Error fetching game history');
     }
     // Map fields for frontend
-    const mappedHistory = getGameHistory.map(row => ({
-        id: row.id,
-        // hanieh added: Use opponent_name for tournament matches, otherwise show AI Opponent for AI matches
-        opponent: row.opponent_id === null ? (row.opponent_name || 'AI Opponent') : (row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown')),
-        // hanieh added: Use proper AI avatar for AI matches
-        opponentAvatar: row.opponent_id === null ? (row.opponent_name ? '/uploads/default.jpg' : '/uploads/ai-avatar.svg') : (row.opponentAvatar ? `/uploads/${row.opponentAvatar}` : ''),
-        score: `${row.user_score}-${row.opponent_score}`,
-        // hanieh added: Show 'ai' for AI matches, otherwise 1v1/tournament
-        gameType: row.round === 'ai' ? 'ai' : (row.round === '1v1' ? '1v1' : 'tournament'),
-        // duration removed, not needed
-        result: row.result === 'finished' ? (row.user_score > row.opponent_score ? 'win' : 'loss') : 'pending',
-        date: row.played_at
-    }));
+    const mappedHistory = getGameHistory.map(row => {
+        let result;
+        let gameType;
+        
+        // Determine game type
+        if (row.round === 'ai') {
+            gameType = 'ai';
+        } else if (row.round === '1v1') {
+            gameType = '1v1';
+        } else {
+            gameType = 'tournament';
+        }
+        
+        // Determine result based on different result formats
+        if (row.result === 'WIN') {
+            result = 'win';
+        } else if (row.result === 'LOSS') {
+            result = 'loss';
+        } else if (row.result === 'DID_NOT_PARTICIPATE') {
+            result = 'DID_NOT_PARTICIPATE'; // Keep uppercase for frontend compatibility
+        } else if (row.result === 'finished' || row.result === 'FINISHED') {
+            // For older matches, calculate result from scores
+            result = row.user_score > row.opponent_score ? 'win' : 'loss';
+        } else if (row.result === 'pending') {
+            result = 'pending';
+        } else {
+            // Default calculation for unknown result types
+            result = row.user_score > row.opponent_score ? 'win' : 'loss';
+        }
+        
+        return {
+            id: row.id,
+            // hanieh added: Use opponent_name for tournament matches, otherwise show AI Opponent for AI matches
+            opponent: row.opponent_id === null ? (row.opponent_name || 'AI Opponent') : (row.user_id === row.opponent_id ? 'You' : (row.opponent || 'Unknown')),
+            // hanieh added: Use proper AI avatar for AI matches
+            opponentAvatar: row.opponent_id === null ? (row.opponent_name ? '/uploads/default.jpg' : '/uploads/ai-avatar.svg') : (row.opponentAvatar ? `/uploads/${row.opponentAvatar}` : ''),
+            score: `${row.user_score}-${row.opponent_score}`,
+            gameType: gameType,
+            result: result,
+            date: row.played_at
+        };
+    });
     // Fetch accepted friends (bidirectional)
     const friends = db.prepare(`
         SELECT u.id, u.username, u.avatar, u.current_status

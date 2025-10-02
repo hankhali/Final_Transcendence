@@ -42,12 +42,22 @@ async function createTournament(name, created_by, creator_alias, min_players, ma
     if(max_players < min_players){
         throw new Error('Maximum players must be greater than or equal to minimum players');
     }
+    
+    // Validate creator_alias
+    if(!creator_alias || typeof creator_alias !== 'string' || creator_alias.trim().length === 0){
+        throw new Error('Creator alias is required and must be a non-empty string');
+    }
+    const trimmedCreatorAlias = creator_alias.trim();
+    if(trimmedCreatorAlias.length < 2 || trimmedCreatorAlias.length > 20){
+        throw new Error('Creator alias must be between 2 and 20 characters');
+    }
+    
     //insert into tournaments table
-    const insert = db.prepare(`INSERT INTO tournaments (name, created_by, creator_alias, min_players, max_players, status) VALUES (?, ?, ?, ?, ?, 'pending')`).run(name, created_by, creator_alias, min_players, max_players);
+    const insert = db.prepare(`INSERT INTO tournaments (name, created_by, creator_alias, min_players, max_players, status) VALUES (?, ?, ?, ?, ?, 'pending')`).run(name, created_by, trimmedCreatorAlias, min_players, max_players);
     console.log('Tournament Created Successfully! ID:', insert.lastInsertRowid);
 
     //automatically join the creator to the tournament
-    const join = db.prepare(`INSERT INTO tournament_players (tournament_id, tournament_alias, status) VALUES (?, ?, 'joined')`).run(insert.lastInsertRowid, creator_alias);
+    const join = db.prepare(`INSERT INTO tournament_players (tournament_id, tournament_alias, status) VALUES (?, ?, 'joined')`).run(insert.lastInsertRowid, trimmedCreatorAlias);
     if(join.changes === 1){
         console.log('Creator joined the tournament successfully');
     }
@@ -141,6 +151,7 @@ async function insertMatch(tournamentId, players, round, shouldShuffle = true){
         const player2 = players[i + 1];
 
         // Insert match into game_history as "pending"
+        // We'll determine the user_id when the match is updated with results
         db.prepare(`INSERT INTO game_history (user_id, opponent_id, user_score, opponent_score, result, round, tournament_id, opponent_name) VALUES (NULL, NULL, 0, 0, 'pending', ?, ?, ?)`).run(round, tournamentId,`${player1.tournament_alias} vs ${player2.tournament_alias}`);
 
         const matchId = db.prepare("SELECT last_insert_rowid() as id").get().id;
@@ -164,21 +175,30 @@ async function createMatch(tournamentId){
         WHERE tournament_id = ? AND status = 'joined'
     `).all(tournamentId);
     
+    console.log(`[DEBUG] Players joined for tournament ${tournamentId}:`, playersJoined);
+    
     const playersWinners = db.prepare(`
         SELECT tournament_alias 
         FROM tournament_players 
         WHERE tournament_id = ? AND status = 'winner'
     `).all(tournamentId);
 
+    console.log(`[DEBUG] Players winners for tournament ${tournamentId}:`, playersWinners);
+
     // Use winners if available (for final match), otherwise use joined players (for semifinals)
     const players = playersWinners.length >= 2 ? playersWinners : playersJoined;
 
+    console.log(`[DEBUG] Final players array for createMatch:`, players);
+    console.log(`[DEBUG] Number of players:`, players.length);
+
     if (players.length < 2) {
+        console.log(`[DEBUG] Not enough players (${players.length}) to create matches`);
         throw new Error('Not enough players to create matches');
     }
 
     const allMatches = [];
     if (players.length === 4) {
+        console.log('[DEBUG] Creating semifinal matches for 4 players');
         // 🎲 SHUFFLE ALL 4 PLAYERS FIRST, then split into pairs
         console.log('[🎲 BACKEND FIX] Shuffling all 4 players together BEFORE creating pairs');
         console.log('[🎲 BACKEND FIX] Players before full shuffle:', players.map(p => p.tournament_alias));
@@ -221,29 +241,74 @@ async function startTournament(tournamentId){
     return{ message: `Tournament ${tournament.name} has started!`, matches};
 }
 
-async function updateMatchResults(matchId, userScore, opponentScore){
+async function updateMatchResults(matchId, userScore, opponentScore, loggedInUserId = null){
     const match = db.prepare('SELECT * FROM game_history WHERE id = ?').get(matchId);
     if(!match){
         throw new Error('Match not found');
     }
+    
+    // Get tournament information to find the creator
+    const tournament = db.prepare('SELECT * FROM tournaments WHERE id = ?').get(match.tournament_id);
+    
     //check results of players and decide winner/loser/draw
     const [alias1, alias2] = match.opponent_name.split(" vs ");
 
     let winnerAlias = null, loserAlias = null;
-    let result = 'DRAW';
+    let result = 'FINISHED';
+    
     if(userScore > opponentScore){
         winnerAlias = alias1;
         loserAlias = alias2;
-        result = 'FINISHED';
     }
     else if(userScore < opponentScore){
         winnerAlias = alias2;
         loserAlias = alias1;
-        result = 'FINISHED';
+    } else {
+        result = 'DRAW';
     }
 
-    const updateMatch = db.prepare(`UPDATE game_history SET user_score = ?, opponent_score = ?, result = ?, played_at = CURRENT_TIMESTAMP, opponent_name = ? WHERE id = ?
-        `).run(userScore, opponentScore, result, `${alias1} vs ${alias2}${winnerAlias ? " | Winner: " + winnerAlias : ""}`, matchId);
+    // Determine if the logged-in user participated in this match
+    // Only the tournament creator can be a logged-in user in tournaments
+    let actualUserId = null;
+    let actualUserScore = userScore;
+    let actualOpponentScore = opponentScore;
+    let actualResult = result;
+    
+    if (loggedInUserId && tournament && tournament.created_by === loggedInUserId) {
+        const creatorAlias = tournament.creator_alias;
+        
+        if (creatorAlias === alias1) {
+            // Creator played as alias1 (first player)
+            actualUserId = loggedInUserId;
+            actualUserScore = userScore;  // userScore represents alias1's score
+            actualOpponentScore = opponentScore; // opponentScore represents alias2's score
+            if (result === 'FINISHED') {
+                actualResult = userScore > opponentScore ? 'WIN' : 'LOSS';
+            } else {
+                actualResult = result; // Keep original result if not FINISHED
+            }
+        } else if (creatorAlias === alias2) {
+            // Creator played as alias2 (second player)
+            actualUserId = loggedInUserId;
+            actualUserScore = opponentScore;  // Creator's actual score is opponentScore
+            actualOpponentScore = userScore;  // Creator's opponent score is userScore
+            if (result === 'FINISHED') {
+                actualResult = opponentScore > userScore ? 'WIN' : 'LOSS';
+            } else {
+                actualResult = result; // Keep original result if not FINISHED
+            }
+        } else {
+            // Creator didn't participate in this match - record as "Did not participate"
+            actualUserId = loggedInUserId;
+            actualUserScore = 0;
+            actualOpponentScore = 0;
+            actualResult = 'DID_NOT_PARTICIPATE';
+        }
+    }
+    // If no logged-in user or user is not the creator, keep actualUserId = null
+
+    const updateMatch = db.prepare(`UPDATE game_history SET user_id = ?, user_score = ?, opponent_score = ?, result = ?, played_at = CURRENT_TIMESTAMP, opponent_name = ? WHERE id = ?
+        `).run(actualUserId, actualUserScore, actualOpponentScore, actualResult, `${alias1} vs ${alias2}${winnerAlias ? " | Winner: " + winnerAlias : ""}`, matchId);
 
     if(updateMatch.changes === 0){
         throw new Error('Could not update match results');
