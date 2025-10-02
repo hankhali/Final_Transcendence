@@ -7,11 +7,6 @@ interface ApiResponse<T = any> {
 }
 
 declare module '../services/api.js' {
-  interface LocalTournamentAPI {
-    startMatch: (player1Name: string, player2Name: string, round: string) => Promise<ApiResponse<{ matchId: number }>>;
-    finishMatch: (matchId: number, player1Score: number, player2Score: number, winnerName: string) => Promise<ApiResponse<{ success: boolean }>>;
-  }
-
   interface OneVOneAPI {
     start: (player2Username: string) => Promise<ApiResponse>;
     submitResult: (matchId: number, player1Score: number, player2Score: number) => Promise<ApiResponse>;
@@ -57,5 +52,4 @@ declare module '../services/api.js' {
   export const apiService: ApiService;
   export const onevone: OneVOneAPI;
   export const ai: AIAPI;
-  export const localTournament: LocalTournamentAPI;
 }

@@ -8,24 +8,6 @@ const ai = {
   }
 };
 
-// hanieh added: Local tournament endpoints
-const localTournament = {
-  // Start a local tournament match
-  startMatch: async (player1Name, player2Name, round) => {
-    return fetchApi('/tournaments/local-match', {
-      method: 'POST',
-      body: JSON.stringify({ player1Name, player2Name, round })
-    });
-  },
-  
-  // Finish a local tournament match
-  finishMatch: async (matchId, player1Score, player2Score, winnerName) => {
-    return fetchApi('/tournaments/local-match/finish', {
-      method: 'POST',
-      body: JSON.stringify({ matchId, player1Score, player2Score, winnerName })
-    });
-  }
-};
 // hanieh added: Standalone 1v1 match endpoints
 const onevone = {
   start: async (player2Username) => {
@@ -291,9 +273,46 @@ const apiService = {
         method: "PATCH",
         body: JSON.stringify(profileData)
       });
+    },
+
+    // Get match history for tournaments (uses general user match history)
+    getMatchHistory: async (tournamentId) => {
+      // For now, use the user's general match history from /me endpoint
+      // which already includes tournament matches
+      const userResult = await fetchApi("/me", {
+        method: "GET"
+      });
+      
+      if (userResult.data && userResult.data.matchHistory) {
+        // Filter for tournament matches only if tournamentId is provided
+        const matches = tournamentId 
+          ? userResult.data.matchHistory.filter(match => match.gameType === 'tournament')
+          : userResult.data.matchHistory;
+        
+        return {
+          data: { matches },
+          error: null,
+          loading: false
+        };
+      }
+      
+      return {
+        data: { matches: [] },
+        error: null,
+        loading: false
+      };
+    },
+
+    // Finish/update tournament match results
+    finish: async (tournamentId, matchData) => {
+      const { matchId, userScore, opponentScore } = matchData;
+      return fetchApi(`/tournaments/${tournamentId}/finish`, {
+        method: "POST",
+        body: JSON.stringify({ matchId, userScore, opponentScore })
+      });
     }
   }
 };
 
 
-export { fetchApi, apiService, onevone, ai, localTournament }; // hanieh added
+export { fetchApi, apiService, onevone, ai }; // cleaned up exports

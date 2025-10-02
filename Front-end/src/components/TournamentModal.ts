@@ -912,7 +912,6 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
     }
     
     // Slot Machine Animation Logic
-    let backendMatches: any[] = [];
     
     // Add spinning animation styles
     const spinningStyle = document.createElement('style');
@@ -939,23 +938,33 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
     });
     
     // Get real backend matchmaking results during animation
+    let backendMatchesPromise: Promise<any[]> | null = null;
+    
     if (tournamentId) {
-      setTimeout(async () => {
+      // Start the backend request immediately and store the promise
+      backendMatchesPromise = (async () => {
         try {
           const { apiService } = await import('../services/api');
           const startResponse = await apiService.tournaments.start(tournamentId);
           console.log('[DEBUG] Tournament started with real backend matchmaking:', startResponse);
           
           if (startResponse.data && startResponse.data.matches) {
-            backendMatches = startResponse.data.matches;
-            console.log('[DEBUG] Backend matches received:', backendMatches);
+            const matches = startResponse.data.matches;
+            console.log('[DEBUG] Backend matches received:', matches);
+            
+            // IMPORTANT: Store backend matches globally immediately when received
+            (window as any).globalBackendMatches = matches;
+            console.log('[DEBUG] Stored backend matches globally:', (window as any).globalBackendMatches);
+            return matches;
+          } else {
+            console.error('[DEBUG] No matches found in startResponse:', startResponse);
+            return [];
           }
         } catch (error) {
           console.error('Error starting tournament:', error);
-          // Fallback to local bracket if backend fails
-          backendMatches = [];
+          return [];
         }
-      }, 1000);
+      })();
     }
     
     // Helper function to set slot result
@@ -970,22 +979,33 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
       }
     }
     
-    // Stop slot machines and show final results after 5 seconds of spinning
-    setTimeout(() => {
+    // Stop slot machines and show final results after waiting for backend
+    setTimeout(async () => {
       // Stop all animations
       allSlotReels.forEach(reel => {
         reel.classList.remove('spinning');
         (reel as HTMLElement).style.animation = 'none';
       });
       
+      // Wait for backend response if available
+      let finalMatches: any[] = [];
+      if (backendMatchesPromise) {
+        try {
+          finalMatches = await backendMatchesPromise;
+          console.log('[DEBUG] Awaited backend matches:', finalMatches);
+        } catch (error) {
+          console.error('[DEBUG] Error waiting for backend matches:', error);
+        }
+      }
+      
       // Position slots to show final matches
-      if (backendMatches.length >= 2) {
+      if (finalMatches.length >= 2) {
         // Use real backend matches
-        const match1 = backendMatches[0];
-        const match2 = backendMatches[1];
+        const match1 = finalMatches[0];
+        const match2 = finalMatches[1];
         
         // Store backend matches globally for startGame function
-        (window as any).globalBackendMatches = backendMatches;
+        (window as any).globalBackendMatches = finalMatches;
         
         // Set final positions based on backend results
         setSlotResult('match1-player1', match1.player1.tournament_alias);
@@ -1005,6 +1025,7 @@ async function showMatchmakingAnimation(players: string[], tournamentId: number 
         setSlotResult('match2-player2', shuffled[3]);
         
         console.log('[DEBUG] Slot machine using fallback random matches');
+        console.log('[DEBUG] Backend matches were:', finalMatches);
       }
       
       // Update status to show results
@@ -1288,10 +1309,10 @@ function showBracket(players: string[]) {
           gameContainer.innerHTML = '';
         }
         
-        // Set tournament flags BEFORE creating the game (use localTournament mode)
+        // Set tournament flags BEFORE creating the game
         (window as any).currentTournamentMatch = true;
         (window as any).gamePageSuppressModal = true;
-        (window as any).gamePageMode = 'localTournament'; // Use localTournament mode
+        (window as any).gamePageMode = 'tournament'; // Use unified tournament mode
         (window as any).localTournamentMatchId = matchId;
         (window as any).localTournamentPlayers = { playerA, playerB };
         (window as any).suppressGamePageResultSubmission = true; // Suppress gamePage submission

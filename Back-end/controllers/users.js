@@ -117,13 +117,16 @@ async function getUserdata(userId){
     }
 
     // Join opponent info and map fields for frontend compatibility
+    // Include both regular matches AND tournament matches where user was the creator
     const getGameHistory = db.prepare(`
         SELECT gh.*, u.username AS opponent, u.avatar AS opponentAvatar
         FROM game_history gh
         LEFT JOIN users u ON u.id = gh.opponent_id
-        WHERE gh.user_id = ?
+        LEFT JOIN tournaments t ON t.id = gh.tournament_id
+        WHERE gh.user_id = ? 
+           OR (gh.tournament_id IS NOT NULL AND t.created_by = ?)
         ORDER BY gh.played_at DESC
-    `).all(userId);
+    `).all(userId, userId);
     console.log('[DEBUG] getUserdata for userId:', userId);
     console.log('[DEBUG] Fetched user:', fetchData);
     console.log('[DEBUG] Fetched gameHistory:', getGameHistory);

@@ -549,15 +549,15 @@ export class GamePage {
     
     // Check if result submission is suppressed (e.g., handled by TournamentModal)
     const suppressFlag = (window as any).suppressGamePageResultSubmission;
-    const isLocalTournament = this.gameMode === 'localTournament';
-    const hasLocalTournamentId = (window as any).localTournamentMatchId;
+    const isTournament = this.gameMode === 'tournament';
+    const hasTournamentMatchId = (window as any).localTournamentMatchId;
     
-    if (suppressFlag || isLocalTournament || hasLocalTournamentId) {
+    if (suppressFlag || isTournament || hasTournamentMatchId) {
       console.log('[DEBUG] Result submission suppressed - handled externally', {
         suppressFlag,
         gameMode: this.gameMode,
-        isLocalTournament,
-        hasLocalTournamentId
+        isTournament,
+        hasTournamentMatchId
       });
       
       // Call tournament result handler if available
@@ -601,52 +601,39 @@ export class GamePage {
               console.error('[hanieh added] Error sending AI match result:', err);
             });
         });
-      } else if (this.gameMode === 'localTournament') {
-        // hanieh added: Handle local tournament matches using localTournament API
-        const winner = this.game?.gameState.winner;
-        const winnerName = winner?.name || 'Unknown';
+      } else if (this.gameMode === 'tournament') {
+        // Handle all tournament matches using the tournament finish endpoint
+        const currentTournamentId = (window as any).currentTournamentId || tournamentId;
         
-        import('./services/api.js').then(({ localTournament }) => {
-          console.log('[DEBUG] Sending local tournament match result:', {
-            matchId,
-            player1Score,
-            player2Score,
-            winnerName
-          });
-          localTournament.finishMatch(matchId, player1Score, player2Score, winnerName)
-            .then(({ data, error }: { data: any; error: any }) => {
-              if (error) {
-                console.error('[DEBUG] Error sending local tournament match result:', error);
-              } else {
-                console.log('[DEBUG] Local tournament match result sent successfully:', data);
-                window.dispatchEvent(new Event('reloadDashboardStats'));
-              }
-            })
-            .catch((err: unknown) => {
-              console.error('[DEBUG] Error sending local tournament match result (catch):', err);
+        if (currentTournamentId) {
+          import('./services/api.js').then(({ apiService }) => {
+            console.log('[DEBUG] Sending tournament match result:', {
+              tournamentId: currentTournamentId,
+              matchId,
+              userScore: player1Score,
+              opponentScore: player2Score
             });
-        });
-      } else if (this.gameMode === 'tournament' && typeof tournamentId === 'number') {
-        import('./services/api.js').then(({ apiService }) => {
-          console.log('[DEBUG] Sending tournament match result:', {
-            tournamentId,
-            matchId,
-            player1Score,
-            player2Score
-          });
-          apiService.tournaments.submitMatchResult(tournamentId, matchId, player1Score, player2Score)
-            .then(({ data, error }: { data: any; error: any }) => {
-              if (error) {
-                console.error('[DEBUG] Error sending tournament match result:', error);
-              } else {
-                console.log('[DEBUG] Tournament match result sent successfully:', data);
-                window.dispatchEvent(new Event('reloadDashboardStats'));
-              }
+            
+            apiService.tournaments.finish(currentTournamentId, {
+              matchId,
+              userScore: player1Score,
+              opponentScore: player2Score
             })
-            .catch((err: unknown) => {
-              console.error('[DEBUG] Error sending tournament match result (catch):', err);
-            });
-        });
+              .then(({ data, error }: { data: any; error: any }) => {
+                if (error) {
+                  console.error('[DEBUG] Error sending tournament match result:', error);
+                } else {
+                  console.log('[DEBUG] Tournament match result sent successfully:', data);
+                  window.dispatchEvent(new Event('reloadDashboardStats'));
+                }
+              })
+              .catch((err: unknown) => {
+                console.error('[DEBUG] Error sending tournament match result (catch):', err);
+              });
+          });
+        } else {
+          console.error('[DEBUG] No tournament ID found for tournament match');
+        }
       } else {
         console.warn('[ADDED] Missing tournamentId for tournament match result', {
           matchId,
